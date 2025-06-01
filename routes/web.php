@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -31,6 +32,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('brands', BrandController::class); 
     Route::resource('categories', CategoryController::class); 
     Route::resource('products', ProductController::class); 
+    Route::resource('stocks', StockController::class); 
     Route::get('logs', 'App\Http\Controllers\GeneralController@logs');
     Route::get('/get-city', [CustomerController::class, 'getCity']);
 });
@@ -42,4 +44,44 @@ Route::get('/api/categories', function() {
 Route::get('/api/brands', function() {
     return response()->json(\App\Models\Brand::all());
 });
+
+Route::get('/api/products/search', function (\Illuminate\Http\Request $request) {
+    $term = $request->get('q', '');
+
+    return \App\Models\Product::with(['category:id,name', 'brand:id,name'])
+        ->where('model', 'like', "%$term%")
+        ->orWhereHas('category', function($q) use ($term) {
+            $q->where('name', 'like', "%$term%");
+        })
+        ->orWhereHas('brand', function($q) use ($term) {
+            $q->where('name', 'like', "%$term%");
+        })
+        ->orWhere('category_id', $term)
+        ->orWhere('brand_id', $term)
+        ->limit(10)
+        ->get(['id', 'model', 'category_id', 'brand_id']);
+});
+
+Route::get('/api/warehouses', function() {
+    return response()->json(\App\Models\Warehouse::all(['id', 'name']));
+});
+
+Route::get('/api/warehouse-stock', function (\Illuminate\Http\Request $request) {
+    $stocks = \App\Models\Stock::with('warehouse')
+        ->where('category_id', $request->category_id)
+        ->where('brand_id', $request->brand_id)
+        ->where('model', $request->model)
+        ->get();
+
+    return response()->json($stocks->map(function($stock) {
+        return [
+            'warehouse' => $stock->warehouse ? $stock->warehouse->name : 'N/A',
+            'qty' => $stock->qty,
+        ];
+    }));
+});
+Route::get('/stock/export', [StockController::class, 'exportPage'])->name('stock.export');
+Route::get('/export/stock', [StockController::class, 'export'])->name('export.stocks');
+Route::post('/stocks/import', [StockController::class, 'import'])->name('stocks.import');
+
 

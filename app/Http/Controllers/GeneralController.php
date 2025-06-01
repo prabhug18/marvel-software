@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
+
 class GeneralController extends Controller
 {
     //

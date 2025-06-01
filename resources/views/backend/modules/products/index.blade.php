@@ -53,7 +53,6 @@
                     </select>
                     </div> --}}
 
-
                     <!-- Table -->
                     <div class="table-responsive" id="responsive-table">
                      <table id="customerTable" class="table table-bordered table-hover align-middle">

@@ -16,17 +16,17 @@
             </a>
             <ul class="submenu">
                 <li>
-                    <a href="./Stock/stock-List.html">
+                    <a href="{{ url('/stocks') }}">
                         <i class="fa-solid fa-list"></i><span> Stock List</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./Stock/Add-stock.html">
+                    <a href="{{ url('/stocks/create') }}">
                         <i class="fas fa-plus-circle"></i><span>Add Stock</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./Stock/bulk-stock/bulk-stock.html">
+                    <a href="{{ route('stock.export') }}">
                         <i class="fas fa-plus-circle"></i><span>Bulk Stock</span>
                     </a>
                 </li>                
