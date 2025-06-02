@@ -84,4 +84,8 @@ Route::get('/stock/export', [StockController::class, 'exportPage'])->name('stock
 Route::get('/export/stock', [StockController::class, 'export'])->name('export.stocks');
 Route::post('/stocks/import', [StockController::class, 'import'])->name('stocks.import');
 
+Route::get('/export/product', [ProductController::class, 'exportPage'])->name('export.product');
+Route::get('/product/export', [ProductController::class, 'export'])->name('product.export');
+Route::post('/product/import', [ProductController::class, 'import'])->name('product.import');
+
 

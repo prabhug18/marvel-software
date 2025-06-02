@@ -21,9 +21,12 @@ return new class extends Migration
             $table->string('memory')->nullable();
             $table->string('operating_system')->nullable();
             $table->string('price')->nullable();
+            $table->string('product_images')->nullable();
+            $table->string('product_images_original')->nullable();
             $table->integer('user_id')->unsigned();
             $table->string('product_images')->nullable();
             $table->string('product_images_original')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

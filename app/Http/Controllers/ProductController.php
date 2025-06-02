@@ -8,6 +8,9 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;
+use App\Exports\ProductExport;
+use App\Imports\ProductImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
@@ -51,12 +54,23 @@ class ProductController extends Controller
             'operating_system' => 'required|string',
             'price' => 'required|numeric|min:0',
             'product_images' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            // Add rules for warehouse[] and stock[] if needed
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Check if the combination of category_id, brand_id, and model already exists
+        $existingProduct = Product::where('category_id', $request->input('category_id'))
+            ->where('brand_id', $request->input('brand_id'))
+            ->where('model', $request->input('model'))
+            ->first();
+
+        if ($existingProduct) {
+            return response()->json([
+                'errors' => ['model' => ['The combination of category, brand, and model already exists.']]
             ], 422);
         }
 
@@ -89,9 +103,6 @@ class ProductController extends Controller
 
         $product->save();
 
-        // Save product logic here (e.g., Product::create([...]))
-        // Handle file uploads if needed
-
         return response()->json(['message' => 'Product created successfully!']);
     }
 
@@ -115,6 +126,7 @@ class ProductController extends Controller
         $brand      =   Brand::pluck('name','id');
         return view('backend.modules.products.edit',compact('product','heading','category','brand'));
     }
+    
 
     /**
      * Update the specified resource in storage.
@@ -178,5 +190,38 @@ class ProductController extends Controller
         $product->delete();
         Session::flash('delete_product','Product deleted successfully');
         return redirect('products');
+    }
+
+    public function exportPage()
+    {
+        $heading    =   "Product Excel Export";        
+        return view('backend.modules.products.bulkExport', compact('heading'));
+    }
+
+    /**
+     * Export products to Excel
+     */
+    public function export() 
+    {
+        return Excel::download(new ProductExport, 'products.xlsx');
+    }
+
+    /**
+     * Import products from Excel
+     */
+    public function import(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls'
+            ]);
+
+            Excel::import(new ProductImport, $request->file('file'));
+
+            return response()->json(['message' => 'Products imported successfully!']);
+        } catch (\Exception $e) {
+            \Log::error('Product import failed: ' . $e->getMessage());
+            return response()->json(['error' => 'An error occurred during import. Please check the file and try again.'], 500);
+        }
     }
 }

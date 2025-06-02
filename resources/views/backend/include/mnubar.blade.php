@@ -49,7 +49,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="./Products/Bulk-upload/Bulk-upload.html">
+                    <a href="{{ route('export.product') }}">
                         <i class="fas fa-box-open"></i><span> Bulk Products</span>
                     </a>
                 </li>

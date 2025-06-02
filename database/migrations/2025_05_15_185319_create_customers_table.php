@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('mobile_no')->unique();
             $table->string('address')->nullable();
-            $table->string('state')->nullable();
-            $table->string('city')->nullable();
+            $table->string('state_id')->nullable();
+            $table->string('city_id')->nullable();
             $table->string('pincode')->nullable();
             $table->integer('user_id')->unsigned();
             $table->softDeletes();
