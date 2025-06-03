@@ -58,7 +58,7 @@
                      <table id="customerTable" class="table table-bordered table-hover align-middle">
                         <thead class="custom-thead text-center">
                         <tr>
-                            <th>ID</th>
+                            <th>S.No</th>
                             <th>Category</th>
                             <th>Brand</th>
                             <th>Model</th>

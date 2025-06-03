@@ -32,7 +32,7 @@
                     <table class="table table-bordered table-hover align-middle">
                         <thead class="custom-thead text-center">
                             <tr>
-                                <th>No</th>
+                                <th>S.No</th>
                                 <th>Name</th>
                                 <th width="280px">Action</th>
                             </tr>

@@ -10,10 +10,10 @@ class WarehouseController extends Controller
 {
     function __construct()
     {
-         $this->middleware('permission:warehouse-list|warehouse-create|warehouse-edit|warehouse-delete', ['only' => ['index','store']]);
-         $this->middleware('permission:warehouse-create', ['only' => ['create','store']]);
-         $this->middleware('permission:warehouse-edit', ['only' => ['edit','update']]);
-         $this->middleware('permission:warehouse-delete', ['only' => ['destroy']]);
+        $this->middleware('permission:warehouse-list|warehouse-create|warehouse-edit|warehouse-delete', ['only' => ['index', 'store']]);
+        $this->middleware('permission:warehouse-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:warehouse-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:warehouse-delete', ['only' => ['destroy']]);
     }
 
     /**

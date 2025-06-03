@@ -74,7 +74,7 @@
 
                             <thead class="custom-thead text-center">
                             <tr>
-                                <th scope="col">ID</th>
+                                <th scope="col">S.No</th>
                                 <th scope="col">Location</th>
                                 <th scope="col">Prefix</th>            
                                 <th scope="col">Action</th>

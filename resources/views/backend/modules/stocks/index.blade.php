@@ -26,7 +26,7 @@
                             <table id="customerTable" class="table table-bordered table-hover align-middle">
                                 <thead class="custom-thead text-center">
                                 <tr>
-                                    <th>ID</th>
+                                    <th>S.No</th>
                                     {{-- <th>Location</th> --}}
                                     <th>Category</th>
                                     <th>Brand</th>
@@ -39,7 +39,7 @@
                                 <?php $i    =   1; ?>
                                 @foreach($stock as $stockVal)
                                 <tr>
-                                    <td data-title="ID">{{ $i }}</td>
+                                    <td data-title="S.No">{{ $i }}</td>
                                     {{-- <td data-title="Location">{{ $stockVal->warehouse->name }}</td> --}}
                                     <td data-title="Category">{{ $stockVal->category->name }}</td>
                                     <td data-title="Brand">{{ $stockVal->brand->name }}</td>

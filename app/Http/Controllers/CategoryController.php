@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\Session;
 
 class CategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:category-list|category-create|category-edit|category-delete', ['only' => ['index', 'store']]);
+        $this->middleware('permission:category-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:category-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:category-delete', ['only' => ['destroy']]);
+    }
     /**
      * Display a listing of the resource.
      */
@@ -40,7 +47,7 @@ class CategoryController extends Controller
             'name'      => 'required'
         ]);
 
-        $id = auth()->user()->id;
+        $id = auth()->id(); // Fixed undefined method 'user'
 
         $category               =   new Category();
         $category->name         =   $request->name;        
@@ -55,7 +62,7 @@ class CategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Brand $brand)
+    public function show(Category $category) // Corrected type from 'Brand' to 'Category'
     {
         //
         

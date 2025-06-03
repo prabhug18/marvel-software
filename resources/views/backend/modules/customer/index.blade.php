@@ -45,14 +45,10 @@
                 <table id="customerTable" class="table table-bordered table-hover align-middle">
                   <thead class="custom-thead text-center">
                     <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Email</th>  
+                      <th>S.No</th>
+                      <th>Name</th>                      
                       <th>Mobile No</th>
-                      <th>Address</th>
-                      <th>State</th>
-                      <th>City</th>
-                      <th>Pincode</th>          
+                      <th>City</th>                            
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -63,13 +59,9 @@
                   @foreach($customer as $customerVal)
                     <tr>
                       <td>{{ $i }}</td>
-                      <td>{{ $customerVal->name }}</td>
-                      <td>{{ $customerVal->email }}</td>
-                      <td>{{ $customerVal->mobile_no }}</td>
-                      <td>{{ $customerVal->address }}</td>
-                      <td>{{ $customerVal->state->name }}</td>
-                      <td>{{ $customerVal->city->name }}</td>
-                      <td>{{ $customerVal->pincode }}</td>              
+                      <td>{{ $customerVal->name }}</td>                     
+                      <td>{{ $customerVal->mobile_no }}</td> 
+                      <td>{{ $customerVal->city->name }}</td>                                  
                       <td class="action-buttons">                  
                         <a class="btn btn-sm btn-outline-primary me-1" href="{{ route('customer.edit',$customerVal->id) }}"  style="text-decoration: none;"><i class="fas fa-edit"></i></a>                  
                         <form method="POST" action="{{ route('customer.destroy', $customerVal->id) }}" class="btn"  onsubmit="return ConfirmDelete()">

@@ -46,7 +46,7 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="category_id" class="form-label">Category</label>
-                                    <select id="category_id" name="category_id" class="form-select" disabled>
+                                    <select id="category_id" name="category_id" class="form-select">
                                         <option value="">Select Category</option>
                                         @foreach ($category as $key => $categoryVal)
                                             <option value="{{ $key }}" {{$product->category_id == $key ? 'selected' : '' }}>{{ $categoryVal }}</option>
@@ -57,7 +57,7 @@
                                 <input type="hidden" class="form-control" id="id" name="id" value="{{ $product->id }}">
                                 <div class="col-md-6">
                                     <label for="brand_id" class="form-label">Brand</label>
-                                    <select id="brand_id" name="brand_id" class="form-select" disabled>
+                                    <select id="brand_id" name="brand_id" class="form-select">
                                         <option value="">Select Brand</option>  
                                         @foreach ($brand as $key => $brandVal)
                                             <option value="{{ $key }}" {{$product->brand_id == $key ? 'selected' : '' }}>{{ $brandVal }}</option>
@@ -67,7 +67,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Model</label>
-                                    <input type="text" class="form-control" name="model" id="model" placeholder="Enter Model" value="{{ $product->model }}" disabled/>
+                                    <input type="text" class="form-control" name="model" id="model" placeholder="Enter Model" value="{{ $product->model }}"/>
                                     <div class="invalid-feedback" id="model-error"></div>
                                 </div>
                                 <div class="col-md-6">

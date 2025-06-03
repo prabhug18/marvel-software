@@ -114,6 +114,7 @@ class ProductController extends Controller
         //
     }
 
+
     /**
      * Show the form for editing the specified resource.
      */
@@ -127,7 +128,6 @@ class ProductController extends Controller
         return view('backend.modules.products.edit',compact('product','heading','category','brand'));
     }
     
-
     /**
      * Update the specified resource in storage.
      */
@@ -223,5 +223,13 @@ class ProductController extends Controller
             \Log::error('Product import failed: ' . $e->getMessage());
             return response()->json(['error' => 'An error occurred during import. Please check the file and try again.'], 500);
         }
+    }
+
+    public function __construct()
+    {
+        $this->middleware('permission:product-list|product-create|product-edit|product-delete', ['only' => ['index', 'store']]);
+        $this->middleware('permission:product-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:product-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:product-delete', ['only' => ['destroy']]);
     }
 }

@@ -149,4 +149,11 @@ class StockController extends Controller
         return response()->json(['message' => 'Bulk stock uploaded successfully!']);
     }
 
+    public function __construct()
+    {
+        $this->middleware('permission:stock-list|stock-create|stock-edit|stock-delete', ['only' => ['index', 'store']]);
+        $this->middleware('permission:stock-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:stock-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:stock-delete', ['only' => ['destroy']]);
+    }
 }

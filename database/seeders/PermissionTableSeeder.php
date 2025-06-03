@@ -38,11 +38,19 @@ class PermissionTableSeeder extends Seeder
             'customer-list',
             'customer-create',
             'customer-edit',
-            'customer-delete',           
-         ];
+            'customer-delete',
+            'brand-list',
+            'brand-create',
+            'brand-edit',
+            'brand-delete',
+            'category-list',
+            'category-create',
+            'category-edit',
+            'category-delete',
+        ];
          
          foreach ($permissions as $permission) {
-              Permission::createQuietly(['name' => $permission]);
-         }
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        }
     }
 }
