@@ -27,6 +27,7 @@ class Customer extends Model
         'city_id',
         'pincode',
         'user_id',
+        'gst_no',
         'SoftDeletes'        
     ];
 

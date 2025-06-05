@@ -11,6 +11,7 @@ use Hash;
 use Illuminate\Support\Arr;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use App\Models\Warehouse;
 
 class UserController extends Controller
 {
@@ -37,8 +38,9 @@ class UserController extends Controller
     public function create(): View
     {
         $roles = Role::pluck('name','name')->all();
+        $warehouses = Warehouse::pluck('name','id');
         $heading    =   "User Management";
-        return view('users.create',compact('roles','heading'));
+        return view('users.create',compact('roles','heading','warehouses'));
     }
     
     /**
@@ -54,11 +56,11 @@ class UserController extends Controller
             'mobile_no' => 'required|numeric',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|same:confirm-password',
-            'roles' => 'required'
+            'roles' => 'required',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
         ]);
     
         $input  = $request->all();
-        
         $input['password'] = Hash::make($input['password']);
     
         $user = User::create($input);
@@ -92,8 +94,9 @@ class UserController extends Controller
         $user       =   User::find($id);
         $roles      =   Role::pluck('name','name')->all();
         $userRole   =   $user->roles->pluck('name','name')->all();
+        $warehouses = Warehouse::pluck('name','id');
         $heading    =   "User Management";
-        return view('users.edit',compact('user','roles','userRole','heading'));
+        return view('users.edit',compact('user','roles','userRole','heading','warehouses'));
     }
     
     /**
@@ -110,7 +113,8 @@ class UserController extends Controller
             'mobile_no' => 'required|numeric',
             'email' => 'required|email|unique:users,email,'.$id,
             'password' => 'same:confirm-password',
-            'roles' => 'required'
+            'roles' => 'required',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
         ]);
     
         $input = $request->all();

@@ -609,3 +609,7 @@ thead.custom-thead th {
   border-radius: 10px;  /* Optional: rounded corners */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Optional: soft shadow */
 }
+
+.select2-selection__rendered{
+  text-align: left;
+}

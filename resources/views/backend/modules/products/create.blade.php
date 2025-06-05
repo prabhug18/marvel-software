@@ -89,7 +89,19 @@
                                     <div class="invalid-feedback" id="price-error"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    
+                                    <label class="form-label">HSN Code</label>
+                                    <input type="text" class="form-control" name="hsn_code" id="hsn_code" placeholder="Enter HSN Code" />
+                                    <div class="invalid-feedback" id="hsn_code-error"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">GST / Tax Percentage</label>
+                                    <select class="form-select" name="tax_percentage" id="tax_percentage">
+                                        <option value="">Select Tax %</option>
+                                        @foreach($gstRates as $gst)
+                                            <option value="{{ $gst->name }}">{{ $gst->name }}%</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="invalid-feedback" id="tax_percentage-error"></div>
                                 </div>
                             </div>
                         </div>

@@ -78,7 +78,8 @@
                         <input class="form-control" type="text" placeholder="Enter Pincode" name="pincode"/>
                     </div>
                     <div class="col-md-6">
-                        <!-- Empty form group for layout balance -->
+                        <label class="form-label">GST No</label>
+                        <input class="form-control" type="text" placeholder="Enter GST No" name="gst_no"/>
                     </div>
                     
                     <div class="col-2">

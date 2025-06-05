@@ -74,7 +74,17 @@
                                     @endforeach
                                 </select>
                             </div>                            
-                            
+
+                            <div class="col-md-6">
+                                <label class="form-label">Location</label>
+                                <select name="warehouse_id" class="form-select">
+                                    <option value="">Select Location</option>
+                                    @foreach ($warehouses as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <div class="col-xs-8 col-sm-8 col-md-8 text-center">
                                 <button type="submit" class="btn-primary"> Save</button>
                             </div>

@@ -64,6 +64,7 @@ class CustomerController extends Controller
         $customer->city_id         =   $request->city;
         $customer->pincode      =   $request->pincode;
         $customer->user_id      =   $id;
+        $customer->gst_no       =   $request->gst_no;
         $customer->save();
 
         Session::flash('create_customer','Customer created successfully');
@@ -102,16 +103,22 @@ class CustomerController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
         $this->validate($request, [
             'name'      => 'required',            
             'email'     => 'required|email|unique:customers,email,'.$id,
             'mobile_no' => 'required|min:10',
         ]);
     
-        $input      =   $request->all();
-        $customer  =   Customer::find($id);
-        $customer->update($input);
+        $customer = Customer::find($id);
+        $customer->name = $request->name;
+        $customer->email = $request->email;
+        $customer->mobile_no = $request->mobile_no;
+        $customer->address = $request->address;
+        $customer->state_id = $request->state;
+        $customer->city_id = $request->city;
+        $customer->pincode = $request->pincode;
+        $customer->gst_no = $request->gst_no;
+        $customer->save();
            
         Session::flash('edit_customer','Customer edited successfully');
 
@@ -134,5 +141,19 @@ class CustomerController extends Controller
     {
         $city = City::where('state_id', $request->state_id)->get();
         return response()->json($city);
+    }
+
+    /**
+     * AJAX: Search customers for auto-suggestion
+     */
+    public function search(Request $request)
+    {
+        $q = $request->input('q');
+        $customers = Customer::where('name', 'like', "%$q%")
+            ->orWhere('mobile_no', 'like', "%$q%")
+            ->orWhere('email', 'like', "%$q%")
+            ->limit(10)
+            ->get();
+        return response()->json($customers);
     }
 }

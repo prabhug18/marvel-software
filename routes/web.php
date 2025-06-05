@@ -7,6 +7,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Auth;
@@ -32,10 +33,15 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('brands', BrandController::class); 
     Route::resource('categories', CategoryController::class); 
     Route::resource('products', ProductController::class); 
-    Route::resource('stocks', StockController::class); 
+    Route::resource('stocks', StockController::class);
+    Route::resource('invoice', InvoiceController::class); 
     Route::get('logs', 'App\Http\Controllers\GeneralController@logs');
     Route::get('/get-city', [CustomerController::class, 'getCity']);
+    Route::get('/generate-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
 });
+
+Route::get('/customer-search', [CustomerController::class, 'search']);
+Route::get('/product-search', [ProductController::class, 'search']);
 
 Route::get('/api/categories', function() {
     return response()->json(\App\Models\Category::all());

@@ -92,6 +92,7 @@ class StockController extends Controller
 
         return response()->json(['message' => 'Product created successfully!']);
     }
+    
 
     /**
      * Display the specified resource.

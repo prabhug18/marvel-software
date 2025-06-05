@@ -72,6 +72,16 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Location</label>
+                        <select name="warehouse_id" class="form-select">
+                            <option value="">Select Location</option>
+                            @foreach ($warehouses as $id => $name)
+                                <option value="{{ $id }}" {{ $user->warehouse_id == $id ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                         
                     <div class="col-xs-12 col-sm-12 col-md-12 text-center">
                         <button type="submit" class="btn btn-primary btn-sm mt-2 mb-3"><i class="fa-solid fa-floppy-disk"></i> Submit</button>

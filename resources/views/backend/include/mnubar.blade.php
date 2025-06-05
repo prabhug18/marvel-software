@@ -69,8 +69,10 @@
             </ul>
         </li>
 
-        <li><a href="./invoice/invoice-list.html"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></a></li>
-        <li class="has-submenu">
+
+        <li><a href="{{ url('/invoice') }}"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></a></li>
+        
+        {{-- <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fa-solid fa-hand-holding-dollar"></i><span>Price</span><i class="fas fa-chevron-down arrow"></i>
             </a>
@@ -86,9 +88,9 @@
                     </a>
                 </li>                
             </ul>
-        </li>
+        </li> --}}
     
-        <li><a href="./logs/logs.html"><i class="fas fa-clipboard-list"></i><span>All Logs</span></a></li>
+        {{-- <li><a href="./logs/logs.html"><i class="fas fa-clipboard-list"></i><span>All Logs</span></a></li> --}}
 
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">

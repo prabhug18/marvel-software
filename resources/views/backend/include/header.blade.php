@@ -13,7 +13,7 @@
   <div class="position-relative d-inline-block">
     <!-- Dropdown Menu -->
     <div id="profileDropdown" class="dropdown-menu show shadow" style="display: none; position: absolute; right: 0; top: 50px;">
-      <a class="dropdown-item" href="#">My Profile</a>
+      <a class="dropdown-item" href="#">Welcome {{ Auth::user()->name }}</a>
       <a class="dropdown-item" href="#">Settings</a>
       <div class="dropdown-divider"></div>
       <a class="dropdown-item text-danger" href="{{ url('logout') }}">Logout</a>

@@ -23,6 +23,8 @@ class Product extends Model
         'user_id',
         'product_images',
         'product_images_original',
+        'tax_percentage',
+        'hsn_code',
         'SoftDeletes'        
     ];
     

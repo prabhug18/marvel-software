@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\GST;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;
@@ -34,7 +35,8 @@ class ProductController extends Controller
         //
         $product    =    Product::orderBy('updated_at', 'desc')->get();
         $heading    =   "Add New Product";
-        return view('backend.modules.products.create', compact('heading','product'));
+        $gstRates   =   GST::all();
+        return view('backend.modules.products.create', compact('heading','product','gstRates'));
     }
 
     /**
@@ -53,6 +55,8 @@ class ProductController extends Controller
             'memory' => 'required|string',
             'operating_system' => 'required|string',
             'price' => 'required|numeric|min:0',
+            'tax_percentage' => 'required|numeric|min:0',
+            'hsn_code' => 'required|string',
             'product_images' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -96,6 +100,8 @@ class ProductController extends Controller
             'memory'                    =>  $request->input('memory'),
             'operating_system'          =>  $request->input('operating_system'),
             'price'                     =>  $request->input('price'),
+            'tax_percentage'            =>  $request->input('tax_percentage'),
+            'hsn_code'                  =>  $request->input('hsn_code'),
             'product_images'            =>  $fileName,
             'product_images_original'   =>  $fileNameOriginal,            
             'user_id'                   =>  auth()->user()->id
@@ -120,12 +126,23 @@ class ProductController extends Controller
      */
     public function edit($id)
     {
-        //
-        $product    =   Product::find($id);
-        $heading    =   "Edit Product";
-        $category   =   Category::pluck('name','id');
-        $brand      =   Brand::pluck('name','id');
-        return view('backend.modules.products.edit',compact('product','heading','category','brand'));
+        $product = Product::find($id);
+        if (!$product) {
+            return redirect()->route('products.index')->with('error', 'Product not found.');
+        }
+        // If there is a matching stock, do NOT allow editing
+        $hasStock = \App\Models\Stock::where('model', $product->model)
+            ->where('category_id', $product->category_id)
+            ->where('brand_id', $product->brand_id)
+            ->exists();
+        if ($hasStock) {
+            return redirect()->route('products.index')->with('error', 'Cannot edit: Product has stock in location.');
+        }
+        $heading = "Edit Product";
+        $category = Category::pluck('name','id');
+        $brand = Brand::pluck('name','id');
+        $gstRates = GST::all();
+        return view('backend.modules.products.edit',compact('product','heading','category','brand','gstRates'));
     }
     
     /**
@@ -142,7 +159,9 @@ class ProductController extends Controller
             'processor' => 'required|string',
             'memory' => 'required|string',
             'operating_system' => 'required|string',
-            'price' => 'required|numeric|min:0',                     
+            'price' => 'required|numeric|min:0',
+            'tax_percentage' => 'required|numeric|min:0',
+            'hsn_code' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -172,6 +191,8 @@ class ProductController extends Controller
         $product->memory                    =   $request->input('memory');
         $product->operating_system          =   $request->input('operating_system');
         $product->price                     =   $request->input('price');
+        $product->tax_percentage            =   $request->input('tax_percentage');
+        $product->hsn_code                  =   $request->input('hsn_code');
         $product->product_images            =   $fileName;   
         $product->product_images_original   =   $fileNameOriginal;
         $product->user_id                   =   auth()->user()->id;
@@ -223,6 +244,48 @@ class ProductController extends Controller
             \Log::error('Product import failed: ' . $e->getMessage());
             return response()->json(['error' => 'An error occurred during import. Please check the file and try again.'], 500);
         }
+    }
+
+    /**
+     * AJAX: Search products for auto-suggestion in invoice
+     */
+    public function search(Request $request)
+    {
+        $q = $request->input('q');
+        $warehouseId = $request->input('warehouse_id');
+        $products = Product::with(['brand', 'category'])
+            ->where(function($query) use ($q) {
+                $query->where('model', 'like', "%$q%")
+                    ->orWhere('series', 'like', "%$q%")
+                    ->orWhereHas('brand', function($query) use ($q) {
+                        $query->where('name', 'like', "%$q%") ;
+                    })
+                    ->orWhereHas('category', function($query) use ($q) {
+                        $query->where('name', 'like', "%$q%") ;
+                    });
+            })
+            ->limit(10)
+            ->get();
+        $result = $products->map(function($p) use ($warehouseId) {
+            // Get stock for this product (by model, category, brand, and warehouse if provided)
+            $stockQuery = \App\Models\Stock::where('model', $p->model)
+                ->where('category_id', $p->category_id)
+                ->where('brand_id', $p->brand_id);
+            if ($warehouseId) {
+                $stockQuery->where('warehouse_id', $warehouseId);
+            }
+            $stock = $stockQuery->sum('qty');
+            return [
+                'brand' => $p->brand ? $p->brand->name : '',
+                'series' => $p->series,
+                'model' => $p->model,
+                'category' => $p->category ? $p->category->name : '',
+                'price' => $p->price,
+                'tax_percentage' => $p->tax_percentage,
+                'stock' => $stock,
+            ];
+        });
+        return response()->json($result);
     }
 
     public function __construct()
