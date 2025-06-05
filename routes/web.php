@@ -93,5 +93,8 @@ Route::post('/stocks/import', [StockController::class, 'import'])->name('stocks.
 Route::get('/export/product', [ProductController::class, 'exportPage'])->name('export.product');
 Route::get('/product/export', [ProductController::class, 'export'])->name('product.export');
 Route::post('/product/import', [ProductController::class, 'import'])->name('product.import');
+Route::get('/api/invoice-details', [App\Http\Controllers\PaymentController::class, 'invoiceDetailsWithTotal']);
+Route::match(['get', 'post'], 'payment/add-payment', [App\Http\Controllers\PaymentController::class, 'addPayment']);
+Route::post('payment/store', [App\Http\Controllers\PaymentController::class, 'store'])->name('payment.store');
 
 

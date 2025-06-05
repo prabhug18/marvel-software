@@ -17,4 +17,9 @@ class Invoice extends Model
         'igst',
         'grand_total',
     ];
+
+    public function customer()
+    {
+        return $this->belongsTo(\App\Models\Customer::class, 'customer_id');
+    }
 }
