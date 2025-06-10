@@ -1,8 +1,9 @@
-
 <div id="mainHeader" class="header d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom shadow-sm w-100">
     <h4 class="fw-bold mb-0">{{ $heading }}</h4>
     <div>
-        <i id="notificationBell" class="bi bi-bell fs-4 me-3"></i>
+        @if(Auth::user() && Auth::user()->hasRole('Admin'))
+            <i id="notificationBell" class="bi bi-bell fs-4 me-3"></i>
+        @endif
         <i id="profileIcon" class="bi bi-person-circle fs-4" style="cursor: pointer;"></i>
     </div>
 </div>
@@ -13,7 +14,11 @@
   <div class="position-relative d-inline-block">
     <!-- Dropdown Menu -->
     <div id="profileDropdown" class="dropdown-menu show shadow" style="display: none; position: absolute; right: 0; top: 50px;">
-      <a class="dropdown-item" href="#">Welcome {{ Auth::user()->name }}</a>
+      @if(Auth::check())
+        <a class="dropdown-item" href="#">Welcome {{ Auth::user()->name }}</a>
+      @else
+        <a class="dropdown-item" href="#">Welcome Guest</a>
+      @endif
       <a class="dropdown-item" href="#">Settings</a>
       <div class="dropdown-divider"></div>
       <a class="dropdown-item text-danger" href="{{ url('logout') }}">Logout</a>
@@ -59,6 +64,7 @@
                 $details['status_id'], 
                 $details['id'],
                 $details['user_id'],
+                $details['password'],
                 $details['updated_at'],
                 $details['deleted_at']);
             }

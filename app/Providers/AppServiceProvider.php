@@ -15,6 +15,8 @@ use App\Models\Category;
 use App\Observers\CategoryObserver;
 use App\Models\Product;
 use App\Observers\ProductObserver;
+use App\Observers\StockObserver;
+use App\Observers\InvoiceObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,6 +40,9 @@ class AppServiceProvider extends ServiceProvider
         Brand::observe(BrandObserver::class);
         Category::observe(CategoryObserver::class);
         Product::observe(ProductObserver::class);
+        \App\Models\Stock::observe(StockObserver::class);
+        \App\Models\Invoice::observe(InvoiceObserver::class);
+        \App\Models\Payment::observe(\App\Observers\PaymentObserver::class);
 
     }
 }

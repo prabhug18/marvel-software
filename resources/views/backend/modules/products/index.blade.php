@@ -67,42 +67,9 @@
                             <th>Action</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        <?php $i    =   1; ?>
-                        @foreach($product as $productVal)
-                        <tr>
-                            <td data-title="S.NO">{{ $i }}</td>
-                            <td data-title="CATEGORY">{{ $productVal->category->name }}</td>
-                            <td data-title="PRODUCT NAME">{{ $productVal->brand->name }}</td>
-                            <td data-title="MODEL NO">{{ $productVal->model }}</td>
-                            <td data-title="PRICE">{{ $productVal->price }}</td>
-                            {{-- <td data-title="QTY">
-                            <button class="btn btn-outline-info btn-sm">5</button>
-                            </td> --}}
-                          
-
-                            <td data-title="ACTIONS">                  
-                                <a class="btn btn-warning btn-sm me-1" href="{{ route('products.edit',$productVal->id) }}"  style="text-decoration: none;"><i class="fas fa-edit"></i></a>                  
-                                <form method="POST" action="{{ route('products.destroy', $productVal->id) }}" class="btn"  onsubmit="return ConfirmDelete()">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
-                                </form>
-                                <script>
-                                    function ConfirmDelete()
-                                    {
-                                        var x = confirm("Are you sure you want to delete?");
-                                        if (x)
-                                            return true;
-                                        else
-                                            return false;
-                                    }
-                                </script>
-                            </td>
-                        </tr>
-                        <?php $i++; ?>
-                        @endforeach 
-                    </tbody>
+                        <tbody id="productTableBody">
+                            @include('backend.modules.products.partials.product_rows', ['products' => $products])
+                        </tbody>
                 </table>        
             </div>
         </div>
@@ -145,6 +112,37 @@
             alert("Stock details will be shown here.");
             modal.show();
         }
+
+        let page = 1;
+        let loading = false;
+        let lastPage = false;
+
+        function loadMoreProducts() {
+            if (loading || lastPage) return;
+            loading = true;
+            page++;
+            $.ajax({
+                url: '?page=' + page,
+                type: 'GET',
+                success: function(data) {
+                    if (data.trim() === '') {
+                        lastPage = true;
+                    } else {
+                        $('#productTableBody').append(data);
+                    }
+                    loading = false;
+                },
+                error: function() {
+                    loading = false;
+                }
+            });
+        }
+
+        $(window).on('scroll', function() {
+            if ($(window).scrollTop() + $(window).height() >= $(document).height() - 200) {
+                loadMoreProducts();
+            }
+        });
     </script>
       
     

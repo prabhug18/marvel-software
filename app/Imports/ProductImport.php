@@ -14,13 +14,18 @@ class ProductImport implements ToCollection
     {
         try {
             if ($rows->count() <= 1) {
-                throw new \Exception('Excel file is empty or contains only headers');
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'import' => ['Excel file is empty or contains only headers']
+                ]);
             }
             $header = $rows->first();
+            $hasError = false;
+            $errorMessages = [];
             foreach ($rows->skip(1) as $index => $row) {
                 // Defensive: check for missing columns
                 if (count($row) < 9) {
-                    \Log::error('ProductImport: Row '.($index+2).' has missing columns', ['row' => $row]);
+                    $hasError = true;
+                    $errorMessages[] = 'Row '.($index+2).': Missing columns';
                     continue;
                 }
                 // Map columns based on export order, trim values
@@ -34,9 +39,13 @@ class ProductImport implements ToCollection
                 $price = is_numeric($row[8]) ? $row[8] : preg_replace('/[^\d.]/', '', $row[8]);
 
                 if (!$category || !$brand || empty($model)) {
-                    \Log::error('ProductImport: Required fields missing on row '.($index+2), [
-                        'category' => $row[1], 'brand' => $row[2], 'model' => $model
-                    ]);
+                    $missing = [];
+                    if (!$category) $missing[] = 'Category: ' . ($row[1] ?? '');
+                    if (!$brand) $missing[] = 'Brand: ' . ($row[2] ?? '');
+                    if (empty($model)) $missing[] = 'Model';
+                    $msg = 'ProductImport: Required fields missing ' . implode(', ', $missing);
+                    $hasError = true;
+                    $errorMessages[] = $msg;
                     continue;
                 }
 
@@ -71,11 +80,18 @@ class ProductImport implements ToCollection
                         ]);
                     }
                 } catch (\Exception $e) {
-                    \Log::error('ProductImport: Exception on row '.($index+2).': '.$e->getMessage());
+                    $hasError = true;
+                    $errorMessages[] = 'Row '.($index+2).': ' . $e->getMessage();
                 }
             }
+            if ($hasError && count($errorMessages) > 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'import' => $errorMessages
+                ]);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            \Log::error('ProductImport: Import failed', ['error' => $e->getMessage()]);
             throw $e;
         }
     }

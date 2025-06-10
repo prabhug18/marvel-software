@@ -18,12 +18,14 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        $product    =    Product::orderBy('updated_at', 'desc')->get();
-        $heading    =   "Product View";
-        return view('backend.modules.products.index', compact('heading','product'));
+        $heading = "Product View";
+        $products = Product::orderBy('updated_at', 'desc')->paginate(10);
+        if ($request->ajax()) {
+            return view('backend.modules.products.partials.product_rows', compact('products'))->render();
+        }
+        return view('backend.modules.products.index', compact('heading', 'products'));
     }
 
 
@@ -51,13 +53,11 @@ class ProductController extends Controller
             'model' => 'required|string',
             'brand_id' => 'required|string',
             'series' => 'required|string',
-            'processor' => 'required|string',
-            'memory' => 'required|string',
-            'operating_system' => 'required|string',
+            'specification' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'tax_percentage' => 'required|numeric|min:0',
             'hsn_code' => 'required|string',
-            'product_images' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'product_images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -96,9 +96,7 @@ class ProductController extends Controller
             'brand_id'                  =>  $request->input('brand_id'),
             'model'                     =>  $request->input('model'),
             'series'                    =>  $request->input('series'),           
-            'processor'                 =>  $request->input('processor'),
-            'memory'                    =>  $request->input('memory'),
-            'operating_system'          =>  $request->input('operating_system'),
+            'specification'             =>  $request->input('specification'),
             'price'                     =>  $request->input('price'),
             'tax_percentage'            =>  $request->input('tax_percentage'),
             'hsn_code'                  =>  $request->input('hsn_code'),
@@ -130,14 +128,7 @@ class ProductController extends Controller
         if (!$product) {
             return redirect()->route('products.index')->with('error', 'Product not found.');
         }
-        // If there is a matching stock, do NOT allow editing
-        $hasStock = \App\Models\Stock::where('model', $product->model)
-            ->where('category_id', $product->category_id)
-            ->where('brand_id', $product->brand_id)
-            ->exists();
-        if ($hasStock) {
-            return redirect()->route('products.index')->with('error', 'Cannot edit: Product has stock in location.');
-        }
+        
         $heading = "Edit Product";
         $category = Category::pluck('name','id');
         $brand = Brand::pluck('name','id');
@@ -156,12 +147,11 @@ class ProductController extends Controller
             'model' => 'required|string',
             'brand_id' => 'required|string',
             'series' => 'required|string',
-            'processor' => 'required|string',
-            'memory' => 'required|string',
-            'operating_system' => 'required|string',
+            'specification' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'tax_percentage' => 'required|numeric|min:0',
             'hsn_code' => 'required|string',
+            'product_images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -187,9 +177,7 @@ class ProductController extends Controller
         $product->brand_id                  =   $request->input('brand_id');
         $product->model                     =   $request->input('model');
         $product->series                    =   $request->input('series');
-        $product->processor                 =   $request->input('processor');
-        $product->memory                    =   $request->input('memory');
-        $product->operating_system          =   $request->input('operating_system');
+        $product->specification             =   $request->input('specification');
         $product->price                     =   $request->input('price');
         $product->tax_percentage            =   $request->input('tax_percentage');
         $product->hsn_code                  =   $request->input('hsn_code');
@@ -237,9 +225,12 @@ class ProductController extends Controller
                 'file' => 'required|mimes:xlsx,xls'
             ]);
 
-            Excel::import(new ProductImport, $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductImport, $request->file('file'));
 
             return response()->json(['message' => 'Products imported successfully!']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return validation errors as JSON with 422 status
+            return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             \Log::error('Product import failed: ' . $e->getMessage());
             return response()->json(['error' => 'An error occurred during import. Please check the file and try again.'], 500);

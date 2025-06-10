@@ -16,9 +16,9 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('customer_id');
             $table->string('customer_name');
-            $table->string('invoice_number');
-            $table->unsignedBigInteger('invoice_id');
-            $table->decimal('grand_total', 15, 2);
+            $table->string('invoice_number')->nullable();
+            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->decimal('grand_total', 15, 2)->nullable();
             $table->decimal('balance_amount', 15, 2)->nullable();
             $table->decimal('paid_amount', 15, 2);
             $table->string('payment_mode');

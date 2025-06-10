@@ -34,43 +34,36 @@
                         @endif
                     </div>
 
-                    <form method="POST" class="row g-4" action="{{ route('customer.update', $customer->id) }}">
+                    <form id="customerEditForm" method="POST" class="row g-4" action="{{ route('customer.update', $customer->id) }}">
                         @csrf
                         @method('PUT')
-                        
                         <div class="col-md-6">
                             <label class="form-label">Customer Name <span class="text-danger">*</span></label>
                             <input class="form-control" type="text" placeholder="Enter Name" required name="name" value="{{ $customer->name }}"/>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label">Customer Phone <span class="text-danger">*</span></label>
                             <input class="form-control" type="text" placeholder="Enter Phone Number" required name="mobile_no"  value="{{ $customer->mobile_no }}"/>
-                        </div>                        
-
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label">Email <span class="text-danger">*</span></label>
                             <input class="form-control" type="email" placeholder="Enter Email Address" name="email" value="{{ $customer->email }}"/>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label">Address</label>
                             <input class="form-control" type="text" placeholder="Enter Address" name="address" value="{{ $customer->address }}"/>
-                        </div>                        
-
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label">State</label>
-                            
                             <select name="state" class="form-select select2" id=state>
-                                <option value="">Select State</option>                                
+                                <option value="">Select State</option>
                                 @foreach ($state as $key => $stateVal)
                                     <option value="{{ $key }}" {{$customer->state_id == $key ? 'selected' : '' }}>{{ $stateVal }}</option>
                                 @endforeach   
                             </select>
                         </div>
-
                         <div class="col-md-6">
-                            <label class="form-label">City</label>                                                
+                            <label class="form-label">City</label>
                             <select name="city" class="form-select select2" id=city>
                                 <option value="">Select City</option>
                                 @foreach ($city as $key => $cityVal)
@@ -78,25 +71,22 @@
                                 @endforeach 
                             </select>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label">Pincode</label>
                             <input class="form-control" type="text" placeholder="Enter Pincode" name="pincode" value="{{ $customer->pincode }}"/>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label">GST No</label>
                             <input class="form-control" type="text" placeholder="Enter GST No" name="gst_no" value="{{ $customer->gst_no }}"/>
                         </div>
-
                         <div class="col-md-6">
                             <!-- Empty form group for layout balance -->
                         </div>                        
                         <div class="col-2">
                             <button type="submit" class="btn btn-success btn-lg">Update</button>
                         </div>
-                                
                     </form>
+                    <div id="formErrorAjaxEdit"></div>
                 </div>
             </div>
         </div>
@@ -136,6 +126,39 @@
             tags: true,
             width: '100%'
         });
+        });
+
+        $(document).ready(function() {
+            $('#customerEditForm').on('submit', function(e) {
+                e.preventDefault();
+                var form = $(this);
+                var formData = form.serialize();
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    headers: {'X-CSRF-TOKEN': $('input[name="_token"]').val()},
+                    success: function(response) {
+                        $('#formErrorAjaxEdit').html('<div class="alert alert-success">Customer updated successfully</div>');
+                        setTimeout(function() {
+                            window.location.href = '/customer';
+                        }, 1200);
+                    },
+                    error: function(xhr) {
+                        if(xhr.status === 422) {
+                            var errors = xhr.responseJSON.errors;
+                            var errorHtml = '<div class="alert alert-danger"><ul>';
+                            $.each(errors, function(key, value) {
+                                errorHtml += '<li>' + value[0] + '</li>';
+                            });
+                            errorHtml += '</ul></div>';
+                            $('#formErrorAjaxEdit').html(errorHtml);
+                        } else {
+                            $('#formErrorAjaxEdit').html('<div class="alert alert-danger">An error occurred. Please try again.</div>');
+                        }
+                    }
+                });
+            });
         });
       </script>
         

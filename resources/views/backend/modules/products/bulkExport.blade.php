@@ -24,7 +24,6 @@
                             download template <strong>here</strong>
                         </a>
                     </p>
-
                     <!-- File Input -->
                     <div class="mb-3">
                         <label for="bulk-file" class="form-label">Upload Excel File</label>
@@ -61,6 +60,15 @@
                                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                                 },
                                 success: function(response) {
+                                    // Remove any previous import error alerts
+                                    $('.alert-danger').remove();
+                                    // Only show success if there is no error in response
+                                    if (response && response.errors && response.errors.import) {
+                                        let msg = Array.isArray(response.errors.import) ? response.errors.import.join('<br>') : response.errors.import;
+                                        let alertHtml = `<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
+                                        $(alertHtml).insertAfter('#uploadBtn');
+                                        return;
+                                    }
                                     $('#successAlert').removeClass('d-none');
                                     setTimeout(function() {
                                         $('#successAlert').addClass('d-none');
@@ -68,11 +76,19 @@
                                     $('#bulk-file').val('');
                                 },
                                 error: function(xhr) {
+                                    // Remove any previous import error alerts
+                                    $('.alert-danger').remove();
                                     if (xhr.status === 422) {
                                         var errors = xhr.responseJSON.errors;
                                         if(errors.file) {
                                             $('#file-error').text(errors.file[0]);
                                             $('#bulk-file').addClass('is-invalid');
+                                        }
+                                        // Show import errors (category/brand not found)
+                                        if(errors.import) {
+                                            let msg = Array.isArray(errors.import) ? errors.import.join('<br>') : errors.import;
+                                            let alertHtml = `<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
+                                            $(alertHtml).insertAfter('#uploadBtn');
                                         }
                                     } else if (xhr.status === 500) {
                                         alert(xhr.responseJSON.error || 'An error occurred. Please try again.');

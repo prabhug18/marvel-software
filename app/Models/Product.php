@@ -16,15 +16,13 @@ class Product extends Model
         'brand_id',
         'model',
         'series',
-        'processor',
-        'memory',
-        'operating_system',
         'price',
         'user_id',
         'product_images',
         'product_images_original',
         'tax_percentage',
         'hsn_code',
+        'specification',
         'SoftDeletes'        
     ];
     

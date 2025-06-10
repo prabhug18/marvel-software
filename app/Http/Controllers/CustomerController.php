@@ -6,6 +6,7 @@ use App\Models\City;
 use App\Models\Customer;
 use App\Models\State;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 class CustomerController extends Controller
@@ -50,23 +51,30 @@ class CustomerController extends Controller
         $this->validate($request, [
             'name'      => 'required',            
             'email'     => 'required|email|unique:customers',
-            'mobile_no' => 'required|min:10',
+            'mobile_no' => 'required|digits:10|unique:customers',
+            'address'   => 'required|string|max:255',
+            'state'     => 'required|exists:states,id',
+            'city'      => 'required|exists:cities,id',
+            'pincode'   => 'required|digits_between:4,8',
         ]);
 
-        $id = auth()->user()->id;
+        $id = Auth::user()->id;
 
         $customer               =   new Customer();
         $customer->name         =   $request->name;
         $customer->email        =   $request->email;
         $customer->mobile_no    =   $request->mobile_no;
         $customer->address      =   $request->address;
-        $customer->state_id        =   $request->state;
-        $customer->city_id         =   $request->city;
+        $customer->state_id     =   $request->state;
+        $customer->city_id      =   $request->city;
         $customer->pincode      =   $request->pincode;
         $customer->user_id      =   $id;
         $customer->gst_no       =   $request->gst_no;
         $customer->save();
 
+        if ($request->ajax()) {
+            return response()->json(['message' => 'Customer created successfully'], 200);
+        }
         Session::flash('create_customer','Customer created successfully');
 
         return redirect('customer');
@@ -106,7 +114,11 @@ class CustomerController extends Controller
         $this->validate($request, [
             'name'      => 'required',            
             'email'     => 'required|email|unique:customers,email,'.$id,
-            'mobile_no' => 'required|min:10',
+            'mobile_no' => 'required|digits:10|unique:customers,mobile_no,'.$id,
+            'address'   => 'required|string|max:255',
+            'state'     => 'required|exists:states,id',
+            'city'      => 'required|exists:cities,id',
+            'pincode'   => 'required|digits_between:4,8',
         ]);
     
         $customer = Customer::find($id);
@@ -119,9 +131,11 @@ class CustomerController extends Controller
         $customer->pincode = $request->pincode;
         $customer->gst_no = $request->gst_no;
         $customer->save();
-           
-        Session::flash('edit_customer','Customer edited successfully');
 
+        if ($request->ajax()) {
+            return response()->json(['message' => 'Customer edited successfully'], 200);
+        }
+        Session::flash('edit_customer','Customer edited successfully');
         return redirect('customer');
     }
 
@@ -156,4 +170,5 @@ class CustomerController extends Controller
             ->get();
         return response()->json($customers);
     }
+    
 }

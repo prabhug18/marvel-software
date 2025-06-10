@@ -46,7 +46,7 @@
                     <div class="stat-card gradient-2">
                         <div class="icon"><i class="bi bi-box"></i></div>
                         <h6>Stock</h6>
-                        <h2>1550</h2>
+                        <h2>{{ $stockCount }}</h2>
                     </div>
                 </div>
                 <div class="col-md-3">

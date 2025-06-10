@@ -63,22 +63,33 @@
             processData: false,
             contentType: false,
             success: function(response) {
-                $('#bulk-file').trigger("reset");
+                // Remove any previous import error alerts
+                $('.alert-danger').remove();
                 $('#successAlert').removeClass('d-none');
                 setTimeout(function() {
                     document.querySelector('#successAlert').remove();
                 }, 3000);
-
                 setTimeout(function() {
                     window.location.reload();
                 }, 4000);
             },
             error: function(xhr) {
-                alert('Upload failed. Please check your file and try again.');
+                // Remove any previous import error alerts
+                $('.alert-danger').remove();
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors && xhr.responseJSON.errors.import) {
+                    let msg = Array.isArray(xhr.responseJSON.errors.import) ? xhr.responseJSON.errors.import.join('<br>') : xhr.responseJSON.errors.import;
+                    let successCount = xhr.responseJSON.errors.success_count || 0;
+                    let alertHtml = `<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">${msg}<br><span class='text-success'>${successCount} row(s) updated successfully.</span><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
+                    $(alertHtml).insertAfter('#uploadBtn');
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    let alertHtml = `<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">${xhr.responseJSON.message}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
+                    $(alertHtml).insertAfter('#uploadBtn');
+                } else {
+                    alert('Upload failed. Please check your file and try again.');
+                }
             }
         });
     });
-    </script>
-    
+    </script>    
 
 @endsection

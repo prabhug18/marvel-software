@@ -93,7 +93,6 @@ class StockController extends Controller
         return response()->json(['message' => 'Product created successfully!']);
     }
     
-
     /**
      * Display the specified resource.
      */
@@ -145,9 +144,36 @@ class StockController extends Controller
             'file' => 'required|mimes:xlsx,xls'
         ]);
 
-        Excel::import(new StockImport, $request->file('file'));
+        try {
+            $result = Excel::import(new StockImport, $request->file('file'));
+            // If StockImport returns an array, it's a partial success
+            if (is_array($result) && isset($result['partial_success'])) {
+                return response()->json(['errors' => [
+                    'import' => $result['import'],
+                    'success_count' => $result['success_count']
+                ]], 200);
+            }
+            return response()->json(['message' => 'Bulk stock uploaded successfully!']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // ValidationException: all rows failed
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Stock Import Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Import failed: ' . $e->getMessage()], 500);
+        }
+    }
 
-        return response()->json(['message' => 'Bulk stock uploaded successfully!']);
+    /**
+     * AJAX endpoint to check available stock for a product model in a warehouse
+     */
+    public function checkStock(Request $request)
+    {
+        $model = $request->input('model');
+        $warehouseId = $request->input('warehouse_id');
+        $stock = \App\Models\Stock::where('model', $model)
+            ->where('warehouse_id', $warehouseId)
+            ->sum('qty');
+        return response()->json(['available_stock' => $stock]);
     }
 
     public function __construct()
@@ -158,3 +184,4 @@ class StockController extends Controller
         $this->middleware('permission:stock-delete', ['only' => ['destroy']]);
     }
 }
+

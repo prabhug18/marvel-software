@@ -6,11 +6,11 @@
         <i class="fas fa-bars"></i>
     </div>
   
+  
     @include('backend.include.mnubar')
   
     <main class="main-content" id="mainContent">
-        @include('backend.include.header')       
-        
+        @include('backend.include.header')
         
         <!-- Push content below fixed header -->
         <div style="padding-top: 30px;"></div>
@@ -18,13 +18,24 @@
             <div class="card shadow-sm rounded-4 mt-4">
                 <div class="card-body">
 
-                <!-- Header Button -->
-                <div class="row">
-                    <div class="col text-end mb-3">
+                <!-- Date Filter and Export Button -->
+                <div class="row mb-3 align-items-end justify-content-between">
+                    <div class="col-auto">
                         <a class="btn custom-orange-btn text-white" href="{{ url('/invoice/create') }}">
                             <i class="fas fa-user-plus me-2"></i>Add Invoice
                         </a>
                     </div>
+                    <form class="col-auto d-flex align-items-end" method="GET" action="{{ route('invoice.export') }}" target="_blank">
+                        <div class="me-2">
+                            <label for="from_date" class="form-label mb-0">From:</label>
+                            <input type="date" class="form-control" id="from_date" name="from_date" value="{{ request('from_date') }}">
+                        </div>
+                        <div class="me-2">
+                            <label for="to_date" class="form-label mb-0">To:</label>
+                            <input type="date" class="form-control" id="to_date" name="to_date" value="{{ request('to_date') }}">
+                        </div>
+                        <button type="submit" class="btn btn-success">Export Invoices</button>
+                    </form>
                 </div>
 
                 <!-- Responsive Table -->
@@ -41,33 +52,8 @@
                             <th scope="col">ACTIONS</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @forelse($invoices as $index => $invoice)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $invoice->date ?? $invoice->created_at->format('Y-m-d') }}</td>
-                                    <td>{{ $invoice->customer_name ?? ($invoice->customer->name ?? '-') }}</td>
-                                    <td>{{ $invoice->invoice_number }}</td>
-                                    <td>{{ $invoice->description ?? 'Product Added' }}</td>
-                                    <td>₹{{ number_format($invoice->grand_total, 2) }}</td>
-                                    <td class="text-center">
-                                        <a href="{{ route('invoice.show', $invoice->id) }}" title="View"><i class="fas fa-eye text-primary mx-1"></i></a>
-                                        {{-- <a href="{{ route('invoice.edit', $invoice->id) }}" title="Edit"><i class="fas fa-edit text-warning mx-1"></i></a> --}}
-                                        <a href="{{ url('payment/add-payment?invoice_id=' . $invoice->id) }}" title="Make TDS Payment"><i class="fas fa-rupee-sign text-success mx-1"></i></a>
-                                        {{-- <form action="{{ route('invoice.destroy', $invoice->id) }}" method="POST" style="display:inline;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" title="Delete" onclick="return confirm('Are you sure to delete?')" style="border:none;background:none;padding:0;">
-                                                <i class="fas fa-trash-alt text-danger mx-1"></i>
-                                            </button>
-                                        </form> --}}
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7">No invoices found.</td>
-                                </tr>
-                            @endforelse
+                        <tbody id="invoiceTableBody">
+                            @include('backend.modules.invoice.partials.invoice_rows', ['invoices' => $invoices])
                         </tbody>
                     </table>
                 </div>
@@ -77,5 +63,44 @@
         </div>
         
     </main>
-   
+@push('scripts')
+<script>
+let page = 1;
+let loading = false;
+let lastPage = {{ $invoices->hasMorePages() ? 'false' : 'true' }};
+
+function loadMoreInvoices() {
+    if (loading || lastPage) return;
+    loading = true;
+    page++;
+    $.ajax({
+        url: '?page=' + page,
+        type: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }, // Ensure Laravel detects AJAX
+        success: function(data) {
+            if (data.trim() === '') {
+                lastPage = true;
+                if (!$('#endOfInvoices').length) {
+                    $('#invoiceTableBody').append('<tr id="endOfInvoices"><td colspan="7" class="text-center text-muted">End of invoices</td></tr>');
+                }
+            } else {
+                $('#invoiceTableBody').append(data);
+            }
+            loading = false;
+        },
+        error: function() {
+            loading = false;
+        }
+    });
+}
+
+$(window).on('scroll', function() {
+    console.log('Scroll event fired');
+    if ($(window).scrollTop() + $(window).height() >= $(document).height() - 200) {
+        loadMoreInvoices();
+    }
+});
+</script>
+@endpush
+
 @endsection

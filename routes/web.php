@@ -10,6 +10,8 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\PaymentController;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -34,6 +36,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('categories', CategoryController::class); 
     Route::resource('products', ProductController::class); 
     Route::resource('stocks', StockController::class);
+    Route::get('invoice/export', [App\Http\Controllers\InvoiceController::class, 'export'])->name('invoice.export');
     Route::resource('invoice', InvoiceController::class); 
     Route::get('logs', 'App\Http\Controllers\GeneralController@logs');
     Route::get('/get-city', [CustomerController::class, 'getCity']);
@@ -93,8 +96,18 @@ Route::post('/stocks/import', [StockController::class, 'import'])->name('stocks.
 Route::get('/export/product', [ProductController::class, 'exportPage'])->name('export.product');
 Route::get('/product/export', [ProductController::class, 'export'])->name('product.export');
 Route::post('/product/import', [ProductController::class, 'import'])->name('product.import');
-Route::get('/api/invoice-details', [App\Http\Controllers\PaymentController::class, 'invoiceDetailsWithTotal']);
-Route::match(['get', 'post'], 'payment/add-payment', [App\Http\Controllers\PaymentController::class, 'addPayment']);
-Route::post('payment/store', [App\Http\Controllers\PaymentController::class, 'store'])->name('payment.store');
+Route::get('/api/invoice-details', [PaymentController::class, 'invoiceDetailsWithTotal']);
+Route::match(['get', 'post'], 'payment/add-payment', [PaymentController::class, 'addPayment']);
+Route::post('payment/store', [PaymentController::class, 'store'])->name('payment.store');
+Route::get('/payment/view', [PaymentController::class, 'view'])->name('payment.view');
+Route::get('payment/create', [PaymentController::class, 'create'])->name('payment.create');
+// AJAX endpoint for stock check (for invoice add product validation)
+Route::get('/check-stock', [StockController::class, 'checkStock']);
+// Add this route for AJAX balance fetch from PaymentController
+Route::get('/customer-balance', [App\Http\Controllers\PaymentController::class, 'customerBalance']);
+// Payment AJAX add route
+Route::post('/payment/add', [App\Http\Controllers\PaymentController::class, 'addPayment']);
+// AJAX payment store route
+Route::post('/payment/ajax-store', [App\Http\Controllers\PaymentController::class, 'ajaxStore']);
 
 

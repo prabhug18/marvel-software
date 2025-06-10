@@ -76,19 +76,9 @@
                                     <div class="invalid-feedback" id="series-error"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Processor</label>
-                                    <input type="text" class="form-control" name="processor" id="processor" placeholder="Enter Processor" value="{{ $product->processor }}" />
-                                    <div class="invalid-feedback" id="processor-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Memory</label>
-                                    <input type="text" class="form-control" name="memory" id="memory" placeholder="Enter Memory" value="{{ $product->memory }}" />
-                                    <div class="invalid-feedback" id="memory-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Operating System</label>
-                                    <input type="text" class="form-control" name="operating_system" id="operating_system"  placeholder="Enter OS" value="{{ $product->operating_system }}" />
-                                    <div class="invalid-feedback" id="operating_system-error"></div>
+                                    <label class="form-label">Specification</label>
+                                    <textarea class="form-control" name="specification" id="specification" placeholder="Enter Specification">{{ $product->specification }}</textarea>
+                                    <div class="invalid-feedback" id="specification-error"></div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Price</label>

@@ -24,7 +24,7 @@
                         @endphp
                         @if($isAdmin)
                         <div class="col-md-4">
-                            <label for="warehouse_id" class="form-label">Warehouse <span class="text-danger">*</span></label>
+                            <label for="warehouse_id" class="form-label">Location <span class="text-danger">*</span></label>
                             <select class="form-select" id="warehouse_id" name="warehouse_id" required>
                                 @foreach($warehouses as $warehouse)
                                     <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
@@ -48,7 +48,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label for="dc_number" class="form-label">DC Number <span class="text-danger">*</span></label>
+                            <label for="dc_number" class="form-label">DC Number</label>
                             <input type="number" class="form-control" id="dc_number" name="dc_number" placeholder="Enter DC No." required>
                         </div>
 
@@ -80,7 +80,7 @@
 
                         <div class="col-md-4">
                             <label for="invoiceState" class="form-label">State <span class="text-danger">*</span></label>
-                            <select name="state" class="form-select select2" id="state">
+                            <select name="state" class="form-select select2" id="state" readonly>
                                 <option value="">Select State</option>
                                 @foreach($state as $stateObj)
                                     <option value="{{ $stateObj->id }}">{{ $stateObj->name }}</option>
@@ -90,7 +90,7 @@
 
                         <div class="col-md-4">
                             <label for="invoiceCity" class="form-label">City <span class="text-danger">*</span></label>
-                            <select name="city" class="form-select select2" id="city">
+                            <select name="city" class="form-select select2" id="city" readonly>
                                 <option value="">Select City</option>
                             </select>
                         </div>
@@ -98,9 +98,7 @@
                         <div class="col-md-4">
                             <label for="pincode" class="form-label">Pincode <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="pincode" name="pincode" placeholder="Enter Pincode" required>
-                        </div>
-
-                        
+                        </div>                        
 
                     </form>
 
@@ -234,7 +232,6 @@
         
             // --- Customer Auto Suggest and Autofill (AJAX version) ---
             $('#customer_name').on('input', function() {
-                console.log('Input event fired'); // Debug
                 const val = $(this).val();
                 const $suggestions = $('#customerSuggestions');
                 $suggestions.empty();
@@ -245,7 +242,6 @@
                         data: { q: val },
                         dataType: 'json',
                         success: function(customers) {
-                            console.log('AJAX success', customers); // Debug
                             if (Array.isArray(customers) && customers.length > 0) {
                                 const seen = new Set();
                                 customers.forEach(function(c) {
@@ -260,7 +256,6 @@
                             }
                         },
                         error: function(xhr, status, error) {
-                            console.error('AJAX error:', error, xhr.responseText); // Debug
                             $suggestions.hide();
                         }
                     });
@@ -359,7 +354,13 @@
                                     if (seen.has(key)) return;
                                     seen.add(key);
                                     const display = [p.brand, p.series, p.model].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
-                                    $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-category="'+(p.category||'')+'" data-price="'+(p.price||'')+'">'+display+'</button>');
+                                    // Ensure GST is a number and not empty or null
+                                    let tax_percentage = 0;
+                                    if (p.tax_percentage !== undefined && p.tax_percentage !== null && p.tax_percentage !== '') {
+                                        tax_percentage = parseFloat(p.tax_percentage);
+                                        if (isNaN(tax_percentage)) tax_percentage = 0;
+                                    }
+                                    $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-category="'+(p.category||'')+'" data-price="'+(p.price||'')+'" data-tax_percentage="'+tax_percentage+'">'+display+'</button>');
                                 });
                                 $suggestions.show();
                             } else {
@@ -381,19 +382,39 @@
                 const brand = $btn.data('brand') || '';
                 const series = $btn.data('series') || '';
                 const model = $btn.data('model') || '';
-                const price = $btn.data('price') || '';
+                // Always treat price as GST-inclusive and reverse-calculate base price
+                let gst_inclusive_price = parseFloat($btn.data('price')) || 0;
+                let gst_percentage = parseFloat($btn.data('tax_percentage'));
+                if (isNaN(gst_percentage)) gst_percentage = 0;
+                let base_price = gst_inclusive_price;
+                if (gst_percentage > 0) {
+                    base_price = gst_inclusive_price / (1 + gst_percentage / 100);
+                }
                 const name = [brand, series, model].filter(Boolean).join(' - ');
                 $('#invoiceProductName').val(name);
-                $('#invoiceProductModel').val(model); // Only model is filled here
-                $('#invoiceProductPrice').val(price); // Prefill price
+                $('#invoiceProductModel').val(model);
+                $('#invoiceProductPrice').val(base_price.toFixed(2)); // Always prefill GST-exclusive base price
+                if ($('#invoiceProductPriceGstIncl').length === 0) {
+                    $('<input>').attr({type: 'hidden', id: 'invoiceProductPriceGstIncl'}).appendTo('body');
+                }
+                $('#invoiceProductPriceGstIncl').val(gst_inclusive_price.toFixed(2));
+                $('#invoiceProductPrice').data('gst-inclusive', gst_inclusive_price.toFixed(2));
+                $('#invoiceProductPrice').data('tax-percentage', gst_percentage);
                 $('#productSuggestions').hide();
             });
 
-            // Hide product suggestions on outside click
-            $(document).on('click', function(e) {
-                if (!$(e.target).closest('#invoiceProductName, #productSuggestions').length) {
-                    $('#productSuggestions').hide();
+            // Update GST-Inclusive Price display when Unit Price is changed manually
+            $('#invoiceProductPrice').on('input', function() {
+                let base_price = parseFloat($(this).val()) || 0;
+                let gst_percentage = parseFloat($(this).data('tax-percentage')) || 0;
+                let gst_inclusive_price = base_price;
+                if (gst_percentage > 0) {
+                    gst_inclusive_price = base_price * (1 + gst_percentage / 100);
                 }
+                if ($('#invoiceProductPriceGstIncl').length === 0) {
+                    $('<input>').attr({type: 'hidden', id: 'invoiceProductPriceGstIncl'}).appendTo('body');
+                }
+                $('#invoiceProductPriceGstIncl').val(gst_inclusive_price.toFixed(2));
             });
 
             $(document).ready(function() {
@@ -434,8 +455,6 @@
 
         });
 
-
-
         window.addEventListener("DOMContentLoaded", () => {
         let productsArr = [];
 
@@ -443,12 +462,15 @@
         const addProductBtn = document.getElementById('invoiceAddProductBtn');
         const generateInvoiceBtn = document.getElementById('invoiceGenerateBtn');
 
-        // Attach event listeners 
-        addProductBtn.addEventListener('click', addProduct);
+        addProductBtn.addEventListener('click', function() {
+            addProduct();
+            updateProductTable(); // Always update table to reflect latest Unit Price and Total
+        });
         generateInvoiceBtn.addEventListener('click', generateInvoice);
 
         // === Add Product Function ===
         function addProduct() {
+            // Do NOT set or recalculate invoiceProductPrice here
             const customerName = document.getElementById('customer_name').value.trim();
             if (!customerName) {
                 alert('❌ Please select or enter a customer before adding products.');
@@ -458,55 +480,66 @@
             const name = document.getElementById('invoiceProductName').value.trim();
             const model = document.getElementById('invoiceProductModel').value.trim();
             const qty = parseInt(document.getElementById('invoiceProductQty').value);
-            const price = parseFloat(document.getElementById('invoiceProductPrice').value);
-
+            const price = parseFloat(document.getElementById('invoiceProductPrice').value); // Always use as GST-exclusive
+            let gst_percentage = 0;
+            if ($('#invoiceProductPrice').data('tax-percentage')) {
+                gst_percentage = parseFloat($('#invoiceProductPrice').data('tax-percentage')) || 0;
+            }
+            let price_for_storage = price; // Always GST-exclusive
+            const warehouseId = $('#warehouse_id').val();
             if (!name || !model || isNaN(qty) || qty <= 0 || isNaN(price) || price < 0) {
                 alert('❌ Please enter valid product details.');
                 return;
             }
-
-            // --- Fetch product tax_percentage from backend (AJAX) ---
+            // --- Stock Validation AJAX (allow negative stock) ---
             $.ajax({
-                url: '/product-search',
+                url: '/check-stock',
                 type: 'GET',
-                data: { q: model },
+                data: {
+                    model: model,
+                    warehouse_id: warehouseId
+                },
                 dataType: 'json',
-                success: function(products) {
-                    let tax_percentage = 5; // default to 5 now
-                    if (Array.isArray(products) && products.length > 0) {
-                        // Try to find exact model match (case-insensitive)
-                        const found = products.find(p => {
-                            // Try both model and tax_percentage in the response
-                            return (p.model && p.model.toLowerCase() === model.toLowerCase());
-                        });
-                        // Debug: log the found product and its tax_percentage
-                        console.log('Product search result:', products);
-                        console.log('Matched product:', found);
-                        if (found && found.tax_percentage !== undefined && found.tax_percentage !== null && found.tax_percentage !== '') {
-                            tax_percentage = parseFloat(found.tax_percentage);
-                        } else {
-                            // Debug: log if not found or tax_percentage missing
-                            console.log('No valid tax_percentage found for model:', model, 'using default:', tax_percentage);
-                        }
-                    } else {
-                        // Debug: log if no products found
-                        console.log('No products found for model:', model);
+                success: function(response) {
+                    // No blocking on stock, just show a warning if stock is insufficient
+                    const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : null;
+                    if (availableStock !== null && qty > availableStock) {
+                        alert('⚠️ Warning: Not enough stock available. This will result in negative stock.');
                     }
-                    // Add product to list
-                    const productFullName = `${name} - ${model}`;
-                    productsArr.push({ name: productFullName, qty, price, total: qty * price, tax_percentage });
-                    updateProductTable();
-                    clearProductFields();
-                    updateTotals();
+                    // --- Continue with existing add product logic regardless of stock ---
+                    // --- Fetch product tax_percentage from backend (AJAX) ---
+                    $.ajax({
+                        url: '/product-search',
+                        type: 'GET',
+                        data: { q: model },
+                        dataType: 'json',
+                        success: function(products) {
+                            let tax_percentage = 5; // default to 5 now
+                            if (Array.isArray(products) && products.length > 0) {
+                                const found = products.find(p => {
+                                    return (p.model && p.model.toLowerCase() === model.toLowerCase());
+                                });
+                                if (found && found.tax_percentage !== undefined && found.tax_percentage !== null && found.tax_percentage !== '') {
+                                    tax_percentage = parseFloat(found.tax_percentage);
+                                }
+                            }
+                            const productFullName = `${name} - ${model}`;
+                            productsArr.push({ name: productFullName, qty, price: price_for_storage, total: qty * price_for_storage, tax_percentage: gst_percentage });
+                            updateProductTable();
+                            clearProductFields();
+                            updateTotals();
+                        },
+                        error: function(xhr, status, error) {
+                            const productFullName = `${name} - ${model}`;
+                            productsArr.push({ name: productFullName, qty, price: price_for_storage, total: qty * price_for_storage, tax_percentage: 5 });
+                            updateProductTable();
+                            clearProductFields();
+                            updateTotals();
+                        }
+                    });
                 },
                 error: function(xhr, status, error) {
-                    // fallback if AJAX fails
-                    console.log('AJAX error fetching product tax_percentage:', error, xhr && xhr.responseText);
-                    const productFullName = `${name} - ${model}`;
-                    productsArr.push({ name: productFullName, qty, price, total: qty * price, tax_percentage: 5 });
-                    updateProductTable();
-                    clearProductFields();
-                    updateTotals();
+                    alert('❌ Error checking stock. Please try again.');
                 }
             });
         }
@@ -520,13 +553,16 @@
                 return;
             }
             productsArr.forEach((product, index) => {
+                // Always use the user-entered price as GST-exclusive
+                const base_price = product.price;
+                const total_ex_gst = base_price * product.qty;
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${product.name}</td>
                     <td>${product.qty}</td>
-                    <td>₹${product.price.toFixed(2)}</td>
-                    <td>₹${product.total.toFixed(2)}</td>
+                    <td>₹${base_price.toFixed(2)}</td>
+                    <td>₹${total_ex_gst.toFixed(2)}</td>
                     <td>
                         <button class="btn btn-sm btn-danger" onclick="removeProduct(${index})">
                             <i class="fas fa-trash-alt"></i>
@@ -555,21 +591,47 @@
 
         // === Update Totals ===
         function updateTotals() {
-            const subtotal = productsArr.reduce((sum, p) => sum + p.total, 0);
+            // Calculate subtotal as sum of GST-exclusive totals
+            const subtotal = productsArr.reduce((sum, p) => {
+                const base_price = p.price;
+                return sum + (base_price * p.qty);
+            }, 0);
             const stateId = document.getElementById('state').value;
             let cgst = 0, sgst = 0, igst = 0, tax = 0;
             if (stateId == '35') {
-                cgst = productsArr.reduce((sum, p) => sum + ((p.total * ((p.tax_percentage ? p.tax_percentage : 5)/2) / 100)), 0);
-                sgst = productsArr.reduce((sum, p) => sum + ((p.total * ((p.tax_percentage ? p.tax_percentage : 5)/2) / 100)), 0);
+                cgst = productsArr.reduce((sum, p) => {
+                    const base_price = p.price;
+                    let gst_price = 0;
+                    if (p.tax_percentage > 0) {
+                        gst_price = (base_price * p.tax_percentage / 100) * p.qty;
+                    }
+                    return sum + (gst_price / 2);
+                }, 0);
+                sgst = productsArr.reduce((sum, p) => {
+                    const base_price = p.price;
+                    let gst_price = 0;
+                    if (p.tax_percentage > 0) {
+                        gst_price = (base_price * p.tax_percentage / 100) * p.qty;
+                    }
+                    return sum + (gst_price / 2);
+                }, 0);
                 igst = 0;
                 tax = cgst + sgst;
             } else {
                 cgst = 0;
                 sgst = 0;
-                igst = productsArr.reduce((sum, p) => sum + ((p.total * (p.tax_percentage ? p.tax_percentage : 5) / 100)), 0);
+                igst = productsArr.reduce((sum, p) => {
+                    const base_price = p.price;
+                    let gst_price = 0;
+                    if (p.tax_percentage > 0) {
+                        gst_price = (base_price * p.tax_percentage / 100) * p.qty;
+                    }
+                    return sum + gst_price;
+                }, 0);
                 tax = igst;
             }
-            const grandTotal = +(subtotal + tax).toFixed(2);
+            // Grand total is subtotal + total GST
+            const grandTotal = Math.round(subtotal + cgst + sgst + igst);
             // Defensive: check if elements exist before updating
             const cgstEl = document.getElementById('invoiceCGST');
             const sgstEl = document.getElementById('invoiceSGST');
@@ -579,7 +641,7 @@
             if (cgstEl) cgstEl.textContent = cgst.toFixed(2);
             if (sgstEl) sgstEl.textContent = sgst.toFixed(2);
             if (igstEl) igstEl.textContent = igst.toFixed(2);
-            if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(2);
+            if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(2); // Always show .00
             if (subtotalEl) subtotalEl.textContent = subtotal.toFixed(2);
         }
 
@@ -609,14 +671,18 @@
             }
 
             // Prepare products array for backend
-            const products = productsArr.map(p => ({
-                name: p.name,
-                model: p.name.split(' - ').pop(),
-                qty: p.qty,
-                price: p.price,
-                total: p.total,
-                tax_percentage: p.tax_percentage
-            }));
+            const products = productsArr.map(p => {
+                const base_price = p.price; // always GST-exclusive, user-entered
+                const total_ex_gst = base_price * p.qty;
+                return {
+                    name: p.name,
+                    model: p.name.split(' - ').pop(),
+                    qty: p.qty,
+                    unit_price: base_price, // store as unit_price
+                    total: total_ex_gst,   // store as total
+                    tax_percentage: p.tax_percentage
+                };
+            });
 
             // CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

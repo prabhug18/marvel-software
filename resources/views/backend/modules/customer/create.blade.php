@@ -35,7 +35,7 @@
                         @endif
                     </div>
 
-                <form  class="row g-4" method="POST" enctype="multipart/form-data" action="{{ route('customer.store') }}">
+                <form id="customerForm" class="row g-4" method="POST" enctype="multipart/form-data" action="{{ route('customer.store') }}">
                     @csrf
                     <div class="col-md-6">
                         <label class="form-label">Customer Name <span class="text-danger">*</span></label>
@@ -85,8 +85,8 @@
                     <div class="col-2">
                         <button type="submit" class="btn btn-success btn-lg"> Submit</button>
                     </div>
-                            
                 </form>
+                <div id="formErrorAjax"></div>
             </div>
         </div>
 
@@ -130,5 +130,47 @@
       });
     });
 
+    $(document).ready(function() {
+        $('#customerForm').on('submit', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var formData = form.serialize();
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: formData,
+                headers: {'X-CSRF-TOKEN': $('input[name="_token"]').val()},
+                success: function(response) {
+                    $('#formErrorAjax').html('<div class="alert alert-success">Customer created successfully</div>');
+                    form.trigger('reset');
+                    setTimeout(function() {
+                        window.location.href = '/customer';
+                    }, 1200);
+                },
+                error: function(xhr) {
+                    if(xhr.status === 422) {
+                        var errors = xhr.responseJSON.errors;
+                        var errorHtml = '<div class="alert alert-danger"><ul>';
+                        $.each(errors, function(key, value) {
+                            errorHtml += '<li>' + value[0] + '</li>';
+                        });
+                        errorHtml += '</ul></div>';
+                        $('#formErrorAjax').html(errorHtml);
+                    } else {
+                        let msg = 'An error occurred. Please try again.';
+                        if(xhr.responseText) {
+                            try {
+                                let json = JSON.parse(xhr.responseText);
+                                if(json.message) msg = json.message;
+                            } catch(e) {
+                                msg = xhr.responseText;
+                            }
+                        }
+                        $('#formErrorAjax').html('<div class="alert alert-danger">'+msg+'</div>');
+                    }
+                }
+            });
+        });
+    });
     </script>
 @endsection
