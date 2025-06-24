@@ -23,10 +23,11 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, Should
             $product->brand->name ?? '',
             $product->model,
             $product->series,
-            $product->processor,
-            $product->memory,
-            $product->operating_system,
-            $product->price           
+            $product->hsn_code,
+            $product->tax_percentage,
+            $product->price,
+            $product->offer_price,
+            $product->specification,
         ];
     }
 
@@ -38,10 +39,11 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, Should
             'Brand',
             'Model',
             'Series',
-            'Processor',
-            'Memory',
-            'Operating System',
-            'Price'
+            'HSN Code',
+            'Tax %',
+            'Price',
+            'Offer Price',
+            'Specification',
         ];
     }
 }

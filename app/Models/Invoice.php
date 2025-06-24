@@ -18,6 +18,7 @@ class Invoice extends Model
         'igst',
         'grand_total',
         'warehouse_id',
+        'reconciliation_done',
     ];
 
     public function customer()
@@ -28,5 +29,15 @@ class Invoice extends Model
     public function items()
     {
         return $this->hasMany(\App\Models\InvoiceItems::class, 'invoice_id');
+    }
+    
+    public function payments()
+    {
+        return $this->hasMany(\App\Models\Payment::class, 'invoice_id');
+    }
+    
+    public function warehouse()
+    {
+        return $this->belongsTo(\App\Models\Warehouse::class, 'warehouse_id');
     }
 }

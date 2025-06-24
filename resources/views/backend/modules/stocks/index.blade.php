@@ -16,10 +16,12 @@
             <div class="container-fluid px-3">
                 <div class="card shadow-sm rounded-4 mt-4">
                     <div class="card-body">
+                        @if(auth()->user() && auth()->user()->hasRole('Admin'))
                         <div class="d-flex justify-content-end gap-2 mb-3">
                             <a href="{{ url('/stocks/create') }}" class="btn btn-primary">Add Stock</a>
                             <a href="{{ route('stock.export') }}" class="btn btn-secondary">Bulk Upload</a>
                         </div>
+                        @endif
 
                         <!-- Table -->
                         <div class="table-responsive" id="responsive-table">

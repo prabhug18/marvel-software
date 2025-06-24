@@ -24,9 +24,9 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        //
-        $customer      =    Customer::orderBy('updated_at', 'desc')->get();
-        $heading        =   "Customer View";
+        // Use withCount to eager load invoice count for each customer
+        $customer = Customer::withCount('invoices')->orderBy('updated_at', 'desc')->get();
+        $heading = "Customer View";
         return view('backend.modules.customer.index', compact('heading','customer'));
     }
 
@@ -144,11 +144,13 @@ class CustomerController extends Controller
      */
     public function destroy($id)
     {
-        //        
-        $customer = Customer::findOrFail($id);
+        $customer = \App\Models\Customer::findOrFail($id);
+        // Prevent delete if customer has invoices
+        if ($customer->invoices()->count() > 0) {
+            return redirect()->back()->with('delete_customer', 'Cannot delete: Customer has invoices.');
+        }
         $customer->delete();
-        Session::flash('delete_customer','Customer deleted successfully');
-        return redirect('customer');
+        return redirect()->back()->with('delete_customer', 'Customer deleted successfully.');
     }
 
     public function getCity(Request $request)

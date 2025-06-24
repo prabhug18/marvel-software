@@ -38,10 +38,15 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('stocks', StockController::class);
     Route::get('invoice/export', [App\Http\Controllers\InvoiceController::class, 'export'])->name('invoice.export');
     Route::resource('invoice', InvoiceController::class); 
+    Route::post('invoice/send-email', [InvoiceController::class, 'sendEmail'])->name('invoice.sendEmail');
+
     Route::get('logs', 'App\Http\Controllers\GeneralController@logs');
     Route::get('/get-city', [CustomerController::class, 'getCity']);
     Route::get('/generate-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
 });
+
+// Invoice view page for a specific invoice
+Route::get('invoice-view', [App\Http\Controllers\InvoiceController::class, 'viewInvoice'])->name('invoice.viewInvoice');
 
 Route::get('/customer-search', [CustomerController::class, 'search']);
 Route::get('/product-search', [ProductController::class, 'search']);
@@ -109,5 +114,12 @@ Route::get('/customer-balance', [App\Http\Controllers\PaymentController::class, 
 Route::post('/payment/add', [App\Http\Controllers\PaymentController::class, 'addPayment']);
 // AJAX payment store route
 Route::post('/payment/ajax-store', [App\Http\Controllers\PaymentController::class, 'ajaxStore']);
+// Payment Reconciliation page for a specific invoice
+Route::get('payment/payment-reconciliation', [PaymentController::class, 'paymentReconciliation']);
+// Mark reconciliation as done
+Route::post('payment/mark-reconciliation', [PaymentController::class, 'markReconciliation']);
+Route::post('payment/confirm', [PaymentController::class, 'confirmPayment'])->name('payment.confirm');
+// Pending Reconciliation modal AJAX endpoint
+Route::get('payment/pending-reconciliation', [App\Http\Controllers\PaymentController::class, 'pendingReconciliation'])->name('payment.pendingReconciliation');
 
 

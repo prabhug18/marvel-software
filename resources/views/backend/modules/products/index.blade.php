@@ -36,10 +36,11 @@
                                 </div>
                             @endif
                         </div>
-                    <div class="d-flex justify-content-end gap-2 mb-3">
-                      
-                        <a href="{{ url('/products/create') }}" class="btn btn-primary">Add Product</a>
-                        {{-- <a href="./Bulk-upload/Bulk-upload.html" class="btn btn-secondary">Bulk Upload</a> --}}
+                    <div class="d-flex justify-content-end gap-2 mb-3">                      
+                        @if(auth()->user() && auth()->user()->hasRole('Admin'))
+                            <a href="{{ url('/products/create') }}" class="btn btn-primary">Add Product</a>                        
+                            <a href="{{ route('export.product') }}" class="btn btn-secondary">Bulk Upload</a>
+                        @endif
                     </div>
 
                     <!-- Filters -->
@@ -63,7 +64,8 @@
                             <th>Brand</th>
                             <th>Model</th>
                             <th>Price</th>
-                            {{-- <th>Stock</th> --}}
+                            <th>Offer Price</th>
+                            <th>Specification</th>
                             <th>Action</th>
                         </tr>
                         </thead>
@@ -143,6 +145,25 @@
                 loadMoreProducts();
             }
         });
+
+        function ConfirmDelete()
+        {
+            var x = confirm("Are you sure you want to delete?");
+            if (x)
+                return true;
+            else
+                return false;
+        }
+        // Enable Bootstrap 5 tooltips for dynamically rendered buttons
+        function initTooltips() {
+          document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            new bootstrap.Tooltip(el);
+          });
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(initTooltips, 500);
+        });
+        // Also re-initialize tooltips after AJAX or pagination if needed
     </script>
       
     

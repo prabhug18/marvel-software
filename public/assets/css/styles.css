@@ -208,16 +208,23 @@ thead.custom-thead th {
 
 /* Submenu */
 .sidebar .has-submenu .submenu {
-  display: none;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.8s ease, max-height 0.8s ease;
   flex-direction: column;
   background-color: white;
   margin-left: 10px;
   border-left: 2px solid #4f8cff;
+  pointer-events: none;
 }
 
 .sidebar .has-submenu:hover .submenu {
-  display: flex;
+  opacity: 1;
+  max-height: 500px; /* or any value large enough to fit all submenu items */
+  pointer-events: auto;
 }
+
 
 .sidebar .has-submenu .arrow {
   margin-left: auto;
@@ -327,7 +334,7 @@ thead.custom-thead th {
   font-weight: bold;
   color: #2c3e50;
 }
-
+/* 
   table {
     border-collapse: separate;
     border-spacing: 0;
@@ -345,14 +352,74 @@ thead.custom-thead th {
     background-color: #f8f9fa;
     padding: 0.5rem;
     text-align: left;
-  }
+  } */
+  /* Apply striped rows to all tables */
+/* Apply striped rows only to tables inside #responsive-table */
+#responsive-table table tbody tr:nth-child(odd) {
+  background-color: #f9f9f9; /* Light grey */
+}
+
+/* Optional: Hover effect only within #responsive-table */
+#responsive-table table.table-hover tbody tr:hover {
+  background-color: #e0e0e0; /* Slightly darker for hover */
+}
+  .invoice-container {
+      background: #fff;
+      padding: 40px;
+      margin: 40px auto;
+      border-radius: 16px;
+      max-width: 1000px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.07);
+    }
+    .invoice-header h3 {
+      font-weight: 700;
+      color: #343a40;
+    }
+    .invoice-header small {
+      color: #6c757d;
+    }
+    .table th {
+      background-color: #f8f9fa;
+      color: #343a40;
+      font-size: 14px;
+    }
+    .table td, .table th {
+      vertical-align: middle;
+    }
+    .total-label {
+      text-align: right;
+    }
+    .total-value {
+      text-align: right;
+      font-weight: 600;
+    }
+    .highlight {
+      color: #0d6efd;
+      font-size: 1.3rem;
+    }
+    .qr-box {
+      text-align: center;
+      border: 2px dashed #ced4da;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .footer-note {
+      text-align: center;
+      color: #6c757d;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+    .btn-wrap {
+      text-align: center;
+      margin-top: 30px;
+    }
 
   /* Style the container */
   .select2-container--default .select2-selection--single {
-    height: 45px;
+    height: 40px;
     padding: 6px 12px;
-    /* border: 2px solid #f47820;
-    border-radius: 8px; */
+    border: 2px solid #f47820;
+    border-radius: 8px;
     background-color: #f9f9f9;
     font-size: 16px;
     transition: all 0.3s ease;
@@ -363,7 +430,6 @@ thead.custom-thead th {
     border-color: #f47820;
     box-shadow: 0 0 5px  #f47820(0, 123, 255, 0.5);
     border-radius: 4px solid #f47820;
-    
   }
 
   /* Dropdown arrow */
@@ -374,23 +440,19 @@ thead.custom-thead th {
 
   /* Placeholder text */
   .select2-container--default .select2-selection--single .select2-selection__placeholder {
-    color: #333;
-    float: left;
-    font-size: 15px;
+    color: #888;
   }
 
   /* Dropdown list items */
   .select2-container--default .select2-results__option {
     padding: 10px;
     font-size: 15px;
-    
   }
 
   /* Highlight on hover */
   .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background-color: #007bff;
     color: white;
-    
   }
 
 
@@ -502,7 +564,7 @@ thead.custom-thead th {
 .lg-container {
   height: 100vh;
   width: 100%;
-  background: url('../images/lg-bg.jpg') no-repeat center center/cover;
+  background: url('./assets/lg-bg.jpg') no-repeat center center/cover;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -610,6 +672,56 @@ thead.custom-thead th {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Optional: soft shadow */
 }
 
-.select2-selection__rendered{
-  text-align: left;
+
+.img-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 5px;
 }
+table td {
+  text-align: center;
+}
+
+.custom-thead th {
+  border: 1px solid #dee2e6 !important;
+  background-color: #e9f1ff;
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid #dee2e6 !important;
+}
+.circular-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+ body {
+      background: #f8f9fa;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .invoice-box {
+      background: white;
+      padding: 30px;
+      margin: 30px auto;
+      border-radius: 10px;
+      max-width: 1200px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+    .title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    /* .table th, .table td {
+      vertical-align: middle;
+    } */
+    .btn-download {
+      margin: 20px auto;
+      display: block;
+    }

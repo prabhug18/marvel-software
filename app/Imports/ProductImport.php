@@ -33,10 +33,11 @@ class ProductImport implements ToCollection
                 $brand = Brand::where('name', trim($row[2]))->first();
                 $model = trim($row[3]);
                 $series = trim($row[4]);
-                $processor = trim($row[5]);
-                $memory = trim($row[6]);
-                $operating_system = trim($row[7]);
-                $price = is_numeric($row[8]) ? $row[8] : preg_replace('/[^\d.]/', '', $row[8]);
+                $hsn_code = trim($row[5]);
+                $tax_percentage = is_numeric($row[6]) ? $row[6] : null;
+                $price = is_numeric($row[7]) ? $row[7] : preg_replace('/[^\u0000-\u007F]+|[^\u0000-\u007F]+/', '', $row[7]);
+                $offer_price = isset($row[8]) && is_numeric($row[8]) ? $row[8] : null;
+                $specification = isset($row[9]) ? trim($row[9]) : null;
 
                 if (!$category || !$brand || empty($model)) {
                     $missing = [];
@@ -58,10 +59,11 @@ class ProductImport implements ToCollection
 
                     if ($product) {
                         $product->series = $series;
-                        $product->processor = $processor;
-                        $product->memory = $memory;
-                        $product->operating_system = $operating_system;
+                        $product->hsn_code = $hsn_code;
+                        $product->tax_percentage = $tax_percentage;
                         $product->price = $price;
+                        $product->offer_price = $offer_price;
+                        $product->specification = $specification;
                         $product->user_id = Auth::id() ?? 1;
                         $product->save();
                     } else {
@@ -70,10 +72,11 @@ class ProductImport implements ToCollection
                             'brand_id' => $brand->id,
                             'model' => $model,
                             'series' => $series,
-                            'processor' => $processor,
-                            'memory' => $memory,
-                            'operating_system' => $operating_system,
+                            'hsn_code' => $hsn_code,
+                            'tax_percentage' => $tax_percentage,
                             'price' => $price,
+                            'offer_price' => $offer_price,
+                            'specification' => $specification,
                             'user_id' => Auth::id() ?? 1,
                             'product_images' => '',
                             'product_images_original' => '',

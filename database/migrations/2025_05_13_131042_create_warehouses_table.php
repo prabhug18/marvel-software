@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('prefix')->nullable();
             $table->tinyInteger('status_id')->default(1);
-            $table->integer('user_id')->unsigned();
+            $table->unsignedBigInteger('user_id');
             $table->softDeletes();
             $table->timestamps();
         });

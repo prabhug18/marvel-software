@@ -11,7 +11,6 @@
   
     <div class="main-content" id="mainContent">
         @include('backend.include.header')
-
        
         <!-- Push content below fixed header -->
         <div style="padding-top: 30px;"></div>
@@ -21,7 +20,7 @@
                     <!-- Header Button -->
                     <div class="row mb-3">
                         <div class="col text-end">
-                            <a class="btn custom-orange-btn text-white" id="addPaymentBtn" href="{{ route('payment.create') }}" disabled>
+                            <a class="btn custom-orange-btn text-white d-none" id="addPaymentBtn" href="{{ route('payment.create') }}" disabled>
                                 <i class="fas fa-user-plus me-2"></i>Add Payment
                             </a>
                         </div>
@@ -67,36 +66,70 @@
                                 <tr>
                                 <th scope="col">S.NO</th>
                                 <th scope="col">CUSTOMER NAME</th>
+                                <th scope="col">INVOICE NUMBER</th>
                                 <th scope="col">BILLED AMOUNT</th>
                                 <th scope="col">AMOUNT PAID</th>
                                 <th scope="col">BALANCE</th>
                                 <th scope="col">PAYMENT DATE</th>
-                                <th scope="col">DESCRIPTION</th>
+                                <th scope="col">RECONCILIATION</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @php $serial = 1; @endphp
+                                @php
+                                    $serial = 1;
+                                    $seenInvoices = [];
+                                    $uniqueGrandTotal = 0;
+                                    // Preload reconciliation status for each invoice number
+                                    $reconciliationStatus = [];
+                                    foreach($payments as $payment) {
+                                        if (!isset($reconciliationStatus[$payment->invoice_number])) {
+                                            $invoice = \App\Models\Invoice::where('invoice_number', $payment->invoice_number)->first();
+                                            $reconciliationStatus[$payment->invoice_number] = $invoice && $invoice->reconciliation_done ? true : false;
+                                        }
+                                    }
+                                @endphp
                                 @foreach($payments as $payment)
-                                    <tr>
-                                        <td>{{ $serial++ }}</td>
-                                        <td>{{ $payment->customer->name ?? 'Unknown Customer' }}</td>
-                                        <td>₹{{ number_format($payment->grand_total) }}</td>
-                                        <td>₹{{ number_format($payment->paid_amount) }}</td>
-                                        <td>₹{{ number_format($payment->balance_amount) }}</td>
-                                        <td>{{ $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('d-m-Y') : '' }}</td>
-                                        <td>{{ $payment->description }}</td>
-                                    </tr>
+                                <tr>
+                                    <td><span class="mobile-value">{{ $serial++ }}</span></td>
+                                    <td><span class="mobile-value">{{ $payment->customer->name ?? 'Unknown Customer' }}</span></td>
+                                    <td><span class="mobile-value">{{ $payment->invoice_number ?? '-' }}</span></td>
+                                    <td>
+                                        <span class="mobile-value">
+                                        @if(!in_array($payment->invoice_number, $seenInvoices))
+                                            ₹{{ number_format($payment->grand_total) }}
+                                            @php 
+                                                $seenInvoices[] = $payment->invoice_number;
+                                                $uniqueGrandTotal += $payment->grand_total;
+                                            @endphp
+                                        @else
+                                            -
+                                        @endif
+                                        </span>
+                                    </td>
+                                    <td><span class="mobile-value">₹{{ number_format($payment->paid_amount) }}</span></td>
+                                    <td><span class="mobile-value">₹{{ number_format($payment->balance_amount) }}</span></td>
+                                    <td><span class="mobile-value">{{ $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('d-m-Y') : '' }}</span></td>
+                                    <td>
+                                        <span class="mobile-value">
+                                        @if($reconciliationStatus[$payment->invoice_number])
+                                            <span class="badge bg-success">Yes</span>
+                                        @else
+                                            <span class="badge bg-danger">No</span>
+                                        @endif
+                                        </span>
+                                    </td>
+                                </tr>
                                 @endforeach
                             </tbody>
                             @php
-                                $grandTotal = $payments->sum('grand_total');
                                 $paidTotal = $payments->sum('paid_amount');
-                                $balanceTotal = $grandTotal - $paidTotal;
+                                $balanceTotal = $uniqueGrandTotal - $paidTotal;
                             @endphp
                             <tfoot>
                                 <tr class="table-primary fw-bold">
-                                    <td colspan="2" class="text-end">Grand Total</td>
-                                    <td>₹{{ number_format($grandTotal) }}</td>
+                                    
+                                    <td colspan="3" class="text-end">Grand Total</td>
+                                    <td>₹{{ number_format($uniqueGrandTotal) }}</td>
                                     <td>₹{{ number_format($paidTotal) }}</td>
                                     <td>₹{{ number_format($balanceTotal) }}</td>
                                     <td colspan="2"></td>
@@ -115,36 +148,114 @@
 @endsection
 
 @push('scripts')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Select2 CSS (should be loaded before any JS and before your main app CSS) -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.6.2/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+    <!-- Strong custom Select2 CSS to enforce Bootstrap 4 theme and layout -->
+    <style>
+        .select2-container--bootstrap4 .select2-selection {
+          border-radius: 0.25rem !important;
+          min-height: 44px !important;
+          border: 1px solid #ced4da !important;
+          background-color: rgb(249, 249, 249) !important;
+          font-size: 15px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+          line-height: 2.9 !important;
+          float: left !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single {
+          height: 50px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--multiple {
+          min-height: 45px !important;
+        }
+        .select2-container {
+          width: 100% !important;
+          z-index: 1060 !important;
+        }
+        .select2-dropdown {
+          z-index: 2000 !important;
+        }
+    </style>
+    <!-- Your main app CSS (should come after Select2 CSS) -->
+    <link href="/assets/build/app.css" rel="stylesheet" />
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
-    function matchCustom(params, data) {
-        if ($.trim(params.term) === '') {
-            return data;
-        }
-        if (typeof data.text === 'undefined') {
-            return null;
-        }
-        var term = params.term.toLowerCase();
-        var name = $(data.element).data('name') ? $(data.element).data('name').toLowerCase() : '';
-        var mobile = $(data.element).data('mobile') ? $(data.element).data('mobile').toLowerCase() : '';
-        var email = $(data.element).data('email') ? $(data.element).data('email').toLowerCase() : '';
-        if (name.indexOf(term) > -1 || mobile.indexOf(term) > -1 || email.indexOf(term) > -1) {
-            return data;
-        }
-        return null;
-    }
     $('#customer_id').select2({
-        theme: 'default', // Use default theme for classic look
+        theme: 'bootstrap4',
         placeholder: "Select Customer",
         allowClear: true,
         width: '100%',
-        matcher: matchCustom,
-        minimumResultsForSearch: 0 // Always show the search box
+        minimumResultsForSearch: 0
     });
-
-    
+});
+</script>
+<style>
+@media (max-width: 767.98px) {
+  .table-responsive {
+    font-size: 0.95rem;
+  }
+  #invoicePaymentTable, #invoicePaymentTable thead, #invoicePaymentTable tbody, #invoicePaymentTable th, #invoicePaymentTable tr {
+    display: block;
+    width: 100%;
+  }
+  #invoicePaymentTable thead {
+    display: none;
+  }
+  #invoicePaymentTable tr {
+    margin-bottom: 1.2rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    background: #fff;
+    padding: 0.5rem;
+  }
+  #invoicePaymentTable td {
+    display: block;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    border: none;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    min-height: 40px;
+    word-break: break-word;
+    white-space: normal;
+    background: #fff;
+  }
+  #invoicePaymentTable td:before {
+    content: attr(data-label);
+    display: block;
+    font-weight: bold;
+    color: #f47820;
+    margin-bottom: 0.2rem;
+    font-size: 0.98em;
+    white-space: pre-line;
+    word-break: break-word;
+  }
+  #invoicePaymentTable td .mobile-value {
+    margin-left: 100px;
+    display: inline-block;
+  }
+  #invoicePaymentTable td:last-child {
+    border-bottom: none;
+  }
+}
+</style>
+<script>
+function setInvoicePaymentTableDataLabels() {
+    var headers = Array.from(document.querySelectorAll('#invoicePaymentTable thead th')).map(th => th.innerText.trim());
+    document.querySelectorAll('#invoicePaymentTable tbody tr').forEach(function(row) {
+        row.querySelectorAll('td').forEach(function(td, i) {
+            td.setAttribute('data-label', headers[i] || '');
+        });
+    });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    setInvoicePaymentTableDataLabels();
 });
 </script>
 @endpush

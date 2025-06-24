@@ -16,14 +16,14 @@ class Product extends Model
         'brand_id',
         'model',
         'series',
+        'specification',
         'price',
-        'user_id',
-        'product_images',
-        'product_images_original',
+        'offer_price',
         'tax_percentage',
         'hsn_code',
-        'specification',
-        'SoftDeletes'        
+        'product_images',
+        'product_images_original',
+        'user_id',
     ];
     
     public function category() {
@@ -31,6 +31,10 @@ class Product extends Model
     }
     public function brand() {
         return $this->belongsTo(\App\Models\Brand::class);
+    }
+    public function invoices()
+    {
+        return $this->hasMany(\App\Models\InvoiceItems::class, 'model', 'model');
     }
 }
 

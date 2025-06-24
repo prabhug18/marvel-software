@@ -18,11 +18,17 @@ class InvoiceItems extends Model
         'tax_amount',
         'unit_price',
         'total',
+        'serial_no',
     ];
 
 
     public function invoice()
     {
         return $this->belongsTo(Invoice::class);
+    }
+    
+    public function product()
+    {
+        return $this->belongsTo(\App\Models\Product::class, 'model', 'model');
     }
 }

@@ -100,6 +100,11 @@
                                     </select>
                                     <div class="invalid-feedback" id="tax_percentage-error"></div>
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Offer Price</label>
+                                    <input type="number" class="form-control" name="offer_price" id="offer_price" placeholder="₹ 0.00" step="0.01" value="{{ $product->offer_price }}"/>
+                                    <div class="invalid-feedback" id="offer_price-error"></div>
+                                </div>
                             </div>
                         </div>
                         

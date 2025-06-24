@@ -100,18 +100,42 @@ class WarehouseController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
         $this->validate($request, [
             'name'      => 'required',            
-            'prefix'    => 'required'
+            'sub_heading' => 'nullable|string|max:255',
+            'prefix'    => 'required',
+            'address'   => 'nullable',
+            'email'     => 'nullable|email',
+            'mobile'    => 'nullable',
+            'image'     => 'nullable|image|max:2048',
+            'account_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:255',
+            'ifsc_code' => 'nullable|string|max:255',
+            'branch' => 'nullable|string|max:255',
+            'gstn_uin' => 'nullable|string|max:255',
+            'bank_name' => 'nullable|string|max:255',
         ]);
-    
-        $input      =   $request->all();
-        $warehouse  =   Warehouse::find($id);
-        $warehouse->update($input);
-           
-        Session::flash('edit_warehouse','Location edited successfully');
 
+        $warehouse  =   Warehouse::find($id);
+        $data = $request->only([
+            'name', 'sub_heading', 'company_name', 'prefix', 'address', 'email', 'mobile',
+            'account_name', 'account_number', 'ifsc_code', 'branch', 'gstn_uin', 'bank_name'
+        ]);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $image      = $request->file('image');
+            $imageName  = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $destinationPath = public_path('assets/uploads');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+            $image->move($destinationPath, $imageName);
+            $data['image'] = 'assets/uploads/' . $imageName;
+        }
+
+        $warehouse->update($data);
+        Session::flash('edit_warehouse','Location edited successfully');
         return redirect('locations');
     }
 

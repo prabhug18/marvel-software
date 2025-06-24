@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>PHOENIX INFOWAYS</title>
+    <title>PHOENIX DIGITAL</title>
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> 
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/styles.css') }}" />  
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>  
 </head>
 <body>

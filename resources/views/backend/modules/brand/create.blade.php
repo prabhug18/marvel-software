@@ -69,10 +69,19 @@
                     <td>{{ $brandVal->name }}</td>                            
                     <td class="action-buttons">                  
                       <a class="btn btn-sm btn-outline-primary me-1"  href="{{ route('brands.edit',$brandVal->id) }}"  style="text-decoration: none;"><i class="fas fa-edit"></i></a>                  
+                      @php
+                        $hasProducts = \App\Models\Product::where('brand_id', $brandVal->id)->exists();
+                      @endphp
                       <form method="POST" action="{{ route('brands.destroy', $brandVal->id) }}" class="btn" onsubmit="return ConfirmDelete()">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
+                        @if($hasProducts)
+                          <span data-bs-toggle="tooltip" data-bs-placement="top" title="Cannot delete: Brand used in products">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" disabled style="pointer-events: none; opacity: 0.6;"><i class="fas fa-trash-alt"></i></button>
+                          </span>
+                        @else
+                          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
+                        @endif
                       </form>
                       <script>
                         function ConfirmDelete()
@@ -83,7 +92,17 @@
                             else
                                 return false;
                         }
-                    </script>
+                        // Enable Bootstrap 5 tooltips for dynamically rendered buttons
+                        function initTooltips() {
+                          document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                            new bootstrap.Tooltip(el);
+                          });
+                        }
+                        document.addEventListener('DOMContentLoaded', function () {
+                          setTimeout(initTooltips, 500);
+                        });
+                        // Also re-initialize tooltips after AJAX or pagination if needed
+                      </script>
                     </td>
                   </tr>
                   <?php $i++; ?>

@@ -80,7 +80,7 @@
 
                         <div class="col-md-4">
                             <label for="invoiceState" class="form-label">State <span class="text-danger">*</span></label>
-                            <select name="state" class="form-select select2" id="state" readonly>
+                            <select name="state" class="form-select select2" id="state">
                                 <option value="">Select State</option>
                                 @foreach($state as $stateObj)
                                     <option value="{{ $stateObj->id }}">{{ $stateObj->name }}</option>
@@ -90,7 +90,7 @@
 
                         <div class="col-md-4">
                             <label for="invoiceCity" class="form-label">City <span class="text-danger">*</span></label>
-                            <select name="city" class="form-select select2" id="city" readonly>
+                            <select name="city" class="form-select select2" id="city">
                                 <option value="">Select City</option>
                             </select>
                         </div>
@@ -107,7 +107,7 @@
                     </div>
                     <form class="row g-4 mb-5">
 
-                        <div class="col-md-3 position-relative">
+                        <div class="col-md-2 position-relative">
                             <label for="invoiceProductName" class="form-label">Product Name <span class="text-danger">*</span></label>
                             <input
                                 type="text"
@@ -119,8 +119,8 @@
                             />
                             <div id="productSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
                         </div>
-
-                        <div class="col-md-3">
+                        
+                        <div class="col-md-2">
                             <label for="invoiceProductModel" class="form-label">Model <span class="text-danger">*</span></label>
                             <input
                             type="text"
@@ -128,6 +128,16 @@
                             id="invoiceProductModel"
                             placeholder="Enter Model"
                             required />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="invoiceProductSerialNo" class="form-label">Serial No <span class="text-danger">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="invoiceProductSerialNo"
+                                placeholder="Enter Serial No"
+                           required />
                         </div>
 
                         <div class="col-md-2">
@@ -141,16 +151,17 @@
                             required />
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-md-2 position-relative d-flex flex-column justify-content-end">
                             <label for="invoiceProductPrice" class="form-label">Unit Price <span class="text-danger">*</span></label>
                             <input
-                            type="number"
-                            class="form-control"
-                            id="invoiceProductPrice"
-                            placeholder="Enter Unit Price"
-                            min="0"
-                            step="0.01"
-                            required />
+                                type="number"
+                                class="form-control"
+                                id="invoiceProductPrice"
+                                placeholder="Enter Unit Price"
+                                min="0"
+                                step="0.01"
+                                required />
+                            <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="display:none; font-weight:bold; min-height:22px; position:absolute; left:0; right:0; bottom:-28px; z-index:2;"></div>
                         </div>
 
                         <div class="col-md-2 d-flex align-items-end">
@@ -171,6 +182,8 @@
                                 <tr>
                                     <th>S.No</th>
                                     <th>Product Name</th>
+                                    <th>Model</th>
+                                    <th>Serial No</th>
                                     <th>Qty</th>
                                     <th>Unit Price</th>
                                     <th>Total</th>
@@ -179,7 +192,7 @@
                             </thead>
                             <tbody>
                                 <tr class="text-muted">
-                                    <td colspan="6">No products added</td>
+                                    <td colspan="8">No products added</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -213,12 +226,68 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div>                   
 
+                    <!-- Quick Payment Section (Dynamic) -->
+                    <div class="row g-4 justify-content-center mt-4" id="paymentFieldsContainer">
+                        <div class="payment-entry row g-3 align-items-end mb-2">
+                            <div class="col-md-4">
+                                <label>Paid Amount</label>
+                                <input type="number" step="0.01" min="0" class="form-control paid-amount" name="paid_amount[]" placeholder="Enter amount">
+                            </div>
+                            <div class="col-md-4">
+                                <label>Payment Mode</label>
+                                <select class="form-control payment-mode" name="payment_mode[]">
+                                    <option value="">Select Mode</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Card">Card</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Bank">Bank</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-success add-payment-field">+</button>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Generate Invoice Button -->
                     <button class="btn btn-success mt-3" id="invoiceGenerateBtn">Generate Invoice</button>
 
-                    </div>
+                    @push('scripts')
+                    <script>
+                    $(document).ready(function() {
+                        function paymentFieldTemplate() {
+                            return `<div class="payment-entry row g-3 align-items-end mb-2">
+                                <div class="col-md-4">
+                                    <input type="number" step="0.01" min="0" class="form-control paid-amount" name="paid_amount[]" placeholder="Enter amount">
+                                </div>
+                                <div class="col-md-4">
+                                    <select class="form-control payment-mode" name="payment_mode[]">
+                                        <option value="">Select Mode</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Card">Card</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Bank">Bank</option>
+                                        <option value="Cheque">Cheque</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-danger remove-payment-field">-</button>
+                                </div>
+                            </div>`;
+                        }
+                        // Add new payment field
+                        $(document).on('click', '.add-payment-field', function() {
+                            $('#paymentFieldsContainer').append(paymentFieldTemplate());
+                        });
+                        // Remove payment field
+                        $(document).on('click', '.remove-payment-field', function() {
+                            $(this).closest('.payment-entry').remove();
+                        });
+                    });
+                    </script>
+                    @endpush
                 </div>
             </div>
         </div>
@@ -226,9 +295,61 @@
     </main>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- Select2 CSS (should be loaded before any JS and before your main app CSS) -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.6.2/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+    <!-- Strong custom Select2 CSS to enforce Bootstrap 4 theme and layout -->
+    <style>
+        .select2-container--bootstrap4 .select2-selection {
+          border-radius: 0.25rem !important;
+          min-height: 44px !important;
+          border: 1px solid #ced4da !important;
+          background-color: rgb(249, 249, 249) !important;
+          font-size: 15px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+          line-height: 2.9 !important;
+          float: left !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single {
+          height: 50px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--multiple {
+          min-height: 45px !important;
+        }
+        .select2-container {
+          width: 100% !important;
+          z-index: 1060 !important;
+        }
+        .select2-dropdown {
+          z-index: 2000 !important;
+        }
+    </style>
+    <!-- Your main app CSS (should come after Select2 CSS) -->
+    <link href="/assets/build/app.css" rel="stylesheet" />
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
+
+            $(document).ready(function() {
+                // Remove readonly attribute if present (defensive, in case browser cache or old markup)
+                $('#state').removeAttr('readonly');
+                $('#city').removeAttr('readonly');
+                // Initialize select2 with search
+                $('#state').select2({
+                    placeholder: "Select State",
+                    width: '100%',
+                    theme: 'bootstrap4'
+                });
+                $('#city').select2({
+                    placeholder: "Select City",
+                    width: '100%',
+                    theme: 'bootstrap4'
+                });
+            });
         
             // --- Customer Auto Suggest and Autofill (AJAX version) ---
             $('#customer_name').on('input', function() {
@@ -294,6 +415,12 @@
                             $.each(data, function(key, value) {
                                 $('#city').append('<option value="'+ value.id +'">'+ value.name +'</option>');
                             });
+                            // Always destroy and re-initialize select2 for city after AJAX
+                            $('#city').select2('destroy').select2({
+                                placeholder: "Select City",
+                                width: '100%',
+                                theme: 'bootstrap4'
+                            });
                             // Prefill city if needed (after options are loaded)
                             var cityId = $('#city').data('prefill');
                             if (cityId) {
@@ -304,24 +431,13 @@
                     });
                 } else {
                     $('#city').empty().append('<option value="">Select City</option>');
+                    $('#city').select2('destroy').select2({
+                        placeholder: "Select City",
+                        width: '100%',
+                        theme: 'bootstrap4'
+                    });
                 }
-            });
-
-            $(document).ready(function() {
-                $('#state').select2({
-                    placeholder: "Select State",
-                    tags: true,
-                    width: '100%'
-                });
-            });
-
-            $(document).ready(function() {
-                $('#city').select2({
-                    placeholder: "Select City",
-                    tags: true,
-                    width: '100%'
-                });
-            });
+            });            
 
             $(document).on('click', function(e) {
                 if (!$(e.target).closest('#customer_name, #customerSuggestions').length) {
@@ -349,7 +465,7 @@
                                 const seen = new Set();
                                 products.forEach(function(p) {
                                     // Only show products with stock > 0
-                                    if (p.stock !== undefined && Number(p.stock) <= 0) return;
+                                    // if (p.stock !== undefined && Number(p.stock) <= 0) return;
                                     const key = (p.brand||'')+'|'+(p.series||'')+'|'+(p.model||'');
                                     if (seen.has(key)) return;
                                     seen.add(key);
@@ -401,20 +517,28 @@
                 $('#invoiceProductPrice').data('gst-inclusive', gst_inclusive_price.toFixed(2));
                 $('#invoiceProductPrice').data('tax-percentage', gst_percentage);
                 $('#productSuggestions').hide();
-            });
-
-            // Update GST-Inclusive Price display when Unit Price is changed manually
+                // Show GST-inclusive price label
+                $('#gstInclusivePriceLabel').text('GST Inclusive Price: ₹' + gst_inclusive_price.toFixed(2)).css('display','block');
+            }); 
+            
+            // When user enters price manually, treat as GST-inclusive and reverse-calculate GST-exclusive
             $('#invoiceProductPrice').on('input', function() {
-                let base_price = parseFloat($(this).val()) || 0;
-                let gst_percentage = parseFloat($(this).data('tax-percentage')) || 0;
-                let gst_inclusive_price = base_price;
+                let gst_inclusive_price = parseFloat($(this).val()) || 0;
+                let gst_percentage = parseFloat($('#invoiceProductPrice').data('tax-percentage')) || 0;
+                let base_price = gst_inclusive_price;
                 if (gst_percentage > 0) {
-                    gst_inclusive_price = base_price * (1 + gst_percentage / 100);
+                    base_price = gst_inclusive_price / (1 + gst_percentage / 100);
                 }
                 if ($('#invoiceProductPriceGstIncl').length === 0) {
                     $('<input>').attr({type: 'hidden', id: 'invoiceProductPriceGstIncl'}).appendTo('body');
                 }
                 $('#invoiceProductPriceGstIncl').val(gst_inclusive_price.toFixed(2));
+                $(this).data('gst-exclusive', base_price.toFixed(2));
+                // --- Update preview total if qty is filled ---
+                let qty = parseInt($('#invoiceProductQty').val()) || 0;
+                let total = gst_inclusive_price * qty;
+                // Optionally, you can show this total somewhere as a preview if needed
+                // For now, this ensures that when addProduct() is called, the correct values are used
             });
 
             $(document).ready(function() {
@@ -452,7 +576,6 @@
                     $('#warehouse_id').trigger('change');
                 });
             @endif
-
         });
 
         window.addEventListener("DOMContentLoaded", () => {
@@ -465,12 +588,15 @@
         addProductBtn.addEventListener('click', function() {
             addProduct();
             updateProductTable(); // Always update table to reflect latest Unit Price and Total
+            // Remove GST Inclusive Price label after adding product
+            $('#gstInclusivePriceLabel').text('').hide();
         });
-        generateInvoiceBtn.addEventListener('click', generateInvoice);
+        generateInvoiceBtn.addEventListener('click', function() {
+            generateInvoice();
+        });
 
         // === Add Product Function ===
         function addProduct() {
-            // Do NOT set or recalculate invoiceProductPrice here
             const customerName = document.getElementById('customer_name').value.trim();
             if (!customerName) {
                 alert('❌ Please select or enter a customer before adding products.');
@@ -479,18 +605,43 @@
             }
             const name = document.getElementById('invoiceProductName').value.trim();
             const model = document.getElementById('invoiceProductModel').value.trim();
+            const serialNo = document.getElementById('invoiceProductSerialNo').value.trim();
             const qty = parseInt(document.getElementById('invoiceProductQty').value);
-            const price = parseFloat(document.getElementById('invoiceProductPrice').value); // Always use as GST-exclusive
             let gst_percentage = 0;
-            if ($('#invoiceProductPrice').data('tax-percentage')) {
+            if ($('#invoiceProductPrice').data('tax-percentage') !== undefined) {
                 gst_percentage = parseFloat($('#invoiceProductPrice').data('tax-percentage')) || 0;
             }
-            let price_for_storage = price; // Always GST-exclusive
+            if (!gst_percentage && $('#invoiceProductPriceGstIncl').length > 0) {
+                gst_percentage = parseFloat($('#invoiceProductPriceGstIncl').data('tax-percentage')) || 0;
+            }
+            // Detect if product was selected from auto-suggestion (GST-inclusive price is stored in hidden field)
+            let gst_inclusive_price;
+            if ($('#invoiceProductPriceGstIncl').length > 0 && $('#invoiceProductPriceGstIncl').val() && !isNaN(parseFloat($('#invoiceProductPriceGstIncl').val()))) {
+                // Product selected from auto-suggestion
+                gst_inclusive_price = parseFloat($('#invoiceProductPriceGstIncl').val());
+            } else {
+                // Manual entry
+                gst_inclusive_price = parseFloat(document.getElementById('invoiceProductPrice').value);
+            }
+            // For auto-suggestion, use the price as GST-inclusive and do NOT reverse-calculate
+            // For manual entry, reverse-calculate GST-exclusive price
+            let base_price;
+            if ($('#invoiceProductPriceGstIncl').length > 0 && $('#invoiceProductPriceGstIncl').val() && !isNaN(parseFloat($('#invoiceProductPriceGstIncl').val()))) {
+                // Auto-suggestion: base price is already GST-exclusive in the input
+                base_price = parseFloat(document.getElementById('invoiceProductPrice').value);
+            } else {
+                // Manual entry: reverse-calculate
+                base_price = gst_inclusive_price;
+                if (gst_percentage > 0) {
+                    base_price = gst_inclusive_price / (1 + gst_percentage / 100);
+                }
+            }
             const warehouseId = $('#warehouse_id').val();
-            if (!name || !model || isNaN(qty) || qty <= 0 || isNaN(price) || price < 0) {
-                alert('❌ Please enter valid product details.');
+            if (!name || !model || !serialNo || isNaN(qty) || qty <= 0 || isNaN(gst_inclusive_price) || gst_inclusive_price < 0) {
+                alert('❌ Please enter valid product details. Serial No is required.');
                 return;
             }
+
             // --- Stock Validation AJAX (allow negative stock) ---
             $.ajax({
                 url: '/check-stock',
@@ -501,12 +652,10 @@
                 },
                 dataType: 'json',
                 success: function(response) {
-                    // No blocking on stock, just show a warning if stock is insufficient
                     const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : null;
                     if (availableStock !== null && qty > availableStock) {
                         alert('⚠️ Warning: Not enough stock available. This will result in negative stock.');
                     }
-                    // --- Continue with existing add product logic regardless of stock ---
                     // --- Fetch product tax_percentage from backend (AJAX) ---
                     $.ajax({
                         url: '/product-search',
@@ -514,7 +663,7 @@
                         data: { q: model },
                         dataType: 'json',
                         success: function(products) {
-                            let tax_percentage = 5; // default to 5 now
+                            let tax_percentage = gst_percentage;
                             if (Array.isArray(products) && products.length > 0) {
                                 const found = products.find(p => {
                                     return (p.model && p.model.toLowerCase() === model.toLowerCase());
@@ -523,15 +672,46 @@
                                     tax_percentage = parseFloat(found.tax_percentage);
                                 }
                             }
-                            const productFullName = `${name} - ${model}`;
-                            productsArr.push({ name: productFullName, qty, price: price_for_storage, total: qty * price_for_storage, tax_percentage: gst_percentage });
+                            // Always recalculate base_price and gst_inclusive_price for manual entry
+                            let final_gst_inclusive_price = gst_inclusive_price;
+                            let final_base_price = base_price;
+                            if (tax_percentage > 0) {
+                                final_base_price = gst_inclusive_price / (1 + tax_percentage / 100);
+                                final_gst_inclusive_price = final_base_price * (1 + tax_percentage / 100);
+                            }
+                            productsArr.push({
+                                name: name,
+                                model: model,
+                                serial_no: serialNo, // <-- use the correct variable name
+                                qty: qty,
+                                price: final_base_price,
+                                gst_inclusive_price: final_gst_inclusive_price,
+                                // Calculate total_incl_gst based on GST-exclusive unit price (base_price * qty)
+                                total_incl_gst: final_base_price * qty,
+                                tax_percentage: tax_percentage
+                            });
                             updateProductTable();
                             clearProductFields();
                             updateTotals();
                         },
                         error: function(xhr, status, error) {
-                            const productFullName = `${name} - ${model}`;
-                            productsArr.push({ name: productFullName, qty, price: price_for_storage, total: qty * price_for_storage, tax_percentage: 5 });
+                            let final_gst_inclusive_price = gst_inclusive_price;
+                            let final_base_price = base_price;
+                            if (gst_percentage > 0) {
+                                final_base_price = gst_inclusive_price / (1 + gst_percentage / 100);
+                                final_gst_inclusive_price = final_base_price * (1 + gst_percentage / 100);
+                            }
+                            productsArr.push({
+                                name: name,
+                                model: model,
+                                serial_no: serialNo, // <-- use the correct variable name
+                                qty: qty,
+                                price: final_base_price,
+                                gst_inclusive_price: final_gst_inclusive_price,
+                                // Calculate total_incl_gst based on GST-exclusive unit price (base_price * qty)
+                                total_incl_gst: final_base_price * qty,
+                                tax_percentage: gst_percentage
+                            });
                             updateProductTable();
                             clearProductFields();
                             updateTotals();
@@ -549,20 +729,22 @@
             const tbody = document.querySelector('#invoiceProductTable tbody');
             tbody.innerHTML = '';
             if (productsArr.length === 0) {
-                tbody.innerHTML = '<tr class="text-muted"><td colspan="6">No products added</td></tr>';
+                tbody.innerHTML = '<tr class="text-muted"><td colspan="8">No products added</td></tr>';
                 return;
             }
             productsArr.forEach((product, index) => {
-                // Always use the user-entered price as GST-exclusive
-                const base_price = product.price;
-                const total_ex_gst = base_price * product.qty;
+                // Show GST-exclusive price (reverse calculated) and total
+                const unit_price = product.price; // GST-exclusive
+                const total_incl_gst = product.price * product.qty;
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${product.name}</td>
+                    <td>${product.model || ''}</td>
+                    <td>${product.serial_no || ''}</td>
                     <td>${product.qty}</td>
-                    <td>₹${base_price.toFixed(2)}</td>
-                    <td>₹${total_ex_gst.toFixed(2)}</td>
+                    <td>₹${unit_price.toFixed(2)}</td>
+                    <td>₹${total_incl_gst.toFixed(2)}</td>
                     <td>
                         <button class="btn btn-sm btn-danger" onclick="removeProduct(${index})">
                             <i class="fas fa-trash-alt"></i>
@@ -571,7 +753,7 @@
                 `;
                 tbody.appendChild(row);
             });
-            updateTotals(); // Ensure totals update after table update
+            updateTotals();
         }
 
         // === Remove Product Globally Accessible ===
@@ -585,35 +767,34 @@
         function clearProductFields() {
             document.getElementById('invoiceProductName').value = '';
             document.getElementById('invoiceProductModel').value = '';
+            document.getElementById('invoiceProductSerialNo').value = '';
             document.getElementById('invoiceProductQty').value = '';
             document.getElementById('invoiceProductPrice').value = '';
         }
 
         // === Update Totals ===
         function updateTotals() {
-            // Calculate subtotal as sum of GST-exclusive totals
-            const subtotal = productsArr.reduce((sum, p) => {
-                const base_price = p.price;
-                return sum + (base_price * p.qty);
-            }, 0);
-            const stateId = document.getElementById('state').value;
+            // Grand total should be the sum of total_incl_gst for all products
+            let grandTotal = productsArr.reduce((sum, p) => sum + (p.total_incl_gst || 0), 0);
+            // Calculate GST splits as before
             let cgst = 0, sgst = 0, igst = 0, tax = 0;
+            const stateId = document.getElementById('state').value;
             if (stateId == '35') {
                 cgst = productsArr.reduce((sum, p) => {
-                    const base_price = p.price;
-                    let gst_price = 0;
+                    let base_price = p.price;
+                    let gst_amt = 0;
                     if (p.tax_percentage > 0) {
-                        gst_price = (base_price * p.tax_percentage / 100) * p.qty;
+                        gst_amt = (base_price * p.tax_percentage / 100) * p.qty;
                     }
-                    return sum + (gst_price / 2);
+                    return sum + (gst_amt / 2);
                 }, 0);
                 sgst = productsArr.reduce((sum, p) => {
-                    const base_price = p.price;
-                    let gst_price = 0;
+                    let base_price = p.price;
+                    let gst_amt = 0;
                     if (p.tax_percentage > 0) {
-                        gst_price = (base_price * p.tax_percentage / 100) * p.qty;
+                        gst_amt = (base_price * p.tax_percentage / 100) * p.qty;
                     }
-                    return sum + (gst_price / 2);
+                    return sum + (gst_amt / 2);
                 }, 0);
                 igst = 0;
                 tax = cgst + sgst;
@@ -621,28 +802,26 @@
                 cgst = 0;
                 sgst = 0;
                 igst = productsArr.reduce((sum, p) => {
-                    const base_price = p.price;
-                    let gst_price = 0;
+                    let base_price = p.price;
+                    let gst_amt = 0;
                     if (p.tax_percentage > 0) {
-                        gst_price = (base_price * p.tax_percentage / 100) * p.qty;
+                        gst_amt = (base_price * p.tax_percentage / 100) * p.qty;
                     }
-                    return sum + gst_price;
+                    return sum + gst_amt;
                 }, 0);
                 tax = igst;
             }
-            // Grand total is subtotal + total GST
-            const grandTotal = Math.round(subtotal + cgst + sgst + igst);
-            // Defensive: check if elements exist before updating
+            // Add GST amounts to grand total
+            grandTotal += cgst + sgst + igst;
+            // Update UI
             const cgstEl = document.getElementById('invoiceCGST');
             const sgstEl = document.getElementById('invoiceSGST');
             const igstEl = document.getElementById('invoiceIGST');
             const grandTotalEl = document.getElementById('invoiceGrandTotal');
-            const subtotalEl = document.getElementById('invoiceSubtotal');
             if (cgstEl) cgstEl.textContent = cgst.toFixed(2);
             if (sgstEl) sgstEl.textContent = sgst.toFixed(2);
             if (igstEl) igstEl.textContent = igst.toFixed(2);
-            if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(2); // Always show .00
-            if (subtotalEl) subtotalEl.textContent = subtotal.toFixed(2);
+            if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(2);
         }
 
         // === Generate Invoice Function ===
@@ -672,17 +851,40 @@
 
             // Prepare products array for backend
             const products = productsArr.map(p => {
-                const base_price = p.price; // always GST-exclusive, user-entered
-                const total_ex_gst = base_price * p.qty;
+                // Always send GST-exclusive price and GST-inclusive price
+                const base_price = p.price;
+                const gst_inclusive_price = p.gst_inclusive_price;
+                const tax_amount = p.tax_percentage > 0 ? (base_price * p.tax_percentage / 100) * p.qty : 0;
+                const total = gst_inclusive_price * p.qty;
                 return {
                     name: p.name,
-                    model: p.name.split(' - ').pop(),
+                    model: p.model,
+                    serial_no: p.serial_no,
                     qty: p.qty,
-                    unit_price: base_price, // store as unit_price
-                    total: total_ex_gst,   // store as total
-                    tax_percentage: p.tax_percentage
+                    unit_price: base_price,
+                    gst_inclusive_price: gst_inclusive_price,
+                    total: total,
+                    tax_percentage: p.tax_percentage,
+                    tax_amount: tax_amount
                 };
             });
+
+            // --- Collect dynamic payment fields ---
+            const paid_amount = [];
+            const payment_mode = [];
+            $('#paymentFieldsContainer .payment-entry').each(function() {
+                const amt = parseFloat($(this).find('.paid-amount').val()) || 0;
+                const mode = $(this).find('.payment-mode').val();
+                paid_amount.push(amt);
+                payment_mode.push(mode);
+            });
+
+            // Check if total paid matches grand total
+            const totalPaid = paid_amount.reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+            if (totalPaid !== grand_total) {
+                alert('❌ Full amount not paid. Please ensure the total paid amount matches the Grand Total.');
+                return;
+            }
 
             // CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -710,10 +912,21 @@
                     igst,
                     grand_total,
                     products,
-                    warehouse_id: $('#warehouse_id').val() // Always include warehouse_id
+                    warehouse_id: $('#warehouse_id').val(),
+                    paid_amount,
+                    payment_mode
                 }),
                 success: function(response) {
                     alert('✅ Invoice saved successfully!');
+                    if (response && response.invoice_id) {
+                        // Open the invoice view page in a new tab and trigger BOTH email and print via auto=all param
+                        var viewUrl = '/invoice-view?invoice_id=' + response.invoice_id + '&auto=all';
+                        var win = window.open(viewUrl, '_blank');
+                        // Fallback: if popup blocked, redirect in current tab
+                        if (!win) {
+                            window.location.href = viewUrl;
+                        }
+                    }
                     window.location.href = '/invoice';
                 },
                 error: function(xhr) {
@@ -749,6 +962,5 @@
         });
    
     </script>
-  
    
 @endsection

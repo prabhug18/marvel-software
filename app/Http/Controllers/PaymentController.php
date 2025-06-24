@@ -142,4 +142,75 @@ class PaymentController extends Controller
         $payment = \App\Models\Payment::create($validated);
         return response()->json(['success' => true, 'payment' => $payment]);
     }
+
+    /**
+     * Show payment reconciliation for a specific invoice
+     */
+    public function paymentReconciliation(Request $request)
+    {
+        $heading = "Payment Reconciliation";
+        $invoiceId = $request->invoice_id;
+        return view('backend.modules.payment.payment-reconciliation', compact('heading', 'invoiceId'));
+    }
+
+    /**
+     * Confirm a payment (set is_confirmed = true)
+     */
+    public function confirmPayment(Request $request)
+    {
+        $request->validate([
+            'payment_id' => 'required|integer|exists:payments,id',
+        ]);
+        $payment = \App\Models\Payment::find($request->payment_id);
+        if (!$payment) {
+            return redirect()->back()->with('error', 'Payment not found.');
+        }
+        $payment->is_confirmed = true;
+        $payment->save();
+        return redirect()->back()->with('success', 'Payment confirmed successfully!');
+    }
+
+    /**
+     * Mark reconciliation as done for an invoice (only if all payments are confirmed)
+     */
+    public function markReconciliation(Request $request)
+    {
+        $invoice = \App\Models\Invoice::find($request->invoice_id);
+        if (!$invoice) {
+            return redirect()->back()->with('error', 'Invoice not found.')->with('redirect_invoice', true);
+        }
+        $payments = \App\Models\Payment::where('invoice_id', $invoice->id)->get();
+        if ($payments->count() == 0 || $payments->where('is_confirmed', false)->count() > 0) {
+            return redirect()->back()->with('error', 'All payments must be confirmed before reconciliation.')->with('redirect_invoice', false);
+        }
+        $invoice->reconciliation_done = true;
+        $invoice->save();
+        return redirect()->back()->with('success', 'Reconciliation marked as done. You will be redirected to the invoice page shortly.')->with('redirect_invoice', true);
+    }
+
+    /**
+     * Show all pending reconciliation invoices for the dashboard modal (AJAX)
+     */
+    public function pendingReconciliation()
+    {
+        // Debug: Log user info
+        \Log::info('pendingReconciliation called', [
+            'user_id' => auth()->id(),
+            'is_authenticated' => auth()->check(),
+            'user_agent' => request()->header('User-Agent'),
+        ]);
+        if (!auth()->check()) {
+            if (request()->ajax()) {
+                return response('Unauthenticated (session/cookie issue)', 401);
+            }
+            abort(401, 'Unauthenticated');
+        }
+        $invoices = \App\Models\Invoice::with(['customer', 'payments' => function($q) {
+            $q->orderBy('payment_date');
+        }])
+        ->where('reconciliation_done', false)
+        ->orderBy('created_at', 'desc')
+        ->get();
+        return view('backend.modules.payment.pending-reconciliation-modal', compact('invoices'))->render();
+    }
 }

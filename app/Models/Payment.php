@@ -18,6 +18,7 @@ class Payment extends Model
         'payment_mode',
         'payment_date',
         'description',
+        'is_confirmed', // allow mass assignment for confirmation status
     ];
 
     public function customer()

@@ -41,4 +41,9 @@ class Customer extends Model
         return $this->belongsTo('App\Models\City','city_id','id');
     }
 
+    public function invoices()
+    {
+        return $this->hasMany('App\Models\Invoice', 'customer_id', 'id');
+    }
+
 }

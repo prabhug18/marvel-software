@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
@@ -40,6 +39,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'api' => [
+        'driver' => 'passport',
+        'provider' => 'users',
+    ],
     ],
 
     /*
@@ -62,7 +65,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model' => App\Models\User::class, // Use the default User model directly for Passport compatibility
         ],
 
         // 'users' => [
@@ -111,5 +114,4 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
-
 ];

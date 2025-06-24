@@ -10,7 +10,9 @@ use App\Exports\InvoiceExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
 {
@@ -68,6 +70,7 @@ class InvoiceController extends Controller
             'invoice_number' => 'required|string',
             'invoice_date' => 'required|date',
             'products' => 'required|array|min:1',
+            'products.*.serial_no' => 'required|string',
         ]);
 
         // Find or create customer
@@ -97,10 +100,8 @@ class InvoiceController extends Controller
         // Create invoice
         $warehouse_id = null;
         if (Auth::user() && Auth::user()->hasRole('Admin')) {
-            // Admin: always use warehouse_id from the request (from invoice page)
             $warehouse_id = $request->warehouse_id;
         } else {
-            // Non-admin: use user's warehouse_id
             $warehouse_id = Auth::user()->warehouse_id ?? null;
         }
         $invoice = \App\Models\Invoice::create([
@@ -117,20 +118,67 @@ class InvoiceController extends Controller
             'warehouse_id' => $warehouse_id,
         ]);
 
-        // Automatically create a Payment entry for this invoice
-        \App\Models\Payment::create([
-            'invoice_id' => $invoice->id,
-            'customer_id' => $customer->id,
-            'customer_name' => $customer->name ?? $request->customer_name,
-            'user_id' => Auth::id() ?? 1,
-            'paid_amount' => 0,
-            'balance_amount' => $grand_total,
-            'grand_total' => $grand_total,
-            'payment_date' => $request->invoice_date,
-            'warehouse_id' => $warehouse_id,
-            'payment_mode' => null, // Default to Credit for new invoices
-            'invoice_number' => $request->invoice_number,
-        ]);
+        // Store dynamic payment fields (multiple payments)
+        $paidAmounts = $request->input('paid_amount', []);
+        $paymentModes = $request->input('payment_mode', []);
+        $paymentDate = $request->invoice_date;
+        $userId = Auth::id() ?? 1;
+        $invoiceNumber = $request->invoice_number;
+        $grandTotal = $grand_total;
+        $totalPaid = 0;
+        $hasValidPayment = false;
+        // Accept both JSON and form-data
+        if ($request->isJson()) {
+            $data = $request->json()->all();
+            $paidAmounts = $data['paid_amount'] ?? $paidAmounts;
+            $paymentModes = $data['payment_mode'] ?? $paymentModes;
+        }
+        // Ensure both are arrays
+        $paidAmounts = is_array($paidAmounts) ? $paidAmounts : [$paidAmounts];
+        $paymentModes = is_array($paymentModes) ? $paymentModes : [$paymentModes];
+        if (count($paidAmounts) > 0) {
+            foreach ($paidAmounts as $i => $amt) {
+                $mode = $paymentModes[$i] ?? null;
+                $amt = is_numeric($amt) ? floatval($amt) : 0;
+                if ($amt > 0 && $mode) {
+                    $totalPaid += $amt;
+                    $currentBalance = $grandTotal - $totalPaid;
+                    $hasValidPayment = true;
+                    
+                    \App\Models\Payment::create([
+                        'invoice_id' => $invoice->id,
+                        'customer_id' => $customer->id,
+                        'customer_name' => $customer->name ?? $request->customer_name,
+                        'user_id' => $userId,
+                        'paid_amount' => $amt,
+                        'balance_amount' => $currentBalance,
+                        'grand_total' => $grandTotal,
+                        'payment_date' => $paymentDate,
+                        'warehouse_id' => $warehouse_id,
+                        'payment_mode' => $mode,
+                        'invoice_number' => $invoiceNumber,
+                        'description' => 'Invoice Payment',
+                    ]);
+                }
+            }
+        }
+        if (!$hasValidPayment) {
+            // Fallback: create a default payment entry with 0 paid (credit)
+            \App\Models\Payment::create([
+                'invoice_id' => $invoice->id,
+                'customer_id' => $customer->id,
+                'customer_name' => $customer->name ?? $request->customer_name,
+                'user_id' => $userId,
+                'paid_amount' => 0,
+                'balance_amount' => $grandTotal,
+                'grand_total' => $grandTotal,
+                'payment_date' => $paymentDate,
+                'warehouse_id' => $warehouse_id,
+                'payment_mode' => null,
+                'invoice_number' => $invoiceNumber,
+                'description' => 'Invoice Payment',
+            ]);
+        }
 
         // Create invoice items
         $stockIssues = [];
@@ -140,6 +188,7 @@ class InvoiceController extends Controller
                 'user_id' => Auth::id() ?? 1,
                 'product_name' => $item['name'] ?? $item['product_name'] ?? '',
                 'model' => $item['model'] ?? '',
+                'serial_no' => $item['serial_no'] ?? null,
                 'qty' => $item['qty'],
                 'tax_percentage' => $item['tax_percentage'] ?? 5,
                 'tax_amount' => isset($item['tax_amount']) ? $item['tax_amount'] : 0,
@@ -184,6 +233,7 @@ class InvoiceController extends Controller
         if (!empty($stockIssues)) {
             return response()->json(['success' => true, 'invoice_id' => $invoice->id, 'stock_warnings' => $stockIssues]);
         }
+       
         return response()->json(['success' => true, 'invoice_id' => $invoice->id]);
     }
 
@@ -270,6 +320,7 @@ class InvoiceController extends Controller
                             'user_id' => Auth::id() ?? 1,
                             'product_name' => $item['name'] ?? $item['product_name'] ?? '',
                             'model' => $item['model'] ?? '',
+                            'serial_no' => $item['serial_no'] ?? null,
                             'qty' => $item['qty'] ?? 1,
                             'tax_percentage' => $item['tax_percentage'] ?? 5,
                             'tax_amount' => $item['tax_amount'] ?? 0,
@@ -349,6 +400,48 @@ class InvoiceController extends Controller
         // Pass warehouse_id to export for non-admins
         $warehouseId = (Auth::user() && !Auth::user()->hasRole('Admin')) ? (Auth::user()->warehouse_id ?? null) : null;
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\InvoiceExport($from, $to, $warehouseId), 'invoices.xlsx');
+    }
+
+    /**
+     * Show a single invoice view page
+     */
+    public function viewInvoice(Request $request)
+    {
+        $heading = "Invoice Details";
+        $invoiceId = $request->invoice_id;
+        $invoice = \App\Models\Invoice::with(['customer', 'items', 'warehouse'])->find($invoiceId);
+        if (!$invoice) {
+            abort(404, 'Invoice not found');
+        }
+        // You can pass more data as needed
+        return view('backend.modules.invoice.invoice-view', compact('invoice','heading'));
+    }
+
+    /**
+     * Handle AJAX request to send invoice PDF to customer email
+     */
+    public function sendEmail(Request $request)
+    {
+        $request->validate([
+            'invoice_id' => 'required|integer|exists:invoices,id',
+            'email' => 'required|email',
+            'pdf' => 'required|file|mimes:pdf',
+        ]);
+        $invoice = \App\Models\Invoice::with(['customer'])->findOrFail($request->invoice_id);
+        $customerEmail = $request->email;
+        $pdfFile = $request->file('pdf');
+        $fileName = 'Invoice-' . ($invoice->invoice_number ?? $invoice->id) . '.pdf';
+        // Send email with PDF attachment
+        Mail::send([], [], function ($message) use ($customerEmail, $pdfFile, $fileName, $invoice) {
+            $message->to($customerEmail)
+                ->subject('Your Invoice from Phoenix Infoways')
+                ->html('Dear ' . ($invoice->customer->name ?? 'Customer') . ',<br><br>Please find attached your invoice.<br><br>Thank you.')
+                ->attach($pdfFile->getRealPath(), [
+                    'as' => $fileName,
+                    'mime' => 'application/pdf',
+                ]);
+        });
+        return response()->json(['success' => true, 'message' => 'Invoice sent to ' . $customerEmail]);
     }
 }
 

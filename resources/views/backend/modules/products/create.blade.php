@@ -78,6 +78,11 @@
                                     <div class="invalid-feedback" id="price-error"></div>
                                 </div>
                                 <div class="col-md-6">
+                                    <label class="form-label">Offer Price</label>
+                                    <input type="number" class="form-control" name="offer_price" id="offer_price" placeholder="₹ 0.00" step="0.01" />
+                                    <div class="invalid-feedback" id="offer_price-error"></div>
+                                </div>
+                                <div class="col-md-6">
                                     <label class="form-label">HSN Code</label>
                                     <input type="text" class="form-control" name="hsn_code" id="hsn_code" placeholder="Enter HSN Code" />
                                     <div class="invalid-feedback" id="hsn_code-error"></div>

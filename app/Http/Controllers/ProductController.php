@@ -21,7 +21,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $heading = "Product View";
-        $products = Product::orderBy('updated_at', 'desc')->paginate(10);
+        $products = Product::withCount('invoices')->orderBy('updated_at', 'desc')->paginate(10);
         if ($request->ajax()) {
             return view('backend.modules.products.partials.product_rows', compact('products'))->render();
         }
@@ -58,6 +58,7 @@ class ProductController extends Controller
             'tax_percentage' => 'required|numeric|min:0',
             'hsn_code' => 'required|string',
             'product_images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'offer_price' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -102,7 +103,8 @@ class ProductController extends Controller
             'hsn_code'                  =>  $request->input('hsn_code'),
             'product_images'            =>  $fileName,
             'product_images_original'   =>  $fileNameOriginal,            
-            'user_id'                   =>  auth()->user()->id
+            'user_id'                   =>  auth()->user()->id,
+            'offer_price'                =>  $request->input('offer_price'),
         ]);
 
         $product->save();
@@ -152,6 +154,7 @@ class ProductController extends Controller
             'tax_percentage' => 'required|numeric|min:0',
             'hsn_code' => 'required|string',
             'product_images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'offer_price' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -184,6 +187,7 @@ class ProductController extends Controller
         $product->product_images            =   $fileName;   
         $product->product_images_original   =   $fileNameOriginal;
         $product->user_id                   =   auth()->user()->id;
+        $product->offer_price                =   $request->input('offer_price');
         $product->save();
 
         return response()->json(['message' => $id. ' Product updated successfully!']);

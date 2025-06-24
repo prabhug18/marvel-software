@@ -68,6 +68,7 @@
                         @endif
                     </div>
                     
+                    
                     <!-- Responsive Table -->
                     <div class="table-responsive mt-5">
                         <table id="customerTable" class="table table-striped table-bordered align-middle">
@@ -84,27 +85,46 @@
                                 <!-- Example rows -->
                                 <?php $i    =   1; ?>
                                 @foreach($warehouse as $warehouseVal)
+                                @php
+                                    $hasInvoices = \App\Models\Invoice::where('warehouse_id', $warehouseVal->id)->exists();
+                                @endphp
                                 <tr>
                                     <td>{{ $i }}</td>
                                     <td>{{ $warehouseVal->name }}</td>
-                                    <td>{{ $warehouseVal->prefix }}</td>              
-                                    <td class="text-center">                  
-                                    <a href="{{ route('locations.edit',$warehouseVal->id) }}" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></a>                  
-                                    <form method="POST" action="{{ route('locations.destroy', $warehouseVal->id) }}" class="btn" onsubmit="return ConfirmDelete()">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
-                                    </form>
-                                    <script>
-                                        function ConfirmDelete()
-                                        {
-                                            var x = confirm("Are you sure you want to delete?");
-                                            if (x)
-                                                return true;
-                                            else
-                                                return false;
-                                        }
-                                    </script>
+                                    <td>{{ $warehouseVal->prefix }}</td>
+                                    <td class="action-buttons">
+                                        <a href="{{ route('locations.edit',$warehouseVal->id) }}" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></a>
+                                        <form method="POST" action="{{ route('locations.destroy', $warehouseVal->id) }}" class="btn" onsubmit="return ConfirmDelete()">
+                                            @csrf
+                                            @method('DELETE')
+                                            @if($hasInvoices)
+                                                <span data-bs-toggle="tooltip" data-bs-placement="top" title="Cannot delete: Location used in invoice">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" disabled style="pointer-events: none; opacity: 0.6;"><i class="fas fa-trash-alt"></i></button>
+                                                </span>
+                                            @else
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
+                                            @endif
+                                        </form>
+                                        <script>
+                                            function ConfirmDelete()
+                                            {
+                                                var x = confirm("Are you sure you want to delete?");
+                                                if (x)
+                                                    return true;
+                                                else
+                                                    return false;
+                                            }
+                                            // Enable Bootstrap 5 tooltips for dynamically rendered buttons
+                                            function initTooltips() {
+                                              document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                                                new bootstrap.Tooltip(el);
+                                              });
+                                            }
+                                            document.addEventListener('DOMContentLoaded', function () {
+                                              setTimeout(initTooltips, 500);
+                                            });
+                                            // Also re-initialize tooltips after AJAX or pagination if needed
+                                        </script>
                                     </td>
                                 </tr>
                                 <?php $i++; ?>
@@ -117,6 +137,79 @@
         </div>   
         
     </main>
+    <style>
+@media (max-width: 767.98px) {
+  .table-responsive {
+    font-size: 0.95rem;
+  }
+  #customerTable, #customerTable thead, #customerTable tbody, #customerTable th, #customerTable tr {
+    display: block;
+    width: 100%;
+  }
+  #customerTable thead {
+    display: none;
+  }
+  #customerTable tr {
+    margin-bottom: 1.2rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    background: #fff;
+    padding: 0.5rem;
+  }
+  #customerTable td {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    border: none;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    min-height: 40px;
+    word-break: break-word;
+    white-space: normal;
+    background: #fff;
+  }
+  #customerTable td:before {
+    min-width: 110px;
+    flex-shrink: 0;
+    content: attr(data-label);
+    display: inline-block;
+    font-weight: bold;
+    color: #f47820;
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+    font-size: 0.98em;
+    white-space: pre-line;
+    word-break: break-word;
+    text-align: left;
+    padding-right: 0.7rem;
+  }
+  #customerTable td > *:not(:first-child) {
+    margin-left: auto;
+    text-align: right;
+  }
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-start;
+  }
+}
+</style>
+<script>
+function setCustomerTableDataLabels() {
+    var headers = Array.from(document.querySelectorAll('#customerTable thead th')).map(th => th.innerText.trim());
+    document.querySelectorAll('#customerTable tbody tr').forEach(function(row) {
+        row.querySelectorAll('td').forEach(function(td, i) {
+            td.setAttribute('data-label', headers[i] || '');
+        });
+    });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    setCustomerTableDataLabels();
+});
+</script>
     <script>
         // function addField() {
         //     const container = document.getElementById('warehouseStockFields');

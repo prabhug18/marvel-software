@@ -20,7 +20,68 @@ class GeneralController extends Controller
         $categoryCount = Category::count();
         $customerCount = Customer::count();
         $stockCount = Stock::sum('qty');
-        return view('backend.general.dashboard', compact('heading', 'brandCount', 'categoryCount', 'customerCount', 'stockCount'));
+        // Get current month invoice total
+        $currentMonthTotal = \App\Models\Invoice::whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('grand_total');
+        // Get daily invoice totals for current month
+        $invoiceDailyTotals = \App\Models\Invoice::selectRaw('DATE(created_at) as date, SUM(grand_total) as total')
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('date')
+            ->get();
+        // Prepare data for chart
+        $chartLabels = $invoiceDailyTotals->pluck('date')->map(function($d) { return date('d M', strtotime($d)); });
+        $chartData = $invoiceDailyTotals->pluck('total');
+        $currentMonthTotal = $invoiceDailyTotals->sum('total');
+        // Reconciled and pending totals
+        $reconciledTotal = \App\Models\Invoice::where('reconciliation_done', true)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('grand_total');
+        $pendingTotal = \App\Models\Invoice::where('reconciliation_done', false)->sum('grand_total');
+        $currentMonthInvoiceCount = \App\Models\Invoice::whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->count();
+        // Add this to your GeneralController and pass $currentMonthReconciled to the view
+        $currentMonthReconciled = \App\Models\Payment::whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('paid_amount');
+        // Add this to your GeneralController and pass $pendingReconciliation to the view
+        $pendingReconciliation = \App\Models\Invoice::where('reconciliation_done', false)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('grand_total');
+
+        // Date filter logic
+        $from = request('from_date', now()->startOfMonth()->format('Y-m-d'));
+        $to = request('to_date', now()->endOfMonth()->format('Y-m-d'));
+
+        // Use filtered dates for all queries (except chart)
+        $filteredMonthInvoiceCount = \App\Models\Invoice::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->count();
+        $filteredMonthTotal = \App\Models\Invoice::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->sum('grand_total');
+        $filteredMonthReconciled = \App\Models\Invoice::where('reconciliation_done', true)
+            ->whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->sum('grand_total');
+        $filteredPendingReconciliation = \App\Models\Invoice::where('reconciliation_done', false)
+            ->whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->sum('grand_total');
+
+        // Pass both filtered and current month (for chart) to view
+        return view('backend.general.dashboard', compact(
+            'heading', 'brandCount', 'categoryCount', 'customerCount', 'stockCount',
+            'currentMonthTotal', 'chartLabels', 'chartData', 'reconciledTotal', 'pendingTotal',
+            'currentMonthInvoiceCount', 'currentMonthReconciled', 'pendingReconciliation',
+            'filteredMonthInvoiceCount', 'filteredMonthTotal', 'filteredMonthReconciled', 'filteredPendingReconciliation',
+            'from', 'to'
+        ));
     }
 
     public static function logs()
@@ -103,6 +164,7 @@ class GeneralController extends Controller
             );
 
         // Combine all logs and order by created_at descending
+        
         $logs = $userLogs
             ->unionAll($customerLogs)
             ->unionAll($warehouseLogs)
@@ -143,5 +205,4 @@ class GeneralController extends Controller
 
         return $logs;
     }
-
 }

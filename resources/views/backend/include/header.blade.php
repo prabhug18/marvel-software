@@ -18,8 +18,7 @@
         <a class="dropdown-item" href="#">Welcome {{ Auth::user()->name }}</a>
       @else
         <a class="dropdown-item" href="#">Welcome Guest</a>
-      @endif
-      <a class="dropdown-item" href="#">Settings</a>
+      @endif     
       <div class="dropdown-divider"></div>
       <a class="dropdown-item text-danger" href="{{ url('logout') }}">Logout</a>
     </div>
