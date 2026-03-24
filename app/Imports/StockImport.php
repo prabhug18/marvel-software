@@ -15,43 +15,59 @@ class StockImport implements ToCollection
     {
         $header = $rows->first();
         // Assuming first 4 columns are: Category, Brand, Model, Model No
-        $warehouseNames = $header->slice(4)->toArray(); 
+        $warehouseNames = $header->slice(4)->values()->map(function($val) {
+            return trim((string)$val);
+        })->toArray(); 
 
         $hasError = false;
         $errorMessages = [];
         foreach ($rows->skip(1) as $rowIndex => $row) {
-            $categoryName = $row->get(0);
-            $brandName = $row->get(1);
-            $modelName = $row->get(2);
-            $modelNo = $row->get(3);
+            // Remove non-breaking spaces and hidden non-printable characters
+            $clean = function($val) {
+                if ($val === null) return null;
+                $v = trim((string)$val);
+                return preg_replace('/[\xF0-\xF7]...|[\xE0-\xEF]..|[\xC2-\xDF].|[\x00-\x1F\x7F]/', '', str_replace("\xc2\xa0", ' ', $v));
+            };
 
-            $category = $categoryName ? Category::where('name', $categoryName)->first() : null;
-            $brand = $brandName ? Brand::where('name', $brandName)->first() : null;
+            $categoryName = $clean($row->get(0));
+            $brandName = $clean($row->get(1));
+            $modelName = $clean($row->get(2));
+            $modelNo = ($row->get(3) !== null && $clean($row->get(3)) !== '') ? $clean($row->get(3)) : null;
+
+            // Use case-insensitive and trimmed search for Category and Brand
+            $category = $categoryName ? Category::where('name', 'like', $categoryName)->first() : null;
+            $brand = $brandName ? Brand::where('name', 'like', $brandName)->first() : null;
             
+            $catId = $category ? $category->id : null;
+            $brandId = $brand ? $brand->id : null;
+
             // Check if product exists for this category, brand, model, and model_no
-            $productExists = \App\Models\Product::where('category_id', optional($category)->id)
-                ->where('brand_id', optional($brand)->id)
-                ->where('model', $modelName)
-                ->where('model_no', $modelNo)
-                ->exists();
+            $productExists = \App\Models\Product::withTrashed()->where([
+                'category_id' => $catId,
+                'brand_id' => $brandId,
+                'model' => $modelName,
+                'model_no' => $modelNo,
+            ])->exists();
 
             // Validation for missing category/brand/model or product
             $missing = [];
-            if (!$category) $missing[] = 'Category: ' . ($categoryName ?? '');
-            if (!$brand) $missing[] = 'Brand: ' . ($brandName ?? '');
-            if (empty($modelName)) $missing[] = 'Model';
-            if (!$productExists) $missing[] = 'Product (category, brand, model, model_no combination does not exist)';
+            if (!$category) $missing[] = "Category '$categoryName' Not Found";
+            if (!$brand) $missing[] = "Brand '$brandName' Not Found";
+            if (empty($modelName)) $missing[] = 'Model Name: Empty';
+            if (!$productExists) {
+                $missing[] = "Product Not Found (Search: CatID=" . ($catId ?? 'NULL') . ", BrandID=" . ($brandId ?? 'NULL') . ", Model='$modelName', ModelNo=" . ($modelNo ?? 'NULL') . ")";
+            }
             
             if (!empty($missing)) {
-                $msg = 'StockImport Row '.($rowIndex + 1).': '. implode(', ', $missing);
+                $msg = 'StockImport Row '.($rowIndex + 2).': '. implode(', ', $missing);
                 $hasError = true;
                 $errorMessages[] = $msg;
                 continue;
             }
 
             foreach ($warehouseNames as $i => $warehouseName) {
-                $warehouse = Warehouse::where('name', $warehouseName)->first();
-                $qtyIdx = $i + 4; // Start from index 4
+                $warehouse = Warehouse::where('name', 'like', $warehouseName)->first();
+                $qtyIdx = $i + 4; // Correct index after values() 
                 $qtyToAdd = (int) $row->get($qtyIdx);
 
                 if ($warehouse && $category && $brand) {
