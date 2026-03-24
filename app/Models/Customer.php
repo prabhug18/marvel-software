@@ -9,9 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Customer extends Model
 {
     //
-    //
-    use HasFactory, SoftDeletes;
-    
+    use HasFactory, SoftDeletes;    
 
      /**
      * The attributes that are mass assignable.
@@ -26,9 +24,13 @@ class Customer extends Model
         'state_id',
         'city_id',
         'pincode',
+        'warehouse_id',
         'user_id',
         'gst_no',
-        'SoftDeletes'        
+        'source',
+        'customer_type',
+        'remarks',
+        'SoftDeletes'
     ];
 
     public function state()

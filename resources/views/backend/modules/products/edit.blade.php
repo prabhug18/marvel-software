@@ -39,9 +39,7 @@
                     @csrf
                    
                     <div class="row">     
-                        <div id="successAlert" class="alert alert-success alert-dismissible fade show mt-3 d-none" role="alert">
-                            Product updated successfully.                         
-                        </div>                   
+                        {{-- Success alert removed in favor of SweetAlert2 modal --}}
                         <div class="col-lg-7">
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -71,8 +69,13 @@
                                     <div class="invalid-feedback" id="model-error"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Series</label>
-                                    <input type="text" class="form-control" name="series" id="series" placeholder="Enter Series" value="{{ $product->series }}" />
+                                    <label class="form-label">Model No</label>
+                                    <input type="text" class="form-control" name="model_no" id="model_no" placeholder="Enter Model No" value="{{ $product->model_no }}"/>
+                                    <div class="invalid-feedback" id="model_no-error"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Warranty</label>
+                                    <input type="text" class="form-control" name="series" id="series" placeholder="Enter Warranty" value="{{ $product->series }}" />
                                     <div class="invalid-feedback" id="series-error"></div>
                                 </div>
                                 <div class="col-md-6">
@@ -235,17 +238,19 @@
                     processData: false,
                     contentType: false,
                     success: function(response) {
-                        showAlert()
-                       setTimeout(function() {
-                        window.location.href = "{{ route('products.index')}}";
-                        }, 3000);
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Product updated successfully.',
+                            icon: 'success',
+                            confirmButtonText: 'OK',
+                            timer: 3000,
+                            timerProgressBar: true
+                        }).then(() => {
+                            window.location.href = "{{ route('products.index')}}";
+                        });
 
-                    setTimeout(function() {
-                        document.querySelector('#successAlert').remove();
-                    }, 32000);
-
-                    $('#productForm').trigger("reset");
-                    preview.innerHTML = "";
+                        $('#productForm').trigger("reset");
+                        preview.innerHTML = "";
                     },
                     error: function(xhr) {
                         

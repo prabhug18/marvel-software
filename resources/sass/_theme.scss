@@ -1,0 +1,25 @@
+// Marvel Software Theme Colors
+$primary-color: #F6A800;
+$secondary-color: #007A33;
+$dark-color: #222222;
+
+// Body
+$body-bg: $dark-color;
+
+// Example usage for sidebar, nav, and menu
+.sidebar {
+  background-color: $primary-color;
+  color: $dark-color;
+}
+
+.navbar {
+  background-color: $secondary-color;
+  color: #fff;
+}
+
+.menu {
+  background-color: $dark-color;
+  color: $primary-color;
+}
+
+// Add more custom styles as needed

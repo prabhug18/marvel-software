@@ -38,6 +38,14 @@
                 <form id="customerForm" class="row g-4" method="POST" enctype="multipart/form-data" action="{{ route('customer.store') }}">
                     @csrf
                     <div class="col-md-6">
+                        <label class="form-label">Customer Type</label>
+                        <select class="form-select" name="customer_type">
+                            <option value="">Select Type</option>
+                            <option value="Customer">Customer</option>
+                            <option value="Dealer">Dealer</option>                            
+                        </select>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label">Customer Name <span class="text-danger">*</span></label>
                         <input class="form-control" type="text" placeholder="Enter Name" required name="name"/>
                     </div>
@@ -47,7 +55,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label">Email <span class="text-danger">*</span></label>
+                        <label class="form-label">Email</label>
                         <input class="form-control" type="email" placeholder="Enter Email Address" name="email"/>
                     </div>
                     <div class="col-md-6">
@@ -81,10 +89,24 @@
                         <label class="form-label">GST No</label>
                         <input class="form-control" type="text" placeholder="Enter GST No" name="gst_no"/>
                     </div>
-                    
-                    <div class="col-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Source</label>
+                        <select class="form-select select2" name="source">
+                            <option value="">Select Source</option>
+                            @foreach($sources as $source)
+                                <option value="{{ $source->name }}">{{ $source->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Remarks</label>
+                        <textarea class="form-control" placeholder="Enter Remarks" name="remarks"></textarea>
+                    </div>
+                    <div class="col-2 mt-5">
                         <button type="submit" class="btn btn-success btn-lg"> Submit</button>
                     </div>
+                    {{-- ensure warehouse_id is submitted; prefer authenticated user's warehouse_id --}}
+                    <input type="hidden" name="warehouse_id" value="{{ auth()->user()->warehouse_id ?? 1 }}">
                 </form>
                 <div id="formErrorAjax"></div>
             </div>

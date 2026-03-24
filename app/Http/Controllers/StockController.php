@@ -10,8 +10,12 @@ use App\Exports\StockExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\StockImport;
 
-class StockController extends Controller
-{
+class StockController extends Controller{
+
+
+    // ...existing code...
+    // ...existing code...
+
     /**
      * Display a listing of the resource.
      */
@@ -182,6 +186,63 @@ class StockController extends Controller
         $this->middleware('permission:stock-create', ['only' => ['create', 'store']]);
         $this->middleware('permission:stock-edit', ['only' => ['edit', 'update']]);
         $this->middleware('permission:stock-delete', ['only' => ['destroy']]);
+    }
+
+    /**
+     * AJAX: Get warehouse-wise stock for a product
+     */
+    public function warehouseStock(Request $request)
+    {
+        $stocks = Stock::with('warehouse')
+            ->where('category_id', $request->category_id)
+            ->where('brand_id', $request->brand_id)
+            ->where('model', $request->model)
+            ->get();
+
+        return response()->json($stocks->map(function($stock) {
+            return [
+                'warehouse' => $stock->warehouse ? $stock->warehouse->name : 'N/A',
+                'warehouse_id' => $stock->warehouse_id,
+                'qty' => $stock->qty,
+            ];
+        }));
+    }
+
+    /**
+     * AJAX: Update warehouse stock quantity
+     */
+    public function updateWarehouseStock(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'category_id' => 'required|exists:categories,id',
+            'brand_id' => 'required|exists:brands,id',
+            'model' => 'required|string',
+            'qty' => 'required|integer|min:0',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $model = trim($request->model);
+        // Update all matching stock rows for this warehouse/category/brand/model
+        $updated = Stock::where('warehouse_id', $request->warehouse_id)
+            ->where('category_id', $request->category_id)
+            ->where('brand_id', $request->brand_id)
+            ->whereRaw('LOWER(model) = ?', [strtolower($model)])
+            ->update(['qty' => $request->qty]);
+
+        // If no row was updated, create a new one
+        if ($updated === 0) {
+            Stock::create([
+                'warehouse_id' => $request->warehouse_id,
+                'category_id' => $request->category_id,
+                'brand_id' => $request->brand_id,
+                'model' => $model,
+                'qty' => $request->qty,
+                'user_id' => Auth::id(),
+            ]);
+        }
+        return response()->json(['message' => 'Stock updated successfully!']);
     }
 }
 

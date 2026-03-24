@@ -13,7 +13,7 @@
 
         <!-- Push content below fixed header -->
         <div style="padding-top: 30px;">
-
+        @if(auth()->user() && auth()->user()->hasRole('Admin'))
             <!-- Filter Form -->
             <div class="container mb-4">
                 <div class="row justify-content-center">
@@ -46,35 +46,36 @@
             </div>
 
             <div class="row g-4 mb-4">
+            <div class="row g-4 mb-4">
                 <div class="col-md-3">
-                    <div class="stat-card gradient-1" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#invoiceListModal">
-                        <div class="icon"><i class="bi bi-list"></i></div>
-                        <h6>Invoices</h6>
-                        <h2>{{ $filteredMonthInvoiceCount }}</h2>
+                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="cursor:pointer; border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#invoiceListModal">
+                        <div class="icon mb-3 rounded-circle text-primary bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-list"></i></div>
+                        <h6 class="text-secondary fw-semibold mb-2">Invoices</h6>
+                        <h2 class="fw-bold mb-0 text-dark">{{ $filteredMonthInvoiceCount }}</h2>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="stat-card gradient-2 text-center">
-                        <div class="icon"><i class="bi bi-cash-stack"></i></div>
-                        <h6>Total Billed</h6>
-                        <h2>₹{{ number_format($filteredMonthTotal, 2) }}</h2>
+                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
+                        <div class="icon mb-3 rounded-circle text-success bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-cash-stack"></i></div>
+                        <h6 class="text-secondary fw-semibold mb-2">Total Billed</h6>
+                        <h2 class="fw-bold mb-0 text-dark">₹{{ number_format($filteredMonthTotal, 2) }}</h2>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="stat-card gradient-3 text-center">
-                        <div class="icon"><i class="bi bi-tag"></i></div>
-                        <h6>Payment Reconciled</h6>
-                        <h2>₹{{ number_format($filteredMonthReconciled, 2) }}</h2>
+                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
+                        <div class="icon mb-3 rounded-circle text-info bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-tag"></i></div>
+                        <h6 class="text-secondary fw-semibold mb-2">Payment Reconciled</h6>
+                        <h2 class="fw-bold mb-0 text-dark">₹{{ number_format($filteredMonthReconciled, 2) }}</h2>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="stat-card gradient-4 text-center">
-                        <div class="icon"><i class="bi bi-people"></i></div>
-                        <h6>Pending Reconciliation</h6>
-                        <h2>₹{{ number_format($filteredPendingReconciliation, 2) }}</h2>
+                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
+                        <div class="icon mb-3 rounded-circle text-warning bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-people"></i></div>
+                        <h6 class="text-secondary fw-semibold mb-2">Pending Reconciliation</h6>
+                        <h2 class="fw-bold mb-0 text-dark">₹{{ number_format($filteredPendingReconciliation, 2) }}</h2>
                     </div>
                 </div>
-                @if(auth()->user() && auth()->user()->hasRole('Admin'))
+                
                     <div class="col-md-12 mt-4">
                         <div class="card p-3">
                             <h6 class="mb-3">Invoice Total (This Month)</h6>
@@ -85,15 +86,15 @@
                         </div>
                     </div>
                     <div class="col-md-6 mt-4">
-                        <div class="card p-3 bg-success bg-opacity-10 border-success mb-2">
-                            <h6 class="mb-1 text-success">Reconciled Amount (This Month)</h6>
-                            <h3 class="mb-0">₹{{ number_format($reconciledTotal, 2) }}</h3>
+                        <div class="card shadow-sm border-0 border-top border-success border-4 p-4 bg-white mb-2" style="border-radius: 8px;">
+                            <h6 class="text-secondary fw-semibold mb-2">Reconciled Amount (This Month)</h6>
+                            <h3 class="fw-bold mb-0 text-success">₹{{ number_format($reconciledTotal, 2) }}</h3>
                         </div>
                     </div>
                     <div class="col-md-6 mt-4">
-                        <div class="card p-3 bg-warning bg-opacity-10 border-warning mb-2 pending-reconciliation-trigger" style="cursor:pointer;" id="pendingReconciliationCard">
-                            <h6 class="mb-1 text-warning">Pending Reconciliation</h6>
-                            <h3 class="mb-0">₹{{ number_format($pendingTotal, 2) }}</h3>
+                        <div class="card shadow-sm border-0 border-top border-warning border-4 p-4 bg-white mb-2 pending-reconciliation-trigger" style="cursor:pointer; border-radius: 8px;" id="pendingReconciliationCard">
+                            <h6 class="text-secondary fw-semibold mb-2">Pending Reconciliation</h6>
+                            <h3 class="fw-bold mb-0 text-warning">₹{{ number_format($pendingTotal, 2) }}</h3>
                         </div>
                     </div>
                     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

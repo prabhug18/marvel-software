@@ -3,6 +3,7 @@
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\TermController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SourceController;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 
@@ -23,7 +25,6 @@ Route::get('/', function () {
 
 Auth::routes();
 Route::get('logout', '\App\Http\Controllers\Auth\LoginController@logout');
-
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::group(['middleware' => ['auth']], function() {
@@ -36,9 +37,25 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('categories', CategoryController::class); 
     Route::resource('products', ProductController::class); 
     Route::resource('stocks', StockController::class);
+    Route::resource('source', SourceController::class);
+    Route::resource('terms', TermController::class)->middleware('role:Admin');
     Route::get('invoice/export', [App\Http\Controllers\InvoiceController::class, 'export'])->name('invoice.export');
+    Route::get('invoice/search', [InvoiceController::class, 'ajaxSearch']);
+    Route::get('invoice/details', [InvoiceController::class, 'ajaxDetails']);
     Route::resource('invoice', InvoiceController::class); 
+    // GST Invoice View
+    Route::get('invoice/{id}/gst', [App\Http\Controllers\InvoiceController::class, 'gstInvoiceView'])->name('invoice.gst');
+    // Invoice View - Format Three (new)
+    Route::get('invoice/{id}/three', [App\Http\Controllers\InvoiceController::class, 'threeInvoiceView'])->name('invoice.three');
+        // Invoice View - Format Four (new)
+        Route::get('invoice/{id}/four', [App\Http\Controllers\InvoiceController::class, 'fourInvoiceView'])->name('invoice.four');
+    // Admin settings: invoice template
+    Route::get('admin/settings/invoice-template', [App\Http\Controllers\Admin\SettingController::class, 'editInvoiceTemplate'])->name('admin.settings.invoice_template.edit');
+    Route::post('admin/settings/invoice-template', [App\Http\Controllers\Admin\SettingController::class, 'updateInvoiceTemplate'])->name('admin.settings.invoice_template.update');
+    
     Route::post('invoice/send-email', [InvoiceController::class, 'sendEmail'])->name('invoice.sendEmail');
+    // Approve invoice (admin only)
+    Route::post('invoice/{id}/approve', [InvoiceController::class, 'approve'])->name('invoice.approve');
 
     Route::get('logs', 'App\Http\Controllers\GeneralController@logs');
     Route::get('/get-city', [CustomerController::class, 'getCity']);
@@ -73,27 +90,20 @@ Route::get('/api/products/search', function (\Illuminate\Http\Request $request) 
         ->orWhere('category_id', $term)
         ->orWhere('brand_id', $term)
         ->limit(10)
-        ->get(['id', 'model', 'category_id', 'brand_id']);
+        ->get(['id', 'model', 'category_id', 'brand_id'])
+        ->unique('model')
+        ->values();
 });
 
 Route::get('/api/warehouses', function() {
     return response()->json(\App\Models\Warehouse::all(['id', 'name']));
 });
 
-Route::get('/api/warehouse-stock', function (\Illuminate\Http\Request $request) {
-    $stocks = \App\Models\Stock::with('warehouse')
-        ->where('category_id', $request->category_id)
-        ->where('brand_id', $request->brand_id)
-        ->where('model', $request->model)
-        ->get();
+// AJAX: Get warehouse-wise stock for a product
+Route::get('/api/warehouse-stock', [StockController::class, 'warehouseStock']);
 
-    return response()->json($stocks->map(function($stock) {
-        return [
-            'warehouse' => $stock->warehouse ? $stock->warehouse->name : 'N/A',
-            'qty' => $stock->qty,
-        ];
-    }));
-});
+// AJAX: Update warehouse stock quantity
+Route::post('/api/update-warehouse-stock', [StockController::class, 'updateWarehouseStock']);
 Route::get('/stock/export', [StockController::class, 'exportPage'])->name('stock.export');
 Route::get('/export/stock', [StockController::class, 'export'])->name('export.stocks');
 Route::post('/stocks/import', [StockController::class, 'import'])->name('stocks.import');
@@ -114,6 +124,8 @@ Route::get('/customer-balance', [App\Http\Controllers\PaymentController::class, 
 Route::post('/payment/add', [App\Http\Controllers\PaymentController::class, 'addPayment']);
 // AJAX payment store route
 Route::post('/payment/ajax-store', [App\Http\Controllers\PaymentController::class, 'ajaxStore']);
+// AJAX bulk payment store route (used by reconciliation page)
+Route::post('/payment/bulk-store', [App\Http\Controllers\PaymentController::class, 'bulkStore']);
 // Payment Reconciliation page for a specific invoice
 Route::get('payment/payment-reconciliation', [PaymentController::class, 'paymentReconciliation']);
 // Mark reconciliation as done

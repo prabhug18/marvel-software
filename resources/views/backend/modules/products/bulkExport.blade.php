@@ -34,10 +34,7 @@
                     <!-- Upload Button -->
                     <div class="mt-4">
                         <button type="button" class="btn btn-success btn-lg" id="uploadBtn">Upload</button>
-                        <div id="successAlert" class="alert alert-success alert-dismissible fade show mt-3 d-none" role="alert">
-                            Bulk Product Uploaded successfully.
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
+                        {{-- Success alert handled by SweetAlert2 --}}
                     </div>
 
                     <script>
@@ -59,22 +56,15 @@
                                 headers: {
                                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                                 },
-                                success: function(response) {
-                                    // Remove any previous import error alerts
-                                    $('.alert-danger').remove();
-                                    // Only show success if there is no error in response
-                                    if (response && response.errors && response.errors.import) {
-                                        let msg = Array.isArray(response.errors.import) ? response.errors.import.join('<br>') : response.errors.import;
-                                        let alertHtml = `<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-                                        $(alertHtml).insertAfter('#uploadBtn');
-                                        return;
-                                    }
-                                    $('#successAlert').removeClass('d-none');
-                                    setTimeout(function() {
-                                        $('#successAlert').addClass('d-none');
-                                    }, 3000);
-                                    $('#bulk-file').val('');
-                                },
+                                    success: function(response) {
+                                        Swal.fire({
+                                            title: 'Success!',
+                                            text: 'Bulk Product Uploaded successfully.',
+                                            icon: 'success',
+                                            confirmButtonText: 'OK'
+                                        });
+                                        $('#bulk-file').val('');
+                                    },
                                 error: function(xhr) {
                                     // Remove any previous import error alerts
                                     $('.alert-danger').remove();

@@ -24,7 +24,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CreateAdminUserSeeder::class);
         $this->call(CreateStatusSeeder::class);
         $this->call(CreateBrandSeeder::class);
-        $this->call(CreateCategorySeeder::class);
-            
+        $this->call(CreateCategorySeeder::class);            
     }
 }

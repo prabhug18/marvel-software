@@ -97,35 +97,63 @@ if (!function_exists('numberToWords')) {
         
         <div class="container-fluid px-3 d-flex justify-content-center align-items-center" style="min-height: 100vh; padding-top: 30px;">
             <div class="invoice-box w-100" id="invoice" style="max-width: 900px; margin: 0 auto;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                <h1 class="mb-0" style="font-size:16px;">Tax Invoice</h1>
-                @if(!empty($invoice->warehouse->image))
-                    <img src="{{ asset($invoice->warehouse->image) }}" alt="Warehouse Logo" style="max-height: 80px; max-width: 150px; margin-bottom: 5px;">
-                @endif
-                </div>
-                <div class="container border p-3 mb-4 rounded bg-light">
-                        
-                <div class="row">
-                    <!-- Column 1: Company Info -->
-                    <div class="col-md-4 border-end">
-                    <h6 class="fw-bold" style="color: #f47820;">{{ $invoice->warehouse->company_name ?? $invoice->warehouse->name ?? '-' }}</h6>
-                    @if(!empty($invoice->warehouse->sub_heading))
-                        <p class="mb-1 small">{{ $invoice->warehouse->sub_heading }}</p>
-                    @endif
-                    @if(!empty($invoice->warehouse->address))
-                        <p class="mb-1 small">{{ $invoice->warehouse->address }}</p>
-                    @endif
-                    @if(!empty($invoice->warehouse->gstn_uin))
-                        <p class="mb-1 small">GSTIN/UIN: {{ $invoice->warehouse->gstn_uin }}</p>
-                    @endif
-                    @if(!empty($invoice->warehouse->mobile))
-                        <p class="mb-1 small">Mobile: {{ $invoice->warehouse->mobile }}</p>
-                    @endif
-                    @if(!empty($invoice->warehouse->email))
-                        <p class="mb-1 small">Email: <a href="mailto:{{ $invoice->warehouse->email }}">{{ $invoice->warehouse->email }}</a></p>
-                    @endif
-                   
-                    </div>
+                <style>
+                    @media print {
+                        .invoice-box { border: none !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+                        .no-print { display: none !important; }
+                        .print-layout-table { display: table !important; width: 100% !important; }
+                        .print-layout-header { display: table-header-group !important; }
+                        .container-fluid { padding: 0 !important; }
+                        main { padding: 0 !important; margin: 0 !important; }
+                    }
+                    .print-layout-table { width: 100%; border-collapse: collapse; }
+                    .print-layout-header { display: block; width: 100%; }
+                </style>
+
+                <table class="print-layout-table">
+                    <thead class="print-layout-header">
+                        <tr>
+                            <td class="pb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h1 class="mb-0" style="font-size:16px;">Tax Invoice</h1>
+                                @if(!empty($invoice->warehouse->image))
+                                    <img src="{{ asset($invoice->warehouse->image) }}" alt="Warehouse Logo" style="max-height: 80px; max-width: 150px; margin-bottom: 5px;">
+                                @endif
+                                </div>
+                                <div class="container border p-3 mb-2 rounded bg-light">
+                                    <div class="row">
+                                        <!-- Column 1: Company Info -->
+                                        <div class="col-4 border-end border-dark">
+                                        <h6 class="fw-bold" style="color: #f47820; font-size: 14px;">{{ $invoice->warehouse->company_name ?? $invoice->warehouse->name ?? '-' }}</h6>
+                                        <p class="mb-0 small" style="font-size: 10px;">{{ $invoice->warehouse->address }}</p>
+                                        <p class="mb-0 small" style="font-size: 10px;">GSTIN/UIN: {{ $invoice->warehouse->gstn_uin }}</p>
+                                        <p class="mb-0 small" style="font-size: 10px;">Mobile: {{ $invoice->warehouse->mobile }}</p>
+                                        </div>
+
+                                        <!-- Column 2: Billing Info -->
+                                        <div class="col-4 border-end border-dark">
+                                            <h6 class="fw-bold" style="color: #f47820; font-size: 14px;">Bill To</h6>
+                                            <p class="mb-0 small" style="font-size: 10px;"><strong>Name:</strong> {{ $invoice->customer->name ?? '-' }}</p>
+                                            <p class="mb-0 small" style="font-size: 10px;"><strong>Address:</strong> {{ $invoice->customer->address ?? '-' }}</p>
+                                            <p class="mb-0 small" style="font-size: 10px;"><strong>Phone:</strong> {{ $invoice->customer->mobile_no ?? '-' }}</p>
+                                        </div>
+
+                                        <!-- Column 3: Invoice Info -->
+                                        <div class="col-4">
+                                            <h6 class="fw-bold" style="color: #f47820; font-size: 14px;">Details</h6>
+                                            <p class="mb-0 small" style="font-size: 10px;"><strong>Inv No:</strong> {{ $invoice->invoice_number }}</p>
+                                            <p class="mb-0 small" style="font-size: 10px;"><strong>Date:</strong> {{ $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date)->format('d-m-Y') : '-' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+
+
 
                     <!-- Column 2: Billing Info -->
                     <div class="col-md-4 border-end">
@@ -244,7 +272,7 @@ if (!function_exists('numberToWords')) {
                   </div>
                   @if($stateId == 35)
                   <!-- SGST Box -->
-                  <div class="col-md-2">&nbsp;</div>
+                  <div class="col-md-1">&nbsp;</div>
                   <div class="col-md-2">
                     <div class="border rounded p-3 shadow-sm bg-light mt-1">
                       <div class="d-flex justify-content-between mb-2 fw-bold">
@@ -272,9 +300,10 @@ if (!function_exists('numberToWords')) {
                     </div>
                     
                   </div>
-                  <div class="col-md-4 ">&nbsp;</div>
+                  
                 @endif
 
+                
                 <!-- Grand Total Box -->
                 <div class="col-md-4 ">
                     <div class="border rounded p-4 shadow-sm bg-warning bg-opacity-25">
@@ -312,7 +341,7 @@ if (!function_exists('numberToWords')) {
                     </div>
                 </div>
 
-                <div class="container mb-3 mt-3" id="invoice">
+                <div class="container mb-3 mt-3">
                   <div class="p-3 rounded-4 shadow-sm border bg-white">
                     
                     <div class="row g-4">
@@ -385,6 +414,10 @@ if (!function_exists('numberToWords')) {
                 </div>
              
                     
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
           </div> <!-- end of .invoice-box -->
         </div>
@@ -414,7 +447,8 @@ if (!function_exists('numberToWords')) {
 
   const canvas = await html2canvas(element, {
     scale: 2,
-    allowTaint: false,
+    useCORS: true,
+    allowTaint: true,
   });
 
   noPrintEls.forEach((el, i) => {
@@ -453,44 +487,7 @@ if (!function_exists('numberToWords')) {
 
 
 function printInvoice() {
-    const invoice = document.getElementById('invoice');
-    // Get invoice number from Blade variable (passed to JS)
-    const invoiceNumber = @json($invoice->invoice_number);
-    // Hide all elements with the no-print class before capturing
-    const noPrintEls = document.querySelectorAll('.no-print');
-    const prevDisplay = [];
-    noPrintEls.forEach((el, i) => {
-      prevDisplay[i] = el.style.display;
-      el.style.display = 'none';
-    });
-
-    html2canvas(invoice, {
-      scale: 2,
-      allowTaint: false,
-    }).then(canvas => {
-      // Restore display after capture
-      noPrintEls.forEach((el, i) => {
-        el.style.display = prevDisplay[i];
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pageWidth;
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(invoiceNumber + '.pdf');
-      // Open the PDF in a new window and trigger print
-      const pdfBlob = pdf.output('bloburl');
-      const printWindow = window.open(pdfBlob, '_blank');
-      if (printWindow) {
-        printWindow.onload = function() {
-          printWindow.focus();
-          printWindow.print();
-        };
-      }
-    });
+    window.print();
 }
 
 // Send Email function
@@ -499,7 +496,7 @@ async function sendInvoiceEmail() {
   const invoiceNumber = @json($invoice->invoice_number);
   const customerEmail = @json($invoice->customer->email);
   if (!customerEmail) {
-    alert('No customer email found.');
+    Swal.fire({ icon: 'warning', title: 'Missing Email', text: 'No customer email found.' });
     return;
   }
   // Hide all elements with the no-print class before capturing
@@ -509,7 +506,7 @@ async function sendInvoiceEmail() {
     prevDisplay[i] = el.style.display;
     el.style.display = 'none';
   });
-  const canvas = await html2canvas(element, { scale: 2, allowTaint: false });
+  const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true });
   noPrintEls.forEach((el, i) => {
     el.style.display = prevDisplay[i];
   });
@@ -562,7 +559,7 @@ async function sendInvoiceEmail() {
       }
     }
     if (response.ok) {
-      alert('Invoice sent to ' + customerEmail);
+      Swal.fire({ icon: 'success', title: 'Sent!', text: 'Invoice sent to ' + customerEmail, timer: 2000, showConfirmButton: false });
     } else {
       let errorMsg = 'Failed to send email.';
       if (responseBody && typeof responseBody === 'object' && responseBody.message) {
@@ -570,11 +567,11 @@ async function sendInvoiceEmail() {
       } else if (typeof responseBody === 'string' && responseBody.length < 500) {
         errorMsg += '\nServer: ' + responseBody;
       }
-      alert(errorMsg);
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     }
   } catch (e) {
     console.error('[InvoiceEmail] Network or JS error:', e);
-    alert('Error sending email. ' + (e && e.message ? e.message : ''));
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Error sending email. ' + (e && e.message ? e.message : '') });
   }
   document.getElementById('sendEmailBtn').disabled = false;
   document.getElementById('sendEmailBtn').innerText = 'Send Email';

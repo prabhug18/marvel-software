@@ -4,210 +4,277 @@
     <!-- Sidebar will be injected here -->
     <div class="toggle-btn" id="toggleBtn">
         <i class="fas fa-bars"></i>
-    </div>    
-  
+    </div>
     @include('backend.include.mnubar')
-  
     <main class="main-content" id="mainContent">
         @include('backend.include.header')
-
         <div class="container-fluid px-3" style="padding-top: 30px;">
-           
             <div class="card shadow-sm rounded-4 mt-4">
                 <div class="card-body">
-                    @if(!Auth::user() || !Auth::user()->hasRole('Admin'))
-                        <div class="alert alert-danger">You do not have permission to edit invoices.</div>
-                    @else
-                        <form id="invoiceEditForm" method="POST" action="{{ route('invoice.update', $invoice->id) }}" novalidate>
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
-                            <input type="hidden" name="cgst" id="hiddenCGST" value="{{ $invoice->cgst }}">
-                            <input type="hidden" name="sgst" id="hiddenSGST" value="{{ $invoice->sgst }}">
-                            <input type="hidden" name="igst" id="hiddenIGST" value="{{ $invoice->igst }}">
-                            <input type="hidden" name="grand_total" id="hiddenGrandTotal" value="{{ $invoice->grand_total }}">
-                            @php
-                                $isAdmin = auth()->user() && auth()->user()->hasRole('Admin');
-                                $userWarehouseId = auth()->user() ? auth()->user()->warehouse_id : null;
-                                $customer = $invoice->customer;
-                            @endphp
+                    <h2 class="mb-4">{{ $heading ?? 'Edit Invoice' }}</h2>
+                    <form id="invoiceEditForm" method="POST" action="{{ route('invoice.update', $invoice->id) }}">
+                        @csrf
+                        @method('PUT')
+                        @php
+                            $isAdmin = auth()->user() && auth()->user()->hasRole('Admin');
+                            $userWarehouseId = auth()->user() ? auth()->user()->warehouse_id : null;
+                            $customer = $invoice->customer;
+                        @endphp
+                        <div class="row g-4">
                             @if($isAdmin)
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label for="warehouse_id" class="form-label">Warehouse <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="warehouse_id" name="warehouse_id" required>
-                                        @foreach($warehouses as $warehouse)
-                                            <option value="{{ $warehouse->id }}" {{ $invoice->warehouse_id == $warehouse->id ? 'selected' : '' }}>{{ $warehouse->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                            <div class="col-md-4">
+                                <label for="warehouse_id" class="form-label">Warehouse <span class="text-danger">*</span></label>
+                                <select class="form-select" id="warehouse_id" name="warehouse_id" required readonly style="pointer-events:none; background-color:#e9ecef;">
+                                    @foreach($warehouses as $warehouse)
+                                        <option value="{{ $warehouse->id }}" {{ $invoice->warehouse_id == $warehouse->id ? 'selected' : '' }}>{{ $warehouse->name }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="hidden" name="warehouse_id" value="{{ $invoice->warehouse_id }}">
+                            </div>
                             @else
                                 <input type="hidden" id="warehouse_id" name="warehouse_id" value="{{ $userWarehouseId }}">
                             @endif
-                                <div class="col-md-4 position-relative">
-                                    <label for="customer_name" class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ $invoice->customer_name }}" required autocomplete="off">
-                                    <div id="customerSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="invoice_number" class="form-label">Invoice Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="invoice_number" name="invoice_number" value="{{ $invoice->invoice_number }}" required readonly>
-                                </div>
+                            <div class="col-md-4 position-relative">
+                                <label for="customer_name" class="form-label">Customer Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ $invoice->customer_name }}" required autocomplete="off" readonly>
+                                <div id="customerSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label for="dc_number" class="form-label">DC Number <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="dc_number" name="dc_number" value="{{ $invoice->dc_number }}" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="gst_number" class="form-label">GST Number</label>
-                                    <input type="text" class="form-control" id="gst_number" name="gst_number" value="{{ $customer->gst_no ?? '' }}" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="invoice_date" class="form-label">Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="invoice_date" name="invoice_date" value="{{ $invoice->invoice_date }}" required>
-                                </div>
+                            <div class="col-md-4">
+                                <label for="invoice_number" class="form-label">Invoice Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="invoice_number" name="invoice_number" value="{{ $invoice->invoice_number }}" required readonly>
                             </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label for="mobile_no" class="form-label">Mobile Number <span class="text-danger">*</span></label>
-                                    <input type="tel" class="form-control" id="mobile_no" name="mobile_no" value="{{ $customer->mobile_no ?? '' }}" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="email" class="form-label">Email ID <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" id="email" name="email" value="{{ $customer->email ?? '' }}" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="address" class="form-label">Address 1 <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="address" name="address" value="{{ $customer->address ?? '' }}" required>
-                                </div>
+                            <div class="col-md-4">
+                                <label for="dc_number" class="form-label">DC Number</label>
+                                <input type="number" class="form-control" id="dc_number" name="dc_number" value="{{ $invoice->dc_number }}" required>
                             </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label for="state" class="form-label">State <span class="text-danger">*</span></label>
-                                    <select name="state" class="form-select select2" id="state">
-                                        <option value="">Select State</option>
-                                        @foreach($states as $stateObj)
-                                            <option value="{{ $stateObj->id }}" {{ $customer->state_id == $stateObj->id ? 'selected' : '' }}>{{ $stateObj->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="city" class="form-label">City <span class="text-danger">*</span></label>
-                                    <select name="city" class="form-select select2" id="city">
-                                        <option value="{{ $customer->city_id ?? '' }}">{{ $customer->city->name ?? 'Select City' }}</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="pincode" class="form-label">Pincode <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="pincode" name="pincode" value="{{ $customer->pincode ?? '' }}" required>
-                                </div>
+                            <div class="col-md-4">
+                                <label for="gst_number" class="form-label">GST Number</label>
+                                <input type="text" class="form-control" id="gst_number" name="gst_number" value="{{ $customer->gst_no ?? '' }}" required>
                             </div>
+                            <div class="col-md-4">
+                                <label for="invoice_date" class="form-label">Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="invoice_date" name="invoice_date" value="{{ $invoice->invoice_date }}" required readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="mobile_no" class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="mobile_no" name="mobile_no" value="{{ $customer->mobile_no ?? '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="email" class="form-label">Email ID</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ $customer->email ?? '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="address" class="form-label">Address 1</label>
+                                <input type="text" class="form-control" id="address" name="address" value="{{ $customer->address ?? '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="state" class="form-label">State <span class="text-danger">*</span></label>
+                                <select name="state" class="form-select select2" id="state">
+                                    <option value="">Select State</option>
+                                    @foreach($states as $stateObj)
+                                        <option value="{{ $stateObj->id }}" {{ $customer->state_id == $stateObj->id ? 'selected' : '' }}>{{ $stateObj->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="city" class="form-label">City <span class="text-danger">*</span></label>
+                                <select name="city" class="form-select select2" id="city">
+                                    <option value="{{ $customer->city_id ?? '' }}">{{ $customer->city->name ?? 'Select City' }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pincode" class="form-label">Pincode</label>
+                                <input type="number" class="form-control" id="pincode" name="pincode" value="{{ $customer->pincode ?? '' }}" required>
+                            </div>
+                            
+                            
+                        </div>
 
-                            <!-- Product Table (show existing items, allow edit/remove/add) -->
-                            @php
-                                // Prepare productsArr for JS prefill (array of items)
-                                $productsArr = $invoice->items->map(function($item) {
-                                    return [
-                                        'product_name' => $item->product_name,
-                                        'model' => $item->model,
-                                        'qty' => $item->qty,
-                                        'unit_price' => $item->unit_price,
-                                        'total' => $item->total,
-                                        'tax_percentage' => $item->tax_percentage,
-                                    ];
-                                });
-                            @endphp
-                            <script>
-                                window.productsArr = @json($productsArr);
-                            </script>
-                            @include('backend.modules.invoice.partials.product_table_edit', ['invoice' => $invoice])
+                        <div class="w-100 text-start ps-3">
+                            <h4 class="mt-5 mb-3">Add Products</h4>
+                        </div>
+                        @include('backend.modules.invoice.partials.product_table_edit', ['invoice' => $invoice])
 
-                            <!-- Totals: Only CGST, SGST, IGST, Grand Total in a single row -->
-                            <div class="mt-4">
-                                <div class="row text-center mt-4">
-                                    <div class="col-md-3">
-                                        <div class="border rounded p-3 shadow-sm bg-light">
-                                            <p class="mb-1 fw-bold text-dark">CGST</p>
-                                            <p class="fs-5">₹<span id="invoiceCGST">0.00</span></p>
-                                        </div>
+                        <div class="mt-4">
+                            <div class="row text-center mt-4">
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 shadow-sm bg-light">
+                                        <p class="mb-1 fw-bold text-primary">CGST</p>
+                                        <p class="fs-5">₹<span id="invoiceCGST">0.00</span></p>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="border rounded p-3 shadow-sm bg-light">
-                                            <p class="mb-1 fw-bold text-dark">SGST</p>
-                                            <p class="fs-5">₹<span id="invoiceSGST">0.00</span></p>
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 shadow-sm bg-light">
+                                        <p class="mb-1 fw-bold text-success">SGST</p>
+                                        <p class="fs-5">₹<span id="invoiceSGST">0.00</span></p>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="border rounded p-3 shadow-sm bg-light">
-                                            <p class="mb-1 fw-bold text-dark">IGST</p>
-                                            <p class="fs-5">₹<span id="invoiceIGST">0.00</span></p>
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 shadow-sm bg-light">
+                                        <p class="mb-1 fw-bold text-danger">IGST</p>
+                                        <p class="fs-5">₹<span id="invoiceIGST">0.00</span></p>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="border rounded p-3 shadow-sm bg-light">
-                                            <p class="mb-1 fw-bold text-dark">Grand Total</p>
-                                            <p class="fs-5">₹<span id="invoiceGrandTotal">0.00</span></p>
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 shadow-sm bg-warning bg-opacity-25">
+                                        <p class="mb-1 fw-bold text-dark">Grand Total</p>
+                                        <p class="fs-5">₹<span id="invoiceGrandTotal">0.00</span></p>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="row mb-3 mt-3">
-                                <div class="col-md-12 text-end">
-                                    <input type="submit" class="btn btn-primary" value="Update Invoice" id="updateInvoiceBtn">
-                                </div>
+                        <!-- Vehicle Type & Details (moved here so they're near the submit button) -->
+                        <div class="row g-4 mt-3">
+                            <div class="col-md-4">
+                                <label for="vehicle_type" class="form-label">Vehicle Type (optional)</label>
+                                <select id="vehicle_type" name="vehicle_type" class="form-select">
+                                    <option value="">Select Vehicle Type</option>
+                                    <option value="Two Wheeler" {{ $invoice->vehicle_type == 'Two Wheeler' ? 'selected' : '' }}>Two Wheeler</option>
+                                    <option value="Four Wheeler" {{ $invoice->vehicle_type == 'Four Wheeler' ? 'selected' : '' }}>Four Wheeler</option>
+                                    <option value="Commercial battery" {{ $invoice->vehicle_type == 'Commercial battery' ? 'selected' : '' }}>Commercial battery</option>
+                                </select>
                             </div>
-                        </form>
-                    @endif
+                            <div class="col-md-8" id="vehicle_details_wrap" style="{{ $invoice->vehicle_type == 'Commercial battery' ? '' : 'display:none;' }}">
+                                <label for="vehicle_details" class="form-label"> Details</label>
+                                <input type="text" id="vehicle_details" name="vehicle_details" class="form-control" value="{{ $invoice->vehicle_details ?? '' }}" placeholder="Enter details (optional)">
+                            </div>
+                        </div>
+
+                        <!-- Payments moved to Payment Reconciliation page -->
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12 text-center">
+                                <button type="button" class="btn btn-success mt-3" id="invoiceUpdateBtn">Update Invoice</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-         
     </main>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.6.2/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+    <style>
+        .select2-container--bootstrap4 .select2-selection {
+          border-radius: 0.25rem !important;
+          min-height: 44px !important;
+          border: 1px solid #ced4da !important;
+          background-color: rgb(249, 249, 249) !important;
+          font-size: 15px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+          line-height: 2.9 !important;
+          float: left !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single {
+          height: 50px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--multiple {
+          min-height: 45px !important;
+        }
+        .select2-container {
+          width: 100% !important;
+          z-index: 1060 !important;
+        }
+        .select2-dropdown {
+          z-index: 2000 !important;
+        }
+    </style>
+    <link href="/assets/build/app.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <style>
+        /* Match create page button and payment section styles */
+        #invoiceUpdateBtn {
+            margin-top: 24px;
+            min-width: 180px;
+            font-size: 1.2rem;
+            padding: 12px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .row.mb-3.mt-3, .row.g-3.mb-3 {
+            margin-bottom: 2rem !important;
+        }
+        .btn-outline-primary {
+            border-width: 2px;
+        }
+        #addPaymentFieldBtn {
+            min-width: 140px;
+            font-size: 1rem;
+        }
+        /* Responsive fix for bottom button */
+        @media (max-width: 600px) {
+            #invoiceUpdateBtn {
+                width: 100%;
+                min-width: unset;
+                font-size: 1rem;
+                padding: 10px 0;
+            }
+        }
+    </style>
     <script>
     $(document).ready(function() {
-        // Remove debug logs and force submit
-        $('#updateInvoiceBtn').on('click', function(e) {
-            e.preventDefault();
-            $('#invoiceEditForm').submit();
+        // --- Select2 for State/City ---
+        $('#state').select2({
+            placeholder: "Select State",
+            width: '100%',
+            theme: 'bootstrap4'
         });
+        $('#city').select2({
+            placeholder: "Select City",
+            width: '100%',
+            theme: 'bootstrap4'
+        });
+
+        // Vehicle type toggle
+        $('#vehicle_type').on('change', function() {
+            var v = $(this).val();
+            if (v === 'Commercial battery') {
+                $('#vehicle_details_wrap').slideDown();
+            } else {
+                $('#vehicle_details_wrap').slideUp();
+                $('#vehicle_details').val('');
+            }
+        });
+
         // --- Customer Auto Suggest and Autofill (AJAX version) ---
+        let customerSearchXhr = null;
         $('#customer_name').on('input', function() {
             const val = $(this).val();
             const $suggestions = $('#customerSuggestions');
-            $suggestions.empty();
+            
+            if (customerSearchXhr) {
+                customerSearchXhr.abort();
+            }
+
             if (val.length > 0) {
-                $.ajax({
+                customerSearchXhr = $.ajax({
                     url: '/customer-search',
                     type: 'GET',
                     data: { q: val },
                     dataType: 'json',
                     success: function(customers) {
-                        if (Array.isArray(customers) && customers.length > 0) {
-                            const seen = new Set();
+                        $suggestions.empty();
+                        if(customers.length > 0) {
                             customers.forEach(function(c) {
-                                const key = (c.mobile_no || '') + '|' + (c.email || '');
-                                if (seen.has(key)) return;
-                                seen.add(key);
-                                $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-name="'+c.name+'" data-mobile="'+c.mobile_no+'" data-email="'+c.email+'" data-gst="'+(c.gst_no||'')+'" data-address="'+(c.address||'')+'" data-state="'+(c.state_id||'')+'" data-city="'+(c.city_id||'')+'" data-pincode="'+(c.pincode||'')+'">'+c.name+' ('+c.mobile_no+', '+c.email+')</button>');
+                                $suggestions.append(`<button type="button" class="list-group-item list-group-item-action" data-name="${c.name}" data-gst="${c.gst_no}" data-mobile="${c.mobile_no}" data-email="${c.email}" data-address="${c.address}" data-pincode="${c.pincode}" data-state="${c.state_id}" data-city="${c.city_id}">${c.name} (${c.mobile_no})</button>`);
                             });
                             $suggestions.show();
                         } else {
                             $suggestions.hide();
                         }
                     },
-                    error: function() { $suggestions.hide(); }
                 });
             } else {
                 $suggestions.hide();
             }
         });
+
         $(document).on('click', '#customerSuggestions button', function() {
             const $btn = $(this);
             $('#customer_name').val($btn.data('name'));
@@ -222,267 +289,149 @@
             $('#city').data('prefill', cityId);
             $('#customerSuggestions').hide();
         });
+
         $('#state').change(function() {
             var stateID = $(this).val();
             if(stateID) {
                 $.ajax({
-                    url: '/get-city',
+                    url: '/city-list',
                     type: 'GET',
-                    data: {state_id: stateID},
-                    success: function(data) {
-                        $('#city').empty().append('<option value="">Select City</option>');
-                        $.each(data, function(key, value) {
-                            $('#city').append('<option value="'+ value.id +'">'+ value.name +'</option>');
+                    data: { state_id: stateID },
+                    dataType: 'json',
+                    success: function(cities) {
+                        $('#city').empty();
+                        $('#city').append('<option value="">Select City</option>');
+                        cities.forEach(function(city) {
+                            $('#city').append(`<option value="${city.id}">${city.name}</option>`);
                         });
-                        var cityId = $('#city').data('prefill');
-                        if (cityId) {
-                            $('#city').val(cityId).trigger('change.select2');
-                            $('#city').removeData('prefill');
-                        }
+                        $('#city').val($('#city').data('prefill')).trigger('change');
                     }
                 });
             } else {
                 $('#city').empty().append('<option value="">Select City</option>');
+                $('#city').select2('destroy').select2({ theme: 'bootstrap4' });
             }
         });
-        $('#state').select2({ placeholder: "Select State", tags: true, width: '100%' });
-        $('#city').select2({ placeholder: "Select City", tags: true, width: '100%' });
+
         $(document).on('click', function(e) {
             if (!$(e.target).closest('#customer_name, #customerSuggestions').length) {
                 $('#customerSuggestions').hide();
             }
         });
-        // --- Product Auto Suggest and Autofill (AJAX version) ---
-        $('#invoiceProductName').on('input', function() {
-            const val = $(this).val();
-            let $suggestions = $('#productSuggestions');
-            if ($suggestions.length === 0) {
-                $suggestions = $('<div id="productSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>');
-                $(this).after($suggestions);
-            }
-            $suggestions.empty();
-            if (val.length > 0) {
-                $.ajax({
-                    url: '/product-search',
-                    type: 'GET',
-                    data: { q: val },
-                    dataType: 'json',
-                    success: function(products) {
-                        if (Array.isArray(products) && products.length > 0) {
-                            const seen = new Set();
-                            products.forEach(function(p) {
-                                if (p.stock !== undefined && Number(p.stock) <= 0) return;
-                                const key = (p.brand||'')+'|'+(p.series||'')+'|'+(p.model||'');
-                                if (seen.has(key)) return;
-                                seen.add(key);
-                                const display = [p.brand, p.series, p.model].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
-                                $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-category="'+(p.category||'')+'" data-price="'+(p.price||'')+'">'+display+'</button>');
-                            });
-                            $suggestions.show();
-                        } else {
-                            $suggestions.hide();
-                        }
-                    },
-                    error: function() { $suggestions.hide(); }
-                });
-            } else {
-                $suggestions.hide();
-            }
-        });
-        $(document).on('click', '#productSuggestions button', function() {
-            const $btn = $(this);
-            const brand = $btn.data('brand') || '';
-            const series = $btn.data('series') || '';
-            const model = $btn.data('model') || '';
-            const price = $btn.data('price') || '';
-            const name = [brand, series, model].filter(Boolean).join(' - ');
-            $('#invoiceProductName').val(name);
-            $('#invoiceProductModel').val(model);
-            $('#invoiceProductPrice').val(price);
-            $('#productSuggestions').hide();
-        });
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('#invoiceProductName, #productSuggestions').length) {
-                $('#productSuggestions').hide();
-            }
-        });
-        // --- Enable form submit for Update Invoice ---
-        $('#invoiceEditForm').off('submit').on('submit', function(e) {
-            // Only sync productsArr to hidden input, do NOT call e.preventDefault() or return false
-            if (window.productsArr && window.productsArr.length > 0) {
-                $(this).find('input[name="products_json"]').remove();
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'products_json',
-                    value: JSON.stringify(window.productsArr)
-                }).appendTo(this);
-            }
-            // Update hidden tax/total fields before submit
-            $('#hiddenCGST').val($('#invoiceCGST').text());
-            $('#hiddenSGST').val($('#invoiceSGST').text());
-            $('#hiddenIGST').val($('#invoiceIGST').text());
-            $('#hiddenGrandTotal').val($('#invoiceGrandTotal').text());
-            // Allow normal submit
-        });
+
+        // Payments are recorded on the Payment Reconciliation page; payment UI removed from this page.
     });
 
-    // --- Product Add/Edit/Remove/Validation/Update Totals (COPY from create page) ---
-    window.productsArr = window.productsArr || [];
+    // --- Product Table and JS Logic ---
     window.addEventListener("DOMContentLoaded", () => {
-        // Attach event listeners
-        const addProductBtn = document.getElementById('invoiceAddProductBtn');
-        if (addProductBtn) addProductBtn.addEventListener('click', addProduct);
-        // Update table and totals on load
-        if (typeof updateProductTable === 'function') {
-            updateProductTable();
-            updateTotals();
-        }
+        window.productsArr = @json($invoice->items);
+        // You can now use productsArr for add/edit/remove logic as in create.blade.php
+        // ...copy/adapt JS logic from create page for product table, totals, etc...
     });
-    function addProduct() {
-        const customerName = document.getElementById('customer_name').value.trim();
-        if (!customerName) {
-            alert('❌ Please select or enter a customer before adding products.');
-            document.getElementById('customer_name').focus();
+    </script>
+<script>
+$(document).ready(function() {
+    $('#invoiceUpdateBtn').on('click', function(e) {
+        e.preventDefault();
+        console.log('invoiceUpdateBtn clicked');
+        // --- Collect form data ---
+        let form = $('#invoiceEditForm');
+        let formData = form.serializeArray();
+    // --- Collect productsArr (use server-side fallback if window.productsArr is not populated) ---
+    const serverProductsFallback = @json($invoice->items ?? []);
+    let productsArr = (window.productsArr && Array.isArray(window.productsArr)) ? window.productsArr : (Array.isArray(serverProductsFallback) ? serverProductsFallback : []);
+        if (!productsArr.length) {
+            Swal.fire({ icon: 'error', title: 'No Products', text: 'Please add at least one product.' });
             return;
         }
-        const name = document.getElementById('invoiceProductName').value.trim();
-        const model = document.getElementById('invoiceProductModel').value.trim();
-        const qty = parseInt(document.getElementById('invoiceProductQty').value);
-        const price = parseFloat(document.getElementById('invoiceProductPrice').value);
-        const warehouseId = $('#warehouse_id').val();
-        if (!name || !model || isNaN(qty) || qty <= 0 || isNaN(price) || price < 0) {
-            alert('❌ Please enter valid product details.');
-            return;
+        // --- Validate serial_no for all products ---
+        for (let i = 0; i < productsArr.length; i++) {
+            let sn = productsArr[i].serial_no || productsArr[i].serialNo || '';
+            if (!sn || sn.trim() === '') {
+                // Try to highlight the serial number input for this product row
+                let productRow = $("#productTable tbody tr").eq(i);
+                let serialInput = productRow.find('.serial-no-input');
+                if (serialInput.length) {
+                    serialInput.addClass('border-danger');
+                    serialInput.focus();
+                }
+                Swal.fire({ icon: 'error', title: 'Serial Number Required', text: 'Serial number is required for all products. Please enter serial number for product #' + (i+1) + '.' });
+                return;
+            } else {
+                // Remove highlight if present
+                let productRow = $("#productTable tbody tr").eq(i);
+                let serialInput = productRow.find('.serial-no-input');
+                if (serialInput.length) {
+                    serialInput.removeClass('border-danger');
+                }
+            }
         }
-        // --- Stock Validation AJAX ---
+
+        // Payments are handled on the Payment Reconciliation page. Skip collecting inline payment fields.
+        // --- Validate required fields ---
+        let requiredFields = ['customer_name','invoice_number','invoice_date','warehouse_id','state','city','mobile_no'];
+        for (let field of requiredFields) {
+            let val = form.find('[name="'+field+'"]').val();
+            if (!val) {
+                Swal.fire({ icon: 'error', title: 'Missing Fields', text: 'Please fill all required fields.' });
+                return;
+            }
+        }
+        // No inline payment validation here — payments are recorded separately in Payment Reconciliation.
+        // --- Prepare products for backend ---
+        let products = productsArr.map(p => {
+            // Calculate tax_amount for each product
+            let tax_amount = 0;
+            if (p.tax_percentage && p.price && p.qty) {
+                tax_amount = (p.price * p.qty) * (p.tax_percentage / 100);
+            }
+            return {
+                name: p.name,
+                model: p.model,
+                product_id: p.product_id || p.id || null,
+                serial_no: (typeof p.serial_no !== 'undefined' && p.serial_no !== null) ? p.serial_no : (typeof p.serialNo !== 'undefined' && p.serialNo !== null ? p.serialNo : ''),
+                qty: p.qty,
+                unit_price: p.price,
+                gst_inclusive_price: p.gst_inclusive_price,
+                total: p.total,
+                tax_percentage: p.tax_percentage,
+                tax_amount: tax_amount
+            };
+        });
+        // --- Prepare data for AJAX ---
+        let data = {};
+        formData.forEach(function(item) { data[item.name] = item.value; });
+        // Ensure vehicle fields are explicitly included (serializeArray should include them, but be explicit)
+        data.vehicle_type = $('#vehicle_type').val() || null;
+        data.vehicle_details = ($('#vehicle_details').length ? $('#vehicle_details').val() : null) || null;
+    data.products = products;
+        data.cgst = parseFloat($('#invoiceCGST').text()) || 0;
+        data.sgst = parseFloat($('#invoiceSGST').text()) || 0;
+        data.igst = parseFloat($('#invoiceIGST').text()) || 0;
+    // Grand total read from the UI
+    let grandTotal = parseFloat($('#invoiceGrandTotal').text()) || 0;
+    data.grand_total = grandTotal;
+        // --- AJAX PUT request ---
+        // DEBUG: log payload to console for debugging product_id persistence
+        console.log('DEBUG: edit -> products payload', data.products);
         $.ajax({
-            url: '/check-stock',
-            type: 'GET',
-            data: {
-                model: model,
-                warehouse_id: warehouseId
-            },
-            dataType: 'json',
+            url: form.attr('action'),
+            type: 'POST',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'X-HTTP-Method-Override': 'PUT' },
+            contentType: 'application/json',
+            data: JSON.stringify(data),
             success: function(response) {
-                const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : null;
-                if (availableStock === null) {
-                    alert('❌ Unable to check stock. Please try again.');
-                    return;
-                }
-                if (qty > availableStock) {
-                    alert('❌ Not enough stock available. Only ' + availableStock + ' units in stock.');
-                    return;
-                }
-                // --- Continue with existing add product logic if stock is sufficient ---
-                // --- Fetch product tax_percentage from backend (AJAX) ---
-                $.ajax({
-                    url: '/product-search',
-                    type: 'GET',
-                    data: { q: model },
-                    dataType: 'json',
-                    success: function(products) {
-                        let tax_percentage = 5; // default to 5 now
-                        if (Array.isArray(products) && products.length > 0) {
-                            const found = products.find(p => {
-                                return (p.model && p.model.toLowerCase() === model.toLowerCase());
-                            });
-                            if (found && found.tax_percentage !== undefined && found.tax_percentage !== null && found.tax_percentage !== '') {
-                                tax_percentage = parseFloat(found.tax_percentage);
-                            }
-                        }
-                        const productFullName = `${name} - ${model}`;
-                        window.productsArr.push({ name: productFullName, product_name: productFullName, model, qty, price, total: qty * price, tax_percentage });
-                        updateProductTable();
-                        clearProductFields();
-                        updateTotals();
-                    },
-                    error: function() {
-                        const productFullName = `${name} - ${model}`;
-                        window.productsArr.push({ name: productFullName, product_name: productFullName, model, qty, price, total: qty * price, tax_percentage: 5 });
-                        updateProductTable();
-                        clearProductFields();
-                        updateTotals();
-                    }
+                Swal.fire({ icon: 'success', title: 'Updated!', text: 'Invoice updated successfully!', timer: 2000, showConfirmButton: false }).then(() => {
+                    window.location.href = '/invoice';
                 });
             },
-            error: function() {
-                alert('❌ Error checking stock. Please try again.');
+            error: function(xhr) {
+                let msg = 'Error updating invoice.';
+                if (xhr.responseJSON && xhr.responseJSON.message) msg += '\n' + xhr.responseJSON.message;
+                Swal.fire({ icon: 'error', title: 'Error', text: msg });
             }
         });
-    }
-    function updateProductTable() {
-        const tbody = document.querySelector('#invoiceProductTable tbody');
-        tbody.innerHTML = '';
-        if (window.productsArr.length === 0) {
-            tbody.innerHTML = '<tr class="text-muted"><td colspan="6">No products added</td></tr>';
-            return;
-        }
-        window.productsArr.forEach((product, index) => {
-            // Defensive: ensure price and total are numbers
-            const price = typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0;
-            const total = typeof product.total === 'number' ? product.total : parseFloat(product.total) || (price * (parseInt(product.qty) || 0));
-            const name = product.name || product.product_name || '';
-            const qty = product.qty || 0;
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${name}</td>
-                <td>${qty}</td>
-                <td>₹${price.toFixed(2)}</td>
-                <td>₹${total.toFixed(2)}</td>
-                <td>
-                    <button class="btn btn-sm btn-danger" onclick="removeProduct(${index})">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-        updateTotals();
-    }
-    window.removeProduct = function(index) {
-        window.productsArr.splice(index, 1);
-        updateProductTable();
-        updateTotals();
-    };
-    function clearProductFields() {
-        document.getElementById('invoiceProductName').value = '';
-        document.getElementById('invoiceProductModel').value = '';
-        document.getElementById('invoiceProductQty').value = '';
-        document.getElementById('invoiceProductPrice').value = '';
-    }
-    function updateTotals() {
-        // Defensive: ensure all totals are numbers
-        const subtotal = window.productsArr.reduce((sum, p) => sum + (typeof p.total === 'number' ? p.total : parseFloat(p.total) || 0), 0);
-        const stateId = document.getElementById('state').value;
-        let cgst = 0, sgst = 0, igst = 0, tax = 0;
-        if (stateId == '35') {
-            cgst = window.productsArr.reduce((sum, p) => sum + (((typeof p.total === 'number' ? p.total : parseFloat(p.total) || 0) * ((p.tax_percentage ? p.tax_percentage : 5)/2) / 100)), 0);
-            sgst = window.productsArr.reduce((sum, p) => sum + (((typeof p.total === 'number' ? p.total : parseFloat(p.total) || 0) * ((p.tax_percentage ? p.tax_percentage : 5)/2) / 100)), 0);
-            igst = 0;
-            tax = cgst + sgst;
-        } else {
-            cgst = 0;
-            sgst = 0;
-            igst = window.productsArr.reduce((sum, p) => sum + (((typeof p.total === 'number' ? p.total : parseFloat(p.total) || 0) * (p.tax_percentage ? p.tax_percentage : 5) / 100)), 0);
-            tax = igst;
-        }
-        const grandTotal = Math.round(subtotal + tax);
-        const cgstEl = document.getElementById('invoiceCGST');
-        const sgstEl = document.getElementById('invoiceSGST');
-        const igstEl = document.getElementById('invoiceIGST');
-        const grandTotalEl = document.getElementById('invoiceGrandTotal');
-        const subtotalEl = document.getElementById('invoiceSubtotal');
-        if (cgstEl) cgstEl.textContent = cgst.toFixed(2);
-        if (sgstEl) sgstEl.textContent = sgst.toFixed(2);
-        if (igstEl) igstEl.textContent = igst.toFixed(2);
-        if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(0);
-        if (subtotalEl) subtotalEl.textContent = Number(subtotal).toFixed(2);
-        // --- Always update hidden fields for backend ---
-        if (document.getElementById('hiddenCGST')) document.getElementById('hiddenCGST').value = cgst.toFixed(2);
-        if (document.getElementById('hiddenSGST')) document.getElementById('hiddenSGST').value = sgst.toFixed(2);
-        if (document.getElementById('hiddenIGST')) document.getElementById('hiddenIGST').value = igst.toFixed(2);
-        if (document.getElementById('hiddenGrandTotal')) document.getElementById('hiddenGrandTotal').value = grandTotal.toFixed(0);
-    }
-    </script>
+    });
+});
+</script>
 @endsection

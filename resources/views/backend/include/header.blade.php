@@ -1,10 +1,18 @@
-<div id="mainHeader" class="header d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom shadow-sm w-100">
-    <h4 class="fw-bold mb-0">{{ $heading }}</h4>
-    <div>
+<div id="mainHeader" class="header d-flex justify-content-between align-items-center px-4 py-3 bg-white border-bottom shadow-sm w-100 position-sticky top-0 z-3" style="min-height: 70px; padding-left: 60px !important;">
+    <h5 class="fw-bold mb-0 text-dark ms-3" style="color: #334155 !important;">{{ $heading ?? 'Dashboard' }}</h5>
+    <div class="d-flex align-items-center">
         @if(Auth::user() && Auth::user()->hasRole('Admin'))
-            <i id="notificationBell" class="bi bi-bell fs-4 me-3"></i>
+            <div class="position-relative me-4" style="cursor: pointer;" id="notificationBellWrapper">
+                <i id="notificationBell" class="bi bi-bell fs-5 text-secondary"></i>
+                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                    <span class="visually-hidden">New alerts</span>
+                </span>
+            </div>
         @endif
-        <i id="profileIcon" class="bi bi-person-circle fs-4" style="cursor: pointer;"></i>
+        <div class="d-flex align-items-center" id="profileIcon" style="cursor: pointer;">
+            <i class="bi bi-person-circle fs-3 text-primary me-2"></i>
+            <span class="fw-medium text-secondary d-none d-md-block">{{ Auth::user() ? Auth::user()->name : 'Guest' }} <i class="bi bi-chevron-down ms-1" style="font-size: 0.8rem;"></i></span>
+        </div>
     </div>
 </div>
 

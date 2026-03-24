@@ -16,21 +16,80 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
 {
+    /**
+     * AJAX: Search for invoices and customers for auto-suggestion
+     */
+    public function ajaxSearch(Request $request)
+    {
+        $q = $request->input('q');
+        $results = [];
+        // Search customers
+        $customers = \App\Models\Customer::where('name', 'like', "%$q%")
+            ->orWhere('email', 'like', "%$q%")
+            ->orWhere('mobile_no', 'like', "%$q%")
+            ->limit(5)
+            ->get();
+        foreach ($customers as $customer) {
+            $results[] = [
+                'id' => 'customer_' . $customer->id,
+                'type' => 'customer',
+                'display' => $customer->name. ($customer->customer_type ? '[' . $customer->customer_type . '] ' : '') ,
+                'subtext' =>  $customer->email . ' | ' . $customer->mobile_no,
+            ];
+        }
+        // Search invoices
+        $invoices = \App\Models\Invoice::where('invoice_number', 'like', "%$q%")
+            ->orWhereHas('customer', function($query) use ($q) {
+                $query->where('name', 'like', "%$q%")
+                    ->orWhere('email', 'like', "%$q%")
+                    ->orWhere('mobile_no', 'like', "%$q%") ;
+            })
+            ->limit(5)
+            ->get();
+        foreach ($invoices as $invoice) {
+            $results[] = [
+                'id' => 'invoice_' . $invoice->id,
+                'type' => 'invoice',
+                'display' => $invoice->invoice_number,
+                'subtext' => ($invoice->customer->name ?? '') . ' | ' . ($invoice->customer->email ?? '') . ' | ' . ($invoice->customer->mobile_no ?? ''),
+            ];
+        }
+        return response()->json($results);
+    }
 
+    /**
+     * AJAX: Return details for modal popup (customer, invoice, payment, reconciliation)
+     */
+    public function ajaxDetails(Request $request)
+    {
+        $id = $request->input('id');
+        $html = '';
+        if (strpos($id, 'customer_') === 0) {
+            $customerId = (int)str_replace('customer_', '', $id);
+            $customer = \App\Models\Customer::with(['invoices', 'invoices.payments'])->find($customerId);
+            if (!$customer) return '<div class="p-4 text-danger">Customer not found.</div>';
+            $html .= view('backend.modules.invoice.partials.customer_details', compact('customer'))->render();
+        } elseif (strpos($id, 'invoice_') === 0) {
+            $invoiceId = (int)str_replace('invoice_', '', $id);
+            $invoice = \App\Models\Invoice::with(['customer', 'items', 'payments'])->find($invoiceId);
+            if (!$invoice) return '<div class="p-4 text-danger">Invoice not found.</div>';
+            $html .= view('backend.modules.invoice.partials.invoice_details', compact('invoice'))->render();
+        } else {
+            $html = '<div class="p-4 text-danger">Invalid selection.</div>';
+        }
+        return $html;
+    }
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
         $heading = "Invoice View";
-        $threeDaysAgo = now()->subDays(10)->startOfDay();
         if (Auth::user() && Auth::user()->hasRole('Admin')) {
-            $invoices = \App\Models\Invoice::where('created_at', '>=', $threeDaysAgo)
-                ->orderBy('created_at', 'desc')->paginate(10);
+            $invoices = \App\Models\Invoice::orderBy('created_at', 'desc')->paginate(10);
         } else {
             $userWarehouseId = Auth::user()->warehouse_id ?? null;
             $invoices = \App\Models\Invoice::where('warehouse_id', $userWarehouseId)
-                ->where('created_at', '>=', $threeDaysAgo)
                 ->orderBy('created_at', 'desc')->paginate(10);
         }
         if ($request->ajax()) {
@@ -63,33 +122,40 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'customer_name' => 'required|string',
             'mobile_no' => 'required|string',
-            'address' => 'required|string',
+            'address' => 'nullable',
             'state' => 'required',
             'city' => 'required',
-            'pincode' => 'required',
+            'pincode' => 'nullable',
             'invoice_number' => 'required|string',
             'invoice_date' => 'required|date',
+            'vehicle_type' => 'nullable|string',
+            'vehicle_details' => 'nullable|string',
             'products' => 'required|array|min:1',
             'products.*.serial_no' => 'required|string',
         ]);
 
+        // ...existing customer logic...
+        // ...existing invoice creation logic...
+
+        // (move this block after invoice is created)
+
         // Find or create customer
-        $customer = \App\Models\Customer::where('mobile_no', $request->mobile_no)
-            ->orWhere('email', $request->email)
-            ->first();
+        $customer = \App\Models\Customer::where('mobile_no', $request->mobile_no)           
+                    ->first();
         if (!$customer) {
             $customer = \App\Models\Customer::create([
                 'name' => $request->customer_name,
                 'mobile_no' => $request->mobile_no,
                 'email' => $request->email ?? null,
-                'address' => $request->address,
-                'state_id' => $request->state,
-                'city_id' => $request->city,
-                'pincode' => $request->pincode,
+                'address' => $request->address ?? null,
+                'state_id' => $request->state ?? null,
+                'city_id' => $request->city ?? null,
+                'pincode' => $request->pincode ?? null,
                 'gst_no' => $request->gst_number ?? null,
                 'user_id' => Auth::id() ?? 1,
             ]);
         }
+        
 
         // Calculate totals
         $cgst = $request->cgst ?? 0;
@@ -104,11 +170,24 @@ class InvoiceController extends Controller
         } else {
             $warehouse_id = Auth::user()->warehouse_id ?? null;
         }
+        // --- Invoice Number Generation and Sequence Increment ---
+        $warehouse = \App\Models\Warehouse::find($warehouse_id);
+        $prefix = $warehouse->prefix;
+        $sequence = \App\Models\WarehouseInvoiceSequence::firstOrCreate(
+            ['warehouse_id' => $warehouse->id],
+            ['current_number' => 1001]
+        );
+        $nextNumber = $sequence->current_number;
+        $invoiceNumber = $prefix . '/' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        // Increment for next time (only here!)
+        $sequence->current_number = $nextNumber + 1;
+        $sequence->save();
+
         $invoice = \App\Models\Invoice::create([
             'customer_id' => $customer->id,
             'user_id' => Auth::id() ?? 1,
             'customer_name' => $customer->name ?? $request->customer_name,
-            'invoice_number' => $request->invoice_number,
+            'invoice_number' => $invoiceNumber,
             'invoice_date' => $request->invoice_date,
             'dc_number' => $request->dc_number,
             'cgst' => $cgst,
@@ -116,7 +195,20 @@ class InvoiceController extends Controller
             'igst' => $igst,
             'grand_total' => $grand_total,
             'warehouse_id' => $warehouse_id,
+            'vehicle_type' => $request->vehicle_type ?? null,
+            'vehicle_details' => $request->vehicle_details ?? null,
         ]);
+
+        // Delivery Address logic (after invoice is created)
+        if ($request->input('delivery_address_option') === 'new' && isset($invoice)) {
+            \App\Models\DeliveryAddress::create([
+                'invoice_id' => $invoice->id,
+                'address' => $request->input('delivery_address'),
+                'state_id' => $request->input('delivery_state'),
+                'city_id' => $request->input('delivery_city'),
+                'pincode' => $request->input('delivery_pincode'),
+            ]);
+        }
 
         // Store dynamic payment fields (multiple payments)
         $paidAmounts = $request->input('paid_amount', []);
@@ -174,7 +266,8 @@ class InvoiceController extends Controller
                 'grand_total' => $grandTotal,
                 'payment_date' => $paymentDate,
                 'warehouse_id' => $warehouse_id,
-                'payment_mode' => null,
+                // payment_mode must not be null in DB; use 'NA' to indicate no payment yet
+                'payment_mode' => 'NA',
                 'invoice_number' => $invoiceNumber,
                 'description' => 'Invoice Payment',
             ]);
@@ -183,17 +276,42 @@ class InvoiceController extends Controller
         // Create invoice items
         $stockIssues = [];
         foreach ($request->products as $item) {
+            // Calculate CGST and SGST per item (assuming 50% of tax_amount each)
+            $taxAmount = isset($item['tax_amount']) ? $item['tax_amount'] : 0;
+            $cgstAmount = $sgstAmount = 0;
+            if ($taxAmount > 0) {
+                $cgstAmount = $sgstAmount = $taxAmount / 2;
+            }
+            // Defensive: resolve product_id if missing by model, then ensure product exists before inserting
+            $productIdToSave = $item['product_id'] ?? null;
+            if (!$productIdToSave && !empty($item['model'])) {
+                $found = \App\Models\Product::where('model', $item['model'])->first();
+                if ($found) {
+                    $productIdToSave = $found->id;
+                }
+            }
+            if ($productIdToSave) {
+                $prodExists = \App\Models\Product::find($productIdToSave);
+                if (!$prodExists) {
+                    $productIdToSave = null; // avoid FK constraint failure
+                    $stockIssues[] = 'Referenced product_id not found for invoice item: ' . json_encode($item);
+                }
+            }
+
             \App\Models\InvoiceItems::create([
                 'invoice_id' => $invoice->id,
                 'user_id' => Auth::id() ?? 1,
+                'product_id' => $productIdToSave,
                 'product_name' => $item['name'] ?? $item['product_name'] ?? '',
                 'model' => $item['model'] ?? '',
                 'serial_no' => $item['serial_no'] ?? null,
                 'qty' => $item['qty'],
                 'tax_percentage' => $item['tax_percentage'] ?? 5,
-                'tax_amount' => isset($item['tax_amount']) ? $item['tax_amount'] : 0,
+                'tax_amount' => $taxAmount,
                 'unit_price' => $item['unit_price'],
                 'total' => $item['total'],
+                'cgst_amount' => $cgstAmount,
+                'sgst_amount' => $sgstAmount,
             ]);
 
             // --- Debit stock from warehouse ---
@@ -255,10 +373,17 @@ class InvoiceController extends Controller
             abort(403, 'Unauthorized');
         }
         $heading    =   "Invoice Updation";
-        $invoice = \App\Models\Invoice::with(['customer', 'customer.city', 'items'])->findOrFail($id);
+        $invoice = \App\Models\Invoice::with(['customer', 'customer.city', 'items', 'payments'])->findOrFail($id);
         $states = \App\Models\State::where('country_id', '101')->get();
         $warehouses = \App\Models\Warehouse::all();
-        return view('backend.modules.invoice.edit', compact('heading','invoice', 'states', 'warehouses'));
+        // Map payments to array with amount and mode for JS prefill
+        $invoicePayments = $invoice->payments->map(function($p) {
+            return [
+                'amount' => $p->paid_amount ?? $p->amount ?? '',
+                'mode' => $p->payment_mode ?? $p->mode ?? '',
+            ];
+        })->toArray();
+        return view('backend.modules.invoice.edit', compact('heading','invoice', 'states', 'warehouses', 'invoicePayments'));
     }
 
     /**
@@ -270,10 +395,227 @@ class InvoiceController extends Controller
         if (!Auth::user() || !Auth::user()->hasRole('Admin')) {
             abort(403, 'Unauthorized');
         }
+
+        // If AJAX/JSON request
+        if ($request->isJson()) {
+            $data = $request->json()->all();
+            // Validate input
+            $validator = \Validator::make($data, [
+                'customer_name' => 'required|string',
+                'mobile_no' => 'required|string',
+                'address' => 'nullable|string',
+                'state' => 'required',
+                'city' => 'required',
+                'pincode' => 'required',
+                'invoice_number' => 'required|string',
+                'invoice_date' => 'required|date',
+                'products' => 'required|array|min:1',
+                'products.*.serial_no' => 'required|string',
+                'products.*.qty' => 'required|integer|min:1',
+                'products.*.unit_price' => 'required|numeric|min:0',
+                // payments are optional here; handled in Payment Reconciliation
+                'paid_amount' => 'sometimes|array',
+                'payment_mode' => 'sometimes|array',
+                'cgst' => 'required|numeric',
+                'sgst' => 'required|numeric',
+                'igst' => 'required|numeric',
+                'grand_total' => 'required|numeric|min:0',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+            }
+
+            try {
+                DB::transaction(function () use ($data, $id) {
+                    $invoice = \App\Models\Invoice::findOrFail($id);
+                    $customer = \App\Models\Customer::find($invoice->customer_id);
+                    if ($customer) {
+                        $customer->update([
+                            'name' => $data['customer_name'],
+                            'mobile_no' => $data['mobile_no'],
+                            'email' => $data['email'] ?? null,
+                            'address' => $data['address'],
+                            'state_id' => $data['state'],
+                            'city_id' => $data['city'],
+                            'pincode' => $data['pincode'],
+                            'gst_no' => $data['gst_number'] ?? null,
+                        ]);
+                    }
+                    $invoice->update([
+                        'customer_name' => $data['customer_name'],
+                        'invoice_number' => $data['invoice_number'],
+                        'invoice_date' => $data['invoice_date'],
+                        'dc_number' => $data['dc_number'] ?? null,
+                        'warehouse_id' => $data['warehouse_id'],
+                        'vehicle_type' => $data['vehicle_type'] ?? null,
+                        'vehicle_details' => $data['vehicle_details'] ?? null,
+                        'cgst' => (float)($data['cgst'] ?? 0),
+                        'sgst' => (float)($data['sgst'] ?? 0),
+                        'igst' => (float)($data['igst'] ?? 0),
+                        'grand_total' => (float)($data['grand_total'] ?? 0),
+                    ]);
+                    // --- Stock adjustment logic ---
+                    // Fetch original items (before update)
+                    $originalItems = \App\Models\InvoiceItems::where('invoice_id', $invoice->id)->get();
+                    // Key by product_id + serial_no for uniqueness
+                    $originalMap = collect($originalItems)->keyBy(function($item) {
+                        $pid = $item->product_id ?? null;
+                        $model = $item->model ?? '';
+                        $serial = $item->serial_no ?? '';
+                        return ($pid ? $pid : $model) . '-' . $serial;
+                    });
+                    $updatedMap = collect($data['products'])->keyBy(function($item) {
+                        $pid = $item['product_id'] ?? null;
+                        $model = $item['model'] ?? '';
+                        $serial = $item['serial_no'] ?? '';
+                        return ($pid ? $pid : $model) . '-' . $serial;
+                    });
+                    // Find new products (in updated, not in original)
+                    $newProducts = $updatedMap->diffKeys($originalMap);
+                    // Find removed products (in original, not in updated)
+                    $removedProducts = $originalMap->diffKeys($updatedMap);
+                    // Remove old items
+                    \App\Models\InvoiceItems::where('invoice_id', $invoice->id)->delete();
+                    // Insert new items
+                    foreach ($data['products'] as $item) {
+                        // Calculate CGST and SGST per item (assuming 50% of tax_amount each)
+                        $taxAmount = $item['tax_amount'] ?? 0;
+                        $cgstAmount = $sgstAmount = 0;
+                        if ($taxAmount > 0) {
+                            $cgstAmount = $sgstAmount = $taxAmount / 2;
+                        }
+                        // Defensive: resolve product_id if missing by model, then ensure product exists before inserting
+                        $productIdToSave = $item['product_id'] ?? null;
+                        if (!$productIdToSave && !empty($item['model'])) {
+                            $found = \App\Models\Product::where('model', $item['model'])->first();
+                            if ($found) {
+                                $productIdToSave = $found->id;
+                            }
+                        }
+                        if ($productIdToSave) {
+                            $prodExists = \App\Models\Product::find($productIdToSave);
+                            if (!$prodExists) {
+                                $productIdToSave = null;
+                                $removed = 'Referenced product_id not found for updated invoice item: ' . json_encode($item);
+                                logger()->warning($removed);
+                            }
+                        }
+
+                        \App\Models\InvoiceItems::create([
+                            'invoice_id' => $invoice->id,
+                            'user_id' => Auth::id() ?? 1,
+                            'product_id' => $productIdToSave,
+                            'product_name' => $item['name'] ?? $item['product_name'] ?? '',
+                            'model' => $item['model'] ?? '',
+                            'serial_no' => $item['serial_no'] ?? null,
+                            'qty' => $item['qty'],
+                            'tax_percentage' => $item['tax_percentage'] ?? 5,
+                            'tax_amount' => $taxAmount,
+                            'unit_price' => $item['unit_price'],
+                            'total' => $item['total'] ?? 0,
+                            'cgst_amount' => $cgstAmount,
+                            'sgst_amount' => $sgstAmount,
+                        ]);
+                    }
+                    $warehouseId = $data['warehouse_id'] ?? (Auth::user()->warehouse_id ?? null);
+                    // Debit stock for newly added products
+                    foreach ($newProducts as $item) {
+                        $product = null;
+                        if (isset($item['product_id'])) {
+                            $product = \App\Models\Product::find($item['product_id']);
+                        } elseif (!empty($item['model'])) {
+                            $product = \App\Models\Product::where('model', $item['model'])->first();
+                        }
+                        if ($product && $warehouseId) {
+                            $stockQuery = \App\Models\Stock::where('warehouse_id', $warehouseId)
+                                ->where('category_id', $product->category_id)
+                                ->where('brand_id', $product->brand_id)
+                                ->where('model', $product->model);
+                            $stock = $stockQuery->first();
+                            if ($stock) {
+                                $stock->qty = max(0, $stock->qty - $item['qty']);
+                                $stock->save();
+                            }
+                        }
+                    }
+                    // Increment stock for removed products
+                    foreach ($removedProducts as $item) {
+                        $product = null;
+                        if (isset($item->product_id)) {
+                            $product = \App\Models\Product::find($item->product_id);
+                        } elseif (!empty($item->model)) {
+                            $product = \App\Models\Product::where('model', $item->model)->first();
+                        }
+                        if ($product && $warehouseId) {
+                            $stockQuery = \App\Models\Stock::where('warehouse_id', $warehouseId)
+                                ->where('category_id', $product->category_id)
+                                ->where('brand_id', $product->brand_id)
+                                ->where('model', $product->model);
+                            $stock = $stockQuery->first();
+                            if ($stock) {
+                                $stock->qty = $stock->qty + $item->qty;
+                                $stock->save();
+                            }
+                        }
+                    }
+                    // Update payments
+                    \App\Models\Payment::where('invoice_id', $invoice->id)->delete();
+                    $paidAmounts = $data['paid_amount'] ?? [];
+                    $paymentModes = $data['payment_mode'] ?? [];
+                    $grandTotal = $data['grand_total'];
+                    $totalPaid = 0;
+                    for ($i = 0; $i < count($paidAmounts); $i++) {
+                        $amt = is_numeric($paidAmounts[$i]) ? floatval($paidAmounts[$i]) : 0;
+                        $mode = $paymentModes[$i] ?? null;
+                        if ($amt > 0 && $mode) {
+                            $totalPaid += $amt;
+                            $currentBalance = $grandTotal - $totalPaid;
+                            \App\Models\Payment::create([
+                                'invoice_id' => $invoice->id,
+                                'customer_id' => $customer->id,
+                                'customer_name' => $customer->name ?? $data['customer_name'],
+                                'user_id' => Auth::id() ?? 1,
+                                'paid_amount' => $amt,
+                                'balance_amount' => $currentBalance,
+                                'grand_total' => $grandTotal,
+                                'payment_date' => $data['invoice_date'],
+                                'warehouse_id' => $data['warehouse_id'],
+                                'payment_mode' => $mode,
+                                'invoice_number' => $data['invoice_number'],
+                                'description' => 'Invoice Payment',
+                            ]);
+                        }
+                    }
+                    if ($totalPaid == 0) {
+                        // Fallback: create a default payment entry with 0 paid (credit)
+                        \App\Models\Payment::create([
+                            'invoice_id' => $invoice->id,
+                            'customer_id' => $customer->id,
+                            'customer_name' => $customer->name ?? $data['customer_name'],
+                            'user_id' => Auth::id() ?? 1,
+                            'paid_amount' => 0,
+                            'balance_amount' => $grandTotal,
+                            'grand_total' => $grandTotal,
+                            'payment_date' => $data['invoice_date'],
+                            'warehouse_id' => $data['warehouse_id'],
+                            // payment_mode must not be null in DB; use 'NA' to indicate no payment yet
+                            'payment_mode' => 'NA',
+                            'invoice_number' => $data['invoice_number'],
+                            'description' => 'Invoice Payment',
+                        ]);
+                    }
+                });
+                return response()->json(['success' => true, 'invoice_id' => $id]);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+        }
+
+        // Fallback: normal form submission
         $validated = $request->validate([
             'customer_name' => 'required|string',
             'mobile_no' => 'required|string',
-            'address' => 'required|string',
+            'address' => 'nullable|string',
             'state' => 'required',
             'city' => 'required',
             'pincode' => 'required',
@@ -302,6 +644,8 @@ class InvoiceController extends Controller
                 'invoice_date' => $request->invoice_date,
                 'dc_number' => $request->dc_number,
                 'warehouse_id' => $request->warehouse_id,
+                'vehicle_type' => $request->vehicle_type ?? null,
+                'vehicle_details' => $request->vehicle_details ?? null,
                 'cgst' => (float)($request->cgst ?? 0),
                 'sgst' => (float)($request->sgst ?? 0),
                 'igst' => (float)($request->igst ?? 0),
@@ -315,17 +659,42 @@ class InvoiceController extends Controller
                     \App\Models\InvoiceItems::where('invoice_id', $invoice->id)->delete();
                     // Insert new items
                     foreach ($products as $item) {
+                        // Calculate CGST and SGST per item (assuming 50% of tax_amount each)
+                        $taxAmount = $item['tax_amount'] ?? 0;
+                        $cgstAmount = $sgstAmount = 0;
+                        if ($taxAmount > 0) {
+                            $cgstAmount = $sgstAmount = $taxAmount / 2;
+                        }
+                        // Defensive: resolve product_id if missing by model, then ensure product exists before inserting
+                        $productIdToSave = $item['product_id'] ?? null;
+                        if (!$productIdToSave && !empty($item['model'])) {
+                            $found = \App\Models\Product::where('model', $item['model'])->first();
+                            if ($found) {
+                                $productIdToSave = $found->id;
+                            }
+                        }
+                        if ($productIdToSave) {
+                            $prodExists = \App\Models\Product::find($productIdToSave);
+                            if (!$prodExists) {
+                                $productIdToSave = null;
+                                logger()->warning('Referenced product_id not found for invoice item (form submit): ' . json_encode($item));
+                            }
+                        }
+
                         \App\Models\InvoiceItems::create([
                             'invoice_id' => $invoice->id,
                             'user_id' => Auth::id() ?? 1,
+                                'product_id' => $productIdToSave,
                             'product_name' => $item['name'] ?? $item['product_name'] ?? '',
                             'model' => $item['model'] ?? '',
                             'serial_no' => $item['serial_no'] ?? null,
                             'qty' => $item['qty'] ?? 1,
                             'tax_percentage' => $item['tax_percentage'] ?? 5,
-                            'tax_amount' => $item['tax_amount'] ?? 0,
+                            'tax_amount' => $taxAmount,
                             'unit_price' => $item['unit_price'],
                             'total' => $item['total'] ?? 0,
+                            'cgst_amount' => $cgstAmount,
+                            'sgst_amount' => $sgstAmount,
                         ]);
                     }
                 }
@@ -345,33 +714,28 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Generate next invoice number based on warehouse prefix and last invoice number
+     * Generate next invoice number based on warehouse sequence table (PREVIEW ONLY, DO NOT INCREMENT)
      */
     public function generateInvoiceNumber(Request $request)
     {
         $warehouseId = $request->get('warehouse_id');
         if ($warehouseId) {
-            $warehouse = Warehouse::find($warehouseId);
+            $warehouse = \App\Models\Warehouse::find($warehouseId);
         } else {
             $user = Auth::user();
-            $warehouse = Warehouse::find($user->warehouse_id);
+            $warehouse = \App\Models\Warehouse::find($user->warehouse_id);
         }
         if (!$warehouse) {
             return response()->json(['error' => 'Warehouse not found'], 404);
         }
         $prefix = $warehouse->prefix;
-        // Find the last invoice number that starts with this prefix
-        $pattern = $prefix . '/%';
-        $lastInvoice = Invoice::where('invoice_number', 'like', $pattern)
-            ->orderBy('id', 'desc')
-            ->first();
-        // Extract the last number after the last slash
-        if ($lastInvoice && preg_match('/' . preg_quote($prefix, '/') . '\/(\d+)$/', $lastInvoice->invoice_number, $matches)) {
-            $nextNumber = intval($matches[1]) + 1;
-        } else {
-            $nextNumber = 1;
-        }
-        $invoiceNumber = $prefix . '/' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $sequence = \App\Models\WarehouseInvoiceSequence::firstOrCreate(
+            ['warehouse_id' => $warehouse->id],
+            ['current_number' => 1001]
+        );
+        $nextNumber = $sequence->current_number;
+        $invoiceNumber = $prefix . '-' . str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+        // DO NOT increment here!
         return response()->json(['invoice_number' => $invoiceNumber]);
     }
 
@@ -428,20 +792,99 @@ class InvoiceController extends Controller
             'pdf' => 'required|file|mimes:pdf',
         ]);
         $invoice = \App\Models\Invoice::with(['customer'])->findOrFail($request->invoice_id);
+        // Only allow sending if invoice is approved
+        if ($invoice->status !== 'approved') {
+            if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
+                return response()->json(['success' => false, 'message' => 'Invoice not approved for sending.'], 403);
+            }
+        }
         $customerEmail = $request->email;
         $pdfFile = $request->file('pdf');
         $fileName = 'Invoice-' . ($invoice->invoice_number ?? $invoice->id) . '.pdf';
         // Send email with PDF attachment
-        Mail::send([], [], function ($message) use ($customerEmail, $pdfFile, $fileName, $invoice) {
-            $message->to($customerEmail)
-                ->subject('Your Invoice from Phoenix Infoways')
-                ->html('Dear ' . ($invoice->customer->name ?? 'Customer') . ',<br><br>Please find attached your invoice.<br><br>Thank you.')
-                ->attach($pdfFile->getRealPath(), [
-                    'as' => $fileName,
-                    'mime' => 'application/pdf',
-                ]);
-        });
-        return response()->json(['success' => true, 'message' => 'Invoice sent to ' . $customerEmail]);
+        // Mail::send([], [], function ($message) use ($customerEmail, $pdfFile, $fileName, $invoice) {
+        //     $message->to($customerEmail)
+        //         ->subject('Your Invoice from Phoenix Infoways')
+        //         ->html('Dear ' . ($invoice->customer->name ?? 'Customer') . ',<br><br>Please find attached your invoice.<br><br>Thank you.')
+        //         ->attach($pdfFile->getRealPath(), [
+        //             'as' => $fileName,
+        //             'mime' => 'application/pdf',
+        //         ]);
+        // });
+        //return response()->json(['success' => true, 'message' => 'Invoice sent to ' . $customerEmail]);
+        return response()->json(['success' => true, 'message' => 'Invoice not actually sent - email stubbed']);
+    }
+
+    /**
+     * Show the GST invoice view page
+     */
+    public function gstInvoiceView($id)
+    {
+        $invoice = \App\Models\Invoice::with(['customer.state', 'items', 'warehouse.state', 'deliveryAddress'])->find($id);
+        if (!$invoice) {
+            abort(404, 'Invoice not found');
+        }
+        $heading = 'GST Invoice';
+        // Only allow printing if invoice is approved
+        if ($invoice->status !== 'approved') {
+            // If user is admin allow viewing but still prevent print/send unless approved
+            if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
+                abort(403, 'Invoice not approved for printing.');
+            }
+        }
+        return view('backend.modules.invoice.invoice-view-two', compact('invoice', 'heading'));
+    }
+
+    /**
+     * Show the Format Three invoice view page (new)
+     */
+    public function threeInvoiceView($id)
+    {
+        $invoice = \App\Models\Invoice::with(['customer', 'items', 'warehouse', 'deliveryAddress'])->find($id);
+        if (!$invoice) {
+            abort(404, 'Invoice not found');
+        }
+        $heading = 'Invoice - Format Three';
+        // Only allow printing if invoice is approved
+        if ($invoice->status !== 'approved') {
+            if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
+                abort(403, 'Invoice not approved for printing.');
+            }
+        }
+        return view('backend.modules.invoice.invoice-view-three', compact('invoice', 'heading'));
+    }
+
+    /**
+     * Show the Format Four invoice view page (custom head-office / location split)
+     */
+    public function fourInvoiceView($id)
+    {
+        $invoice = \App\Models\Invoice::with(['customer', 'items', 'warehouse', 'deliveryAddress'])->find($id);
+        if (!$invoice) {
+            abort(404, 'Invoice not found');
+        }
+        $heading = 'Invoice - Format Four';
+        // Only allow printing if invoice is approved
+        if ($invoice->status !== 'approved') {
+            if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
+                abort(403, 'Invoice not approved for printing.');
+            }
+        }
+        return view('backend.modules.invoice.invoice-view-four', compact('invoice', 'heading'));
+    }
+
+    public function approve(Request $request, $id)
+    {
+        if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+        $invoice = \App\Models\Invoice::find($id);
+        if (!$invoice) return response()->json(['success' => false, 'message' => 'Invoice not found'], 404);
+        $invoice->status = 'approved';
+        $invoice->approved_by = auth()->id();
+        $invoice->approved_at = now();
+        $invoice->save();
+        return response()->json(['success' => true, 'message' => 'Invoice approved']);
     }
 }
 

@@ -51,6 +51,7 @@ class ProductController extends Controller
         $validator = Validator::make($request->all(), [
             'category_id' => 'required|string',
             'model' => 'required|string',
+            'model_no' => 'nullable|string',
             'brand_id' => 'required|string',
             'series' => 'required|string',
             'specification' => 'nullable|string',
@@ -67,17 +68,7 @@ class ProductController extends Controller
             ], 422);
         }
 
-        // Check if the combination of category_id, brand_id, and model already exists
-        $existingProduct = Product::where('category_id', $request->input('category_id'))
-            ->where('brand_id', $request->input('brand_id'))
-            ->where('model', $request->input('model'))
-            ->first();
-
-        if ($existingProduct) {
-            return response()->json([
-                'errors' => ['model' => ['The combination of category, brand, and model already exists.']]
-            ], 422);
-        }
+        // removed validation logic locally as requested
 
         if($request->file('product_images')){
             $image              =   $request->file('product_images');
@@ -96,6 +87,7 @@ class ProductController extends Controller
             'category_id'               =>  $request->input('category_id'),
             'brand_id'                  =>  $request->input('brand_id'),
             'model'                     =>  $request->input('model'),
+            'model_no'                  =>  $request->input('model_no'),
             'series'                    =>  $request->input('series'),           
             'specification'             =>  $request->input('specification'),
             'price'                     =>  $request->input('price'),
@@ -147,6 +139,7 @@ class ProductController extends Controller
         $validator = Validator::make($request->all(), [
             'category_id' => 'required|string',
             'model' => 'required|string',
+            'model_no' => 'nullable|string',
             'brand_id' => 'required|string',
             'series' => 'required|string',
             'specification' => 'nullable|string',
@@ -179,6 +172,7 @@ class ProductController extends Controller
         $product->category_id               =   $request->input('category_id');
         $product->brand_id                  =   $request->input('brand_id');
         $product->model                     =   $request->input('model');
+        $product->model_no                  =   $request->input('model_no');
         $product->series                    =   $request->input('series');
         $product->specification             =   $request->input('specification');
         $product->price                     =   $request->input('price');
@@ -271,15 +265,17 @@ class ProductController extends Controller
             }
             $stock = $stockQuery->sum('qty');
             return [
+                'id' => $p->id,
                 'brand' => $p->brand ? $p->brand->name : '',
                 'series' => $p->series,
                 'model' => $p->model,
                 'category' => $p->category ? $p->category->name : '',
                 'price' => $p->price,
+                'offer_price' => $p->offer_price,
                 'tax_percentage' => $p->tax_percentage,
                 'stock' => $stock,
             ];
-        });
+        })->unique('model')->values();
         return response()->json($result);
     }
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>PHOENIX DIGITAL</title>
+    <title>Billing Software</title>
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> 
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="{{ asset('assets/css/styles.css') }}" />  
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.6/dist/sweetalert2.min.css" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>  
 </head>
@@ -32,6 +34,7 @@
     
     <script src="{{ asset('assets/js/script.js') }}"></script>   
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.6/dist/sweetalert2.all.min.js"></script>
     <script>
         $('#customerTable').DataTable({
             paging: true,
@@ -61,5 +64,53 @@
     </script>
 
     @stack('scripts')
+    <script>
+        $(document).ready(function() {
+            @if(Session::has('success'))
+                Swal.fire({
+                    title: 'Success!',
+                    text: "{{ Session::get('success') }}",
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+            @endif
+
+            @if(Session::has('error'))
+                Swal.fire({
+                    title: 'Error!',
+                    text: "{{ Session::get('error') }}",
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            @endif
+
+            @if(Session::has('create_product') || Session::has('create_customer') || Session::has('create_category') || Session::has('create_brand'))
+                Swal.fire({
+                    title: 'Success!',
+                    text: "{{ Session::get('create_product') ?? Session::get('create_customer') ?? Session::get('create_category') ?? Session::get('create_brand') }}",
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+            @endif
+
+            @if(Session::has('edit_product') || Session::has('edit_customer') || Session::has('edit_category') || Session::has('edit_brand'))
+                Swal.fire({
+                    title: 'Updated!',
+                    text: "{{ Session::get('edit_product') ?? Session::get('edit_customer') ?? Session::get('edit_category') ?? Session::get('edit_brand') }}",
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+            @endif
+
+            @if(Session::has('delete_product') || Session::has('delete_customer') || Session::has('delete_category') || Session::has('delete_brand'))
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: "{{ Session::get('delete_product') ?? Session::get('delete_customer') ?? Session::get('delete_category') ?? Session::get('delete_brand') }}",
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+            @endif
+        });
+    </script>
 </body>
 </html>

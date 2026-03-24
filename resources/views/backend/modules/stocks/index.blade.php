@@ -78,16 +78,19 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div id="stockSuccessMsg" class="alert alert-success" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1051;min-width:200px;text-align:center;" role="alert" aria-live="polite"></div>
                     <table class="table table-bordered table-hover align-middle" id="productTable">
                         <thead class="custom-thead text-center">
                             <tr>
                                 <th>Location</th>
                                 <th>Stock</th>
+                                @if(auth()->user() && auth()->user()->hasRole('Admin'))
+                                <th>Action</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td>WH1</td><td>2</td></tr>
-                            <tr><td>WH2</td><td>3</td></tr>
+                            <!-- JS will populate rows -->
                         </tbody>
                     </table>
                 </div>            
@@ -96,9 +99,22 @@
     </div>
 
     <script>
+        // Global variables to store current product context
+        var currentCategoryId = null;
+        var currentBrandId = null;
+        var currentModel = null;
+
         function openModal(category_id, brand_id, model) {
+            // Store current product identifiers globally
+            currentCategoryId = category_id;
+            currentBrandId = brand_id;
+            currentModel = model;
+
             // Clear previous rows
-            $('#productTable tbody').html('<tr><td colspan="2">Loading...</td></tr>');
+            $('#productTable tbody').html('<tr><td colspan="3">Loading...</td></tr>');
+
+            // Determine if user is admin (from blade)
+            var isAdmin = {{ auth()->user() && auth()->user()->hasRole('Admin') ? 'true' : 'false' }};
 
             // Fetch data via AJAX
             $.get('/api/warehouse-stock', {
@@ -109,18 +125,153 @@
                 let rows = '';
                 if (data.length > 0) {
                     data.forEach(function(item) {
-                        rows += `<tr><td>${item.warehouse}</td><td>${item.qty}</td></tr>`;
+                        if (isAdmin) {
+                            rows += `<tr data-warehouse-id="${item.warehouse_id}">
+                                <td>${item.warehouse}</td>
+                                <td>
+                                    <span class="stock-qty" style="cursor:pointer;" onclick="editStockQty(this, ${item.qty})">${item.qty}</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-success save-stock-btn" style="display:none;">Save</button>
+                                </td>
+                            </tr>`;
+                        } else {
+                            rows += `<tr data-warehouse-id="${item.warehouse_id}">
+                                <td>${item.warehouse}</td>
+                                <td>
+                                    <span class="stock-qty" style="cursor:default;">${item.qty}</span>
+                                </td>
+                            </tr>`;
+                        }
                     });
                 } else {
-                    rows = '<tr><td colspan="2">No stock found.</td></tr>';
+                    if (isAdmin) {
+                        rows = '<tr><td colspan="3">No stock found.</td></tr>';
+                    } else {
+                        rows = '<tr><td colspan="2">No stock found.</td></tr>';
+                    }
                 }
                 $('#productTable tbody').html(rows);
             });
 
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('stockModal'));
-            modal.show();
+            // Show modal only if not already open
+            var $modal = $('#stockModal');
+            var bsModal = bootstrap.Modal.getInstance($modal[0]);
+            if (!bsModal) {
+                bsModal = new bootstrap.Modal($modal[0]);
+            }
+            bsModal.show();
+            // Move focus to modal body for accessibility
+            setTimeout(function() {
+                $modal.find('.modal-body').attr('tabindex', '-1').focus();
+            }, 300);
         }
+
+        // Make stock quantity editable
+        function editStockQty(span, qty) {
+            // Only allow edit if admin
+            var isAdmin = {{ auth()->user() && auth()->user()->hasRole('Admin') ? 'true' : 'false' }};
+            if (!isAdmin) return;
+            var $span = $(span);
+            var $td = $span.closest('td');
+            var $tr = $span.closest('tr');
+            var warehouse_id = $tr.data('warehouse-id');
+            // Replace span with input
+            $span.hide();
+            $td.append(`<input type="number" class="form-control stock-qty-input" value="${qty}" min="0" style="width:80px;display:inline-block;">`);
+            $tr.find('.save-stock-btn').show();
+        }
+
+        // Save edited stock quantity
+        $(document).on('click', '.save-stock-btn', function() {
+            // Only allow save if admin
+            var isAdmin = {{ auth()->user() && auth()->user()->hasRole('Admin') ? 'true' : 'false' }};
+            if (!isAdmin) return;
+            var $tr = $(this).closest('tr');
+            var warehouse_id = $tr.data('warehouse-id');
+            var newQty = $tr.find('.stock-qty-input').val();
+            // Use global variables for product context
+            var category_id = currentCategoryId;
+            var brand_id = currentBrandId;
+            var model = currentModel;
+            // AJAX update
+            $.ajax({
+                url: '/api/update-warehouse-stock',
+                type: 'POST',
+                data: {
+                    warehouse_id: warehouse_id,
+                    category_id: category_id,
+                    brand_id: brand_id,
+                    model: model,
+                    qty: newQty,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(resp) {
+                    // After update, refresh the modal table using global product context
+                    $.get('/api/warehouse-stock', {
+                        category_id: category_id,
+                        brand_id: brand_id,
+                        model: model
+                    }, function(data) {
+                        let rows = '';
+                        if (data.length > 0) {
+                            data.forEach(function(item) {
+                                if (isAdmin) {
+                                    rows += `<tr data-warehouse-id="${item.warehouse_id}">
+                                        <td>${item.warehouse}</td>
+                                        <td>
+                                            <span class="stock-qty" style="cursor:pointer;" onclick="editStockQty(this, ${item.qty})">${item.qty}</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success save-stock-btn" style="display:none;">Save</button>
+                                        </td>
+                                    </tr>`;
+                                } else {
+                                    rows += `<tr data-warehouse-id="${item.warehouse_id}">
+                                        <td>${item.warehouse}</td>
+                                        <td>
+                                            <span class="stock-qty" style="cursor:default;">${item.qty}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">No permission</span>
+                                        </td>
+                                    </tr>`;
+                                }
+                            });
+                        } else {
+                            rows = '<tr><td colspan="3">No stock found.</td></tr>';
+                        }
+                        $('#productTable tbody').html(rows);
+                        // Move focus to modal body for accessibility after update
+                        var $modal = $('#stockModal');
+                        setTimeout(function() {
+                            $modal.find('.modal-body').attr('tabindex', '-1').focus();
+                        }, 300);
+                    });
+                    // Show success message in modal
+                    var $msg = $('#stockSuccessMsg');
+                    $msg.text('Stock updated successfully!').fadeIn();
+                    setTimeout(function() {
+                        $msg.fadeOut();
+                    }, 2000);
+                    // Refresh main stock table after modal update
+                    $.get(window.location.pathname, function(pageHtml) {
+                        var newTable = $(pageHtml).find('#customerTable tbody').html();
+                        $('#customerTable tbody').html(newTable);
+                    });
+                },
+                error: function(xhr) {
+                    var $msg = $('#stockSuccessMsg');
+                    $msg.removeClass('alert-success').addClass('alert-danger');
+                    $msg.text('Error updating stock.').fadeIn();
+                    setTimeout(function() {
+                        $msg.fadeOut(function(){
+                            $msg.removeClass('alert-danger').addClass('alert-success');
+                        });
+                    }, 2000);
+                }
+            });
+        });
     </script>
 
 @endsection

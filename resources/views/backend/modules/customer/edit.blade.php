@@ -38,6 +38,14 @@
                         @csrf
                         @method('PUT')
                         <div class="col-md-6">
+                            <label class="form-label">Customer Type</label>
+                            <select class="form-select" name="customer_type">
+                                <option value="">Select Type</option>
+                                <option value="Customer" {{ $customer->customer_type == 'Customer' ? 'selected' : '' }}>Customer</option>
+                                <option value="Dealer" {{ $customer->customer_type == 'Dealer' ? 'selected' : '' }}>Dealer</option>                                
+                            </select>
+                        </div>   
+                        <div class="col-md-6">
                             <label class="form-label">Customer Name <span class="text-danger">*</span></label>
                             <input class="form-control" type="text" placeholder="Enter Name" required name="name" value="{{ $customer->name }}"/>
                         </div>
@@ -46,13 +54,15 @@
                             <input class="form-control" type="text" placeholder="Enter Phone Number" required name="mobile_no"  value="{{ $customer->mobile_no }}"/>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <label class="form-label">Email</label>
                             <input class="form-control" type="email" placeholder="Enter Email Address" name="email" value="{{ $customer->email }}"/>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Address</label>
                             <input class="form-control" type="text" placeholder="Enter Address" name="address" value="{{ $customer->address }}"/>
                         </div>
+                                            
+                        
                         <div class="col-md-6">
                             <label class="form-label">State</label>
                             <select name="state" class="form-select select2" id=state>
@@ -79,10 +89,22 @@
                             <label class="form-label">GST No</label>
                             <input class="form-control" type="text" placeholder="Enter GST No" name="gst_no" value="{{ $customer->gst_no }}"/>
                         </div>
+                        
                         <div class="col-md-6">
-                            <!-- Empty form group for layout balance -->
-                        </div>                        
-                        <div class="col-2">
+                            <label class="form-label">Source</label>
+                            <select class="form-select select2" name="source">
+                                <option value="">Select Source</option>
+                                @foreach($sources as $source)
+                                    <option value="{{ $source->name }}" {{ $customer->source == $source->name ? 'selected' : '' }}>{{ $source->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Remarks</label>
+                            <textarea class="form-control" placeholder="Enter Remarks" name="remarks">{{ $customer->remarks }}</textarea>
+                        </div>                     
+                        <div class="col-2 mt-5">
+                               <input type="hidden" name="warehouse_id" value="{{ old('warehouse_id', $customer->warehouse_id ?? auth()->user()->warehouse_id ?? 1) }}">
                             <button type="submit" class="btn btn-success btn-lg">Update</button>
                         </div>
                     </form>
@@ -145,17 +167,22 @@
                         }, 1200);
                     },
                     error: function(xhr) {
-                        if(xhr.status === 422) {
-                            var errors = xhr.responseJSON.errors;
+                        var res = xhr.responseJSON || {};
+                        var $alert = $('#formErrorAjaxEdit');
+                        $alert.empty();
+                        if (res.message) {
+                            $alert.html('<div class="alert alert-danger">' + res.message + '</div>');
+                        } else if (res.errors) {
                             var errorHtml = '<div class="alert alert-danger"><ul>';
-                            $.each(errors, function(key, value) {
+                            $.each(res.errors, function(key, value) {
                                 errorHtml += '<li>' + value[0] + '</li>';
                             });
                             errorHtml += '</ul></div>';
-                            $('#formErrorAjaxEdit').html(errorHtml);
+                            $alert.html(errorHtml);
                         } else {
-                            $('#formErrorAjaxEdit').html('<div class="alert alert-danger">An error occurred. Please try again.</div>');
+                            $alert.html('<div class="alert alert-danger">An unexpected error occurred. Please try again.</div>');
                         }
+                        $alert.show();
                     }
                 });
             });

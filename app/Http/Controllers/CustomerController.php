@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\City;
 use App\Models\Customer;
 use App\Models\State;
+use App\Models\Source;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -35,11 +36,11 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        //
         $customer       =   Customer::orderBy('updated_at', 'desc')->get();
         $state          =   State::where('country_id','101')->get();
+        $sources        =   Source::where('status', 1)->orderBy('name')->get();
         $heading        =   "Add New Customer";
-        return view('backend.modules.customer.create', compact('heading','customer','state'));
+        return view('backend.modules.customer.create', compact('heading','customer','state','sources'));
     }
 
     /**
@@ -50,12 +51,18 @@ class CustomerController extends Controller
         //
         $this->validate($request, [
             'name'      => 'required',            
-            'email'     => 'required|email|unique:customers',
-            'mobile_no' => 'required|digits:10|unique:customers',
-            'address'   => 'required|string|max:255',
+            'email'     => 'nullable|email',
+            'mobile_no' => 'required|digits:10|unique:customers,mobile_no',
+            'address'   => 'nullable|string|max:255',
             'state'     => 'required|exists:states,id',
             'city'      => 'required|exists:cities,id',
             'pincode'   => 'required|digits_between:4,8',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
+            'source'    => 'nullable|string|max:255',
+            'customer_type' => 'nullable|string|max:50',
+            'remarks'   => 'nullable|string',
+        ], [
+            'mobile_no.unique' => 'A customer with this mobile number already exists.',
         ]);
 
         $id = Auth::user()->id;
@@ -67,10 +74,28 @@ class CustomerController extends Controller
         $customer->address      =   $request->address;
         $customer->state_id     =   $request->state;
         $customer->city_id      =   $request->city;
-        $customer->pincode      =   $request->pincode;
-        $customer->user_id      =   $id;
+    $customer->pincode      =   $request->pincode;
+    // warehouse_id: prefer request value, fallback to authenticated user's warehouse
+    $customer->warehouse_id = $request->input('warehouse_id') ?? Auth::user()->warehouse_id ?? null;
+    $customer->user_id      =   $id;
         $customer->gst_no       =   $request->gst_no;
-        $customer->save();
+        $customer->source       =   $request->source;
+        $customer->customer_type = $request->customer_type;
+        $customer->remarks      =   $request->remarks;
+        try {
+            $customer->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Generic DB error (unique constraints removed at app-level if desired)
+            $msg = 'Failed to save customer due to a database error.';
+            if ($e->getMessage()) {
+                // keep the raw message only for debugging; present a generic message to users
+                $msg = 'Failed to save customer due to a database error.';
+            }
+            if ($request->ajax()) {
+                return response()->json(['message' => $msg], 409);
+            }
+            return redirect()->back()->withInput()->with('create_customer_error', $msg);
+        }
 
         if ($request->ajax()) {
             return response()->json(['message' => 'Customer created successfully'], 200);
@@ -93,7 +118,6 @@ class CustomerController extends Controller
      */
     public function edit($id)
     {
-        //
         $customer   =   Customer::find($id);
         $state      =   State::where('country_id','101')->pluck('name','id');
         if($customer->state_id) {
@@ -101,9 +125,9 @@ class CustomerController extends Controller
         } else {
             $city = [];
         }
-       
+        $sources    =   \App\Models\Source::where('status', 1)->orderBy('name')->get();
         $heading    =   "Edit Customer";
-        return view('backend.modules.customer.edit',compact('customer','heading','state','city'));
+        return view('backend.modules.customer.edit',compact('customer','heading','state','city','sources'));
     }
 
     /**
@@ -111,14 +135,20 @@ class CustomerController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->validate($request, [
-            'name'      => 'required',            
-            'email'     => 'required|email|unique:customers,email,'.$id,
-            'mobile_no' => 'required|digits:10|unique:customers,mobile_no,'.$id,
-            'address'   => 'required|string|max:255',
+    $this->validate($request, [
+        'name'      => 'required',            
+        'email'     => 'nullable|email',
+        'mobile_no' => 'required|digits:10|unique:customers,mobile_no,' . $id,
+            'address'   => 'nullable|string|max:255',
             'state'     => 'required|exists:states,id',
             'city'      => 'required|exists:cities,id',
             'pincode'   => 'required|digits_between:4,8',
+            'source'    => 'nullable|string|max:255',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
+            'customer_type' => 'nullable|string|max:50',
+            'remarks'   => 'nullable|string',
+        ], [
+            'mobile_no.unique' => 'A customer with this mobile number already exists.',
         ]);
     
         $customer = Customer::find($id);
@@ -129,8 +159,21 @@ class CustomerController extends Controller
         $customer->state_id = $request->state;
         $customer->city_id = $request->city;
         $customer->pincode = $request->pincode;
+    $customer->warehouse_id = $request->input('warehouse_id') ?? Auth::user()->warehouse_id ?? $customer->warehouse_id;
         $customer->gst_no = $request->gst_no;
-        $customer->save();
+        $customer->source = $request->source;
+        $customer->customer_type = $request->customer_type;
+        $customer->remarks = $request->remarks;
+            try {
+                $customer->save();
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Generic DB error during update
+                $msg = 'Failed to update customer due to a database error.';
+                if ($request->ajax()) {
+                    return response()->json(['message' => $msg], 409);
+                }
+                return redirect()->back()->withInput()->with('update_customer_error', $msg);
+            }
 
         if ($request->ajax()) {
             return response()->json(['message' => 'Customer edited successfully'], 200);
@@ -168,9 +211,14 @@ class CustomerController extends Controller
         $customers = Customer::where('name', 'like', "%$q%")
             ->orWhere('mobile_no', 'like', "%$q%")
             ->orWhere('email', 'like', "%$q%")
-            ->limit(10)
             ->get();
-        return response()->json($customers);
+
+        // Deduplicate by mobile_no and email on the collection
+        $uniqueCustomers = $customers->unique(function ($item) {
+            return $item->mobile_no . $item->email;
+        })->values();
+
+        return response()->json($uniqueCustomers);
     }
     
 }

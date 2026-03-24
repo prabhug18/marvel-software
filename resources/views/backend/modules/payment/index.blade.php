@@ -41,7 +41,11 @@
                                 <label for="customer_id" class="form-label">Customer</label>
                                 <select class="form-select select2" id="customer_id" name="customer_id" style="width:100%">
                                     <option value="">All Customer</option>
-                                    @foreach(App\Models\Customer::orderBy('name')->get() as $customer)
+                                    @php
+                                        $allCustomers = \App\Models\Customer::orderBy('name')->get();
+                                        $uniqueCustomers = $allCustomers->unique('mobile_no');
+                                    @endphp
+                                    @foreach($uniqueCustomers as $customer)
                                         <option value="{{ $customer->id }}"
                                             data-name="{{ $customer->name }}"
                                             data-mobile="{{ $customer->mobile_no }}"
@@ -79,12 +83,15 @@
                                     $serial = 1;
                                     $seenInvoices = [];
                                     $uniqueGrandTotal = 0;
-                                    // Preload reconciliation status for each invoice number
-                                    $reconciliationStatus = [];
+                                    // Preload reconciliation data for each invoice number
+                                    $reconciliationData = [];
                                     foreach($payments as $payment) {
-                                        if (!isset($reconciliationStatus[$payment->invoice_number])) {
+                                        if (!isset($reconciliationData[$payment->invoice_number])) {
                                             $invoice = \App\Models\Invoice::where('invoice_number', $payment->invoice_number)->first();
-                                            $reconciliationStatus[$payment->invoice_number] = $invoice && $invoice->reconciliation_done ? true : false;
+                                            $reconciliationData[$payment->invoice_number] = [
+                                                'done' => ($invoice && $invoice->reconciliation_done) ? true : false,
+                                                'id'   => $invoice ? $invoice->id : null
+                                            ];
                                         }
                                     }
                                 @endphp
@@ -111,10 +118,24 @@
                                     <td><span class="mobile-value">{{ $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('d-m-Y') : '' }}</span></td>
                                     <td>
                                         <span class="mobile-value">
-                                        @if($reconciliationStatus[$payment->invoice_number])
-                                            <span class="badge bg-success">Yes</span>
+                                        @php
+                                            $rData = $reconciliationData[$payment->invoice_number] ?? ['done' => false, 'id' => null];
+                                        @endphp
+                                        
+                                        @if($rData['id'])
+                                            <a href="{{ url('payment/payment-reconciliation?invoice_id=' . $rData['id']) }}" style="text-decoration: none;" title="Go to Reconciliation">
+                                                @if($rData['done'])
+                                                    <span class="badge bg-success">Yes</span>
+                                                @else
+                                                    <span class="badge bg-danger">No</span>
+                                                @endif
+                                            </a>
                                         @else
-                                            <span class="badge bg-danger">No</span>
+                                            @if($rData['done'])
+                                                <span class="badge bg-success">Yes</span>
+                                            @else
+                                                <span class="badge bg-danger">No</span>
+                                            @endif
                                         @endif
                                         </span>
                                     </td>

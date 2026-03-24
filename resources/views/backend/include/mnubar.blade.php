@@ -1,6 +1,6 @@
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-        <img src="{{ asset('assets/images/logo.png') }}" alt="Logo" />
+        <img src="{{ asset('assets/images/logo.jpg') }}" alt="Logo" />
     </div>
     <ul>
         <li><a href="{{ url('/') }}"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
@@ -74,6 +74,7 @@
         </li>
         @endif
         <li><a href="{{ url('/invoice') }}"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></a></li>
+        
         @if(Auth::user() && Auth::user()->hasRole('Admin'))
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
@@ -99,6 +100,11 @@
                         <i class="fas fa-th-large"></i><span>Categories</span>
                     </a>
                 </li>
+                <li>
+                    <a href="{{ url('/source/create') }}">
+                        <i class="fas fa-database"></i><span>Source</span>
+                    </a>
+                </li>
             </ul>
         </li>
 
@@ -115,6 +121,23 @@
                 <li>
                     <a href="{{ url('/users/create') }}">
                         <i class="fas fa-th-large"></i><span>Create User</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li class="has-submenu">
+            <a href="#" class="submenu-toggle">
+                <i class="fas fa-cog"></i><span>Settings</span><i class="fas fa-chevron-down arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li>
+                    <a href="{{ route('admin.settings.invoice_template.edit') }}">
+                        <i class="fas fa-file-invoice"></i><span>Invoice Template</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('terms.index') }}">
+                        <i class="fas fa-file-contract"></i><span>Terms & Conditions</span>
                     </a>
                 </li>
             </ul>

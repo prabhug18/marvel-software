@@ -31,6 +31,73 @@
                             <strong>Invoice Number:</strong> {!! (string) $invoice->getOriginal('invoice_number') !!}<br>
                             <strong>Grand Total:</strong> ₹{{ number_format($invoice->grand_total, 2) }}
                         </div>
+                        <!-- Add Payment Form -->
+                        <div class="mb-4">
+                            <h5 class="mb-2">Add Payment</h5>
+                            <form id="addPaymentForm">
+                                @csrf
+                                <input type="hidden" name="invoice_id" value="{{ $invoiceId }}">
+                                <input type="hidden" name="invoice_number" value="{{ $invoice->invoice_number }}">
+                                <input type="hidden" name="customer_name" value="{{ $invoice->customer->name ?? '' }}">
+                                <input type="hidden" name="grand_total" value="{{ $invoice->grand_total }}">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Payment Date</label>
+                                        <input type="date" name="payment_date" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Amount (₹)</label>
+                                        <input type="number" name="paid_amount" class="form-control" step="0.01" min="0" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Payment Mode</label>
+                                        <select name="payment_mode" class="form-select" required>
+                                            <option value="">Select Mode</option>
+                                            <option value="Cash">Cash</option>
+                                            <option value="Card">Card</option>
+                                            <option value="UPI">UPI</option>
+                                            <option value="Bank">Bank</option>
+                                            <option value="Cheque">Cheque</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div>
+                                            <button type="submit" id="addPaymentBtn" class="btn btn-primary">Add Payment</button>
+                                           
+                                        </div>
+                                    </div>
+                                    <!-- description removed; default will be set to 'Invoice Payment' on save -->
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Pending Payments (client-side) -->
+                        <div class="mb-3">
+                            <h5 class="mb-2">Pending Payments (Unsaved)</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered" id="pendingPaymentsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Payment Date</th>
+                                            <th>Amount</th>
+                                            <th>Mode</th>
+                                            <th>Description</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="6" class="text-center text-muted">No pending payments</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-2">
+                                <button id="submitPendingPayments" class="btn btn-success">Submit All Payments</button>
+                                <button id="clearPendingPayments" class="btn btn-secondary">Clear</button>
+                            </div>
+                        </div>
+
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped">
                                 <thead>
@@ -174,6 +241,142 @@
     }
     document.addEventListener('DOMContentLoaded', function() {
         setPaymentTableDataLabels();
+    });
+    // Pending payments client-side queue and bulk submit
+    document.addEventListener('DOMContentLoaded', function() {
+        var addForm = document.getElementById('addPaymentForm');
+        if (!addForm) return;
+        var addBtn = document.getElementById('addPaymentBtn');
+        var submitBtn = document.getElementById('submitPendingPayments');
+        var clearBtn = document.getElementById('clearPendingPayments');
+        var pendingTable = document.getElementById('pendingPaymentsTable').querySelector('tbody');
+        var pendingPayments = [];
+        // server-side totals
+        var existingPaid = parseFloat('{{ number_format($payments->sum('paid_amount'), 2, '.', '') }}') || 0;
+        var grandTotal = parseFloat('{{ number_format($invoice->grand_total, 2, '.', '') }}') || 0;
+
+        function renderPending() {
+            pendingTable.innerHTML = '';
+            if (pendingPayments.length === 0) {
+                pendingTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No pending payments</td></tr>';
+                return;
+            }
+            pendingPayments.forEach(function(p, idx) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + (idx+1) + '</td>' +
+                    '<td>' + p.payment_date + '</td>' +
+                    '<td>₹' + parseFloat(p.paid_amount).toFixed(2) + '</td>' +
+                    '<td>' + p.payment_mode + '</td>' +
+                    '<td>' + (p.description || '') + '</td>' +
+                    '<td><button type="button" class="btn btn-sm btn-danger btn-remove" data-idx="'+idx+'">Remove</button></td>';
+                pendingTable.appendChild(tr);
+            });
+        }
+
+        addForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!addBtn) return;
+            var fd = new FormData(addForm);
+            var entry = {
+                payment_date: fd.get('payment_date'),
+                paid_amount: fd.get('paid_amount'),
+                payment_mode: fd.get('payment_mode'),
+                // description textarea removed; default to 'Invoice Payment'
+                description: 'Invoice Payment'
+            };
+            // Basic client-side validation
+            if (!entry.paid_amount || isNaN(parseFloat(entry.paid_amount))) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            if (!entry.payment_mode) {
+                alert('Please select payment mode');
+                return;
+            }
+            // Prevent adding amount that would exceed invoice total (considering saved + pending)
+            var paidSoFar = existingPaid + pendingPayments.reduce(function(s, it){ return s + parseFloat(it.paid_amount || 0); }, 0);
+            var entryAmount = parseFloat(entry.paid_amount || 0);
+            if (paidSoFar + entryAmount > grandTotal + 0.0001) {
+                alert('Amount exceeds invoice balance. Cannot add payment larger than remaining invoice amount.');
+                return;
+            }
+            pendingPayments.push(entry);
+            renderPending();
+            addForm.reset();
+            // reset date to today
+            addForm.querySelector('input[name="payment_date"]').value = new Date().toISOString().slice(0,10);
+        });
+
+        // Remove pending item (event delegation)
+        pendingTable.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('btn-remove')) {
+                var idx = parseInt(e.target.getAttribute('data-idx'));
+                if (!isNaN(idx)) {
+                    pendingPayments.splice(idx, 1);
+                    renderPending();
+                }
+            }
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                if (confirm('Clear all pending payments?')) {
+                    pendingPayments = [];
+                    renderPending();
+                }
+            });
+        }
+
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+                if (pendingPayments.length === 0) {
+                    alert('No pending payments to submit');
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Submitting...';
+
+                var tokenEl = addForm.querySelector('input[name="_token"]');
+                var token = tokenEl ? tokenEl.value : '';
+                var payload = {
+                    invoice_id: addForm.querySelector('input[name="invoice_id"]').value,
+                    payments: pendingPayments
+                };
+
+                fetch('{{ url("/payment/bulk-store") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload),
+                    credentials: 'same-origin'
+                }).then(function(res) {
+                    return res.json().then(function(json) {
+                        if (!res.ok) throw json;
+                        return json;
+                    });
+                }).then(function(data) {
+                    if (data && data.success) {
+                        alert('Payments saved successfully');
+                        location.reload();
+                    } else {
+                        alert((data && data.message) ? data.message : 'Failed to save payments');
+                    }
+                }).catch(function(err) {
+                    var msg = 'Error saving payments.';
+                    if (err && err.message) msg = err.message;
+                    alert(msg);
+                }).finally(function() {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Submit All Payments';
+                });
+            });
+        }
+
+        // initial render
+        renderPending();
     });
     </script>
 @endsection

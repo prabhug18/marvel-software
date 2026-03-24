@@ -18,24 +18,9 @@
             <div class="container-fluid px-3">
                 <div class="card shadow-sm rounded-4 mt-4">
                 <div class="card-body">
-                  <div class="col-md-6">
-                            @include('backend.include.formError')
-                            @if(Session::has('create_product'))
-                                <div class="alert alert-success col-md-12">
-                                    <strong>{{session('create_product')}}</strong>
-                                </div>
-                            @endif
-                            @if(Session::has('delete_product'))
-                                <div class="alert alert-danger col-md-12">
-                                    <strong>{{session('delete_product')}}</strong>
-                                </div>
-                            @endif
-                            @if(Session::has('edit_product'))
-                                <div class="alert alert-warning col-md-12">
-                                    <strong>{{session('edit_product')}}</strong>
-                                </div>
-                            @endif
-                        </div>
+                    <div class="col-md-6">
+                        {{-- Global SweetAlert2 handles session messages --}}
+                    </div>
                     <div class="d-flex justify-content-end gap-2 mb-3">                      
                         @if(auth()->user() && auth()->user()->hasRole('Admin'))
                             <a href="{{ url('/products/create') }}" class="btn btn-primary">Add Product</a>                        
@@ -63,6 +48,8 @@
                             <th>Category</th>
                             <th>Brand</th>
                             <th>Model</th>
+                            <th>Model No</th>
+                            <th>Warranty</th>
                             <th>Price</th>
                             <th>Offer Price</th>
                             <th>Specification</th>

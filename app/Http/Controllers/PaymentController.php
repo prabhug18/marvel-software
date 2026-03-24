@@ -44,11 +44,37 @@ class PaymentController extends Controller
 
             // Calculate total paid so far for this invoice
             $totalPaid = \App\Models\Payment::where('invoice_id', $request->invoice_id)->sum('paid_amount');
+            // Prevent overpaying: ensure this paid_amount doesn't push totalPaid over grand_total
+            $invoice = null;
+            if (!empty($request->invoice_id)) {
+                $invoice = \App\Models\Invoice::find($request->invoice_id);
+            }
+            if ($invoice) {
+                $remaining = $invoice->grand_total - $totalPaid;
+                if (floatval($request->paid_amount) > floatval($remaining) + 0.0001) {
+                    if ($request->ajax()) {
+                        return response()->json(['success' => false, 'message' => 'Paid amount exceeds remaining invoice balance.'], 422);
+                    }
+                    return redirect()->back()->with('error', 'Paid amount exceeds remaining invoice balance.');
+                }
+            }
             $currentPaid = $request->paid_amount;
             $grandTotal = $request->grand_total;
             $balance = $grandTotal - ($totalPaid + $currentPaid);
             $validated['balance_amount'] = $balance;
             $validated['user_id'] = Auth::id() ?? 1;
+            // Default description for invoice payments when not provided
+            if (empty($validated['description'])) {
+                $validated['description'] = 'Invoice Payment';
+            }
+
+            // Ensure customer_id is set when invoice_id is present
+            if (empty($validated['customer_id']) && !empty($validated['invoice_id'])) {
+                $invoice = \App\Models\Invoice::find($validated['invoice_id']);
+                if ($invoice && $invoice->customer_id) {
+                    $validated['customer_id'] = $invoice->customer_id;
+                }
+            }
 
             \App\Models\Payment::create($validated);
             if ($request->ajax()) {
@@ -57,6 +83,67 @@ class PaymentController extends Controller
             return redirect()->back()->with('success', 'Payment added successfully!');
         }
         return view('backend.modules.payment.add-payment', compact('heading'));
+    }
+
+    /**
+     * Store multiple payments in bulk (AJAX)
+     * Expected payload: invoice_id, payments: [{paid_amount, payment_mode, payment_date, description}]
+     */
+    public function bulkStore(Request $request)
+    {
+        $data = $request->validate([
+            'invoice_id' => 'required|integer|exists:invoices,id',
+            'payments' => 'required|array|min:1',
+            'payments.*.paid_amount' => 'required|numeric|min:0',
+            'payments.*.payment_mode' => 'required|string',
+            'payments.*.payment_date' => 'required|date',
+            'payments.*.description' => 'nullable|string',
+        ]);
+
+        $invoice = \App\Models\Invoice::find($data['invoice_id']);
+        if (!$invoice) {
+            return response()->json(['success' => false, 'message' => 'Invoice not found.'], 404);
+        }
+
+        $customerId = $invoice->customer_id;
+        $grandTotal = $invoice->grand_total;
+
+        \DB::beginTransaction();
+        try {
+            foreach ($data['payments'] as $p) {
+                // total paid so far (includes payments we just created in this transaction)
+                $totalPaid = \App\Models\Payment::where('invoice_id', $invoice->id)->sum('paid_amount');
+                $currentPaid = $p['paid_amount'];
+                // Prevent overpay in bulk as well: ensure cumulative doesn't exceed grand total
+                if (floatval($currentPaid) < 0) {
+                    throw new \Exception('Invalid payment amount');
+                }
+                if (floatval($totalPaid) + floatval($currentPaid) > floatval($grandTotal) + 0.0001) {
+                    throw new \Exception('One or more payments would exceed invoice total.');
+                }
+                $balance = $grandTotal - ($totalPaid + $currentPaid);
+
+                \App\Models\Payment::create([
+                    'customer_id' => $customerId,
+                    'customer_name' => $invoice->customer ? $invoice->customer->name : null,
+                    'invoice_number' => $invoice->invoice_number,
+                    'invoice_id' => $invoice->id,
+                    'grand_total' => $grandTotal,
+                    'paid_amount' => $currentPaid,
+                    'payment_mode' => $p['payment_mode'],
+                    'payment_date' => $p['payment_date'],
+                    'description' => isset($p['description']) && $p['description'] !== '' ? $p['description'] : 'Invoice Payment',
+                    'balance_amount' => $balance,
+                    'user_id' => Auth::id() ?? 1,
+                ]);
+            }
+            \DB::commit();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('bulkStore payments error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to save payments.'], 500);
+        }
     }
 
     public function create()

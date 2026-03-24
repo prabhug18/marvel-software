@@ -9,27 +9,46 @@ document.addEventListener('DOMContentLoaded', () => {
       const isMobile = window.innerWidth <= 768;
 
       if (isMobile) {
-        sidebar.classList.toggle('active'); // for mobile
+        sidebar.classList.toggle('active'); // Mobile slide-in
       } else {
-        sidebar.classList.toggle('collapsed'); // for desktop
+        sidebar.classList.toggle('collapsed'); // Desktop collapse
         mainContent.classList.toggle('expanded');
+        toggleBtn.classList.toggle('collapsed'); // Appended for styling
       }
     });
 
     document.addEventListener('click', (e) => {
-      if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+      if (
+        window.innerWidth <= 768 &&
+        !sidebar.contains(e.target) &&
+        !toggleBtn.contains(e.target)
+      ) {
         sidebar.classList.remove('active');
       }
     });
   }
 
-  // Submenu toggle
+  // Submenu toggle on click
   document.querySelectorAll('.submenu-toggle').forEach(toggle => {
     toggle.addEventListener('click', (e) => {
       e.preventDefault();
       const submenu = toggle.nextElementSibling;
+
+      // Optional: Close other open submenus
+      document.querySelectorAll('.submenu').forEach(menu => {
+        if (menu !== submenu) {
+          menu.classList.remove('open');
+        }
+      });
+
       if (submenu && submenu.classList.contains('submenu')) {
         submenu.classList.toggle('open');
+      }
+
+      // Rotate arrow if exists
+      const arrow = toggle.querySelector('.arrow');
+      if (arrow) {
+        arrow.classList.toggle('rotated');
       }
     });
   });

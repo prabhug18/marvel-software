@@ -3,7 +3,9 @@
     <td data-title="S.NO">{{ ($products->firstItem() ?? 0) + $i }}</td>
     <td data-title="CATEGORY">{{ $productVal->category->name }}</td>
     <td data-title="PRODUCT NAME">{{ $productVal->brand->name }}</td>
-    <td data-title="MODEL NO">{{ $productVal->model }}</td>
+    <td data-title="MODEL">{{ $productVal->model }}</td>
+    <td data-title="MODEL NO">{{ $productVal->model_no }}</td>
+    <td data-title="WARRANTY">{{ $productVal->series }}</td>
     <td data-title="PRICE">{{ $productVal->price }}</td>
     <td data-title="OFFER PRICE">{{ $productVal->offer_price !== null ? rtrim(rtrim(number_format($productVal->offer_price, 2, '.', ''), '0'), '.') : '' }}</td>
     <td data-title="SPECIFICATION">{{ $productVal->specification ?? '-' }}</td>

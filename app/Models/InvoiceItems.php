@@ -10,6 +10,7 @@ class InvoiceItems extends Model
 
     protected $fillable = [
         'invoice_id',
+        'product_id',
         'user_id',
         'product_name',
         'model',
@@ -19,6 +20,9 @@ class InvoiceItems extends Model
         'unit_price',
         'total',
         'serial_no',
+        'cgst_amount',
+        'sgst_amount',
+        'igst_amount',
     ];
 
 
@@ -29,6 +33,6 @@ class InvoiceItems extends Model
     
     public function product()
     {
-        return $this->belongsTo(\App\Models\Product::class, 'model', 'model');
+        return $this->belongsTo(\App\Models\Product::class, 'product_id');
     }
 }
