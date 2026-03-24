@@ -33,6 +33,7 @@
                                     <th>Category</th>
                                     <th>Brand</th>
                                     <th>Model</th>                                    
+                                    <th>Model No</th>
                                     <th>Stock</th>
                                     {{-- <th>Action</th> --}}
                                 </tr>
@@ -46,9 +47,10 @@
                                     <td data-title="Category">{{ $stockVal->category->name }}</td>
                                     <td data-title="Brand">{{ $stockVal->brand->name }}</td>
                                     <td data-title="Model">{{ $stockVal->model }}</td>                                    
+                                    <td data-title="Model No">{{ $stockVal->model_no }}</td>
                                     <td data-title="Stock">
                                         <button class="btn btn-outline-info btn-sm"
-                                            onclick="openModal('{{ $stockVal->category_id }}', '{{ $stockVal->brand_id }}', '{{ $stockVal->model }}')">
+                                            onclick="openModal('{{ $stockVal->category_id }}', '{{ $stockVal->brand_id }}', '{{ $stockVal->model }}', '{{ $stockVal->model_no }}')">
                                             {{ $stockVal->total_qty }}
                                         </button>
                                     </td>
@@ -103,12 +105,14 @@
         var currentCategoryId = null;
         var currentBrandId = null;
         var currentModel = null;
+        var currentModelNo = null;
 
-        function openModal(category_id, brand_id, model) {
+        function openModal(category_id, brand_id, model, model_no) {
             // Store current product identifiers globally
             currentCategoryId = category_id;
             currentBrandId = brand_id;
             currentModel = model;
+            currentModelNo = model_no;
 
             // Clear previous rows
             $('#productTable tbody').html('<tr><td colspan="3">Loading...</td></tr>');
@@ -120,7 +124,8 @@
             $.get('/api/warehouse-stock', {
                 category_id: category_id,
                 brand_id: brand_id,
-                model: model
+                model: model,
+                model_no: model_no
             }, function(data) {
                 let rows = '';
                 if (data.length > 0) {
@@ -194,6 +199,7 @@
             var category_id = currentCategoryId;
             var brand_id = currentBrandId;
             var model = currentModel;
+            var model_no = currentModelNo;
             // AJAX update
             $.ajax({
                 url: '/api/update-warehouse-stock',
@@ -203,6 +209,7 @@
                     category_id: category_id,
                     brand_id: brand_id,
                     model: model,
+                    model_no: model_no,
                     qty: newQty,
                     _token: $('meta[name="csrf-token"]').attr('content')
                 },
@@ -211,7 +218,8 @@
                     $.get('/api/warehouse-stock', {
                         category_id: category_id,
                         brand_id: brand_id,
-                        model: model
+                        model: model,
+                        model_no: model_no
                     }, function(data) {
                         let rows = '';
                         if (data.length > 0) {

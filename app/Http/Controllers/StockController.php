@@ -23,9 +23,9 @@ class StockController extends Controller{
     {
         //        
         $heading    =   "Stock View";
-        $stock = Stock::select('model', 'category_id', 'brand_id')
+        $stock = Stock::select('model', 'model_no', 'category_id', 'brand_id')
                     ->selectRaw('SUM(qty) as total_qty')
-                    ->groupBy('model', 'category_id', 'brand_id')
+                    ->groupBy('model', 'model_no', 'category_id', 'brand_id')
                     ->orderBy('updated_at', 'desc')
                     ->get();
         return view('backend.modules.stocks.index', compact('heading','stock'));
@@ -70,6 +70,7 @@ class StockController extends Controller{
                 ->where('category_id', $product->category_id)
                 ->where('brand_id', $product->brand_id)
                 ->where('model', $product->model)
+                ->where('model_no', $product->model_no)
                 ->exists();
 
             if ($exists) {
@@ -89,6 +90,7 @@ class StockController extends Controller{
                 'category_id'  => $product->category_id,
                 'brand_id'     => $product->brand_id,
                 'model'        => $product->model,
+                'model_no'     => $product->model_no,
                 'qty'          => $request->stock[$index],
                 'user_id'      => Auth::id(),
             ]);
@@ -197,6 +199,7 @@ class StockController extends Controller{
             ->where('category_id', $request->category_id)
             ->where('brand_id', $request->brand_id)
             ->where('model', $request->model)
+            ->where('model_no', $request->model_no)
             ->get();
 
         return response()->json($stocks->map(function($stock) {
@@ -218,6 +221,7 @@ class StockController extends Controller{
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'model' => 'required|string',
+            'model_no' => 'nullable|string',
             'qty' => 'required|integer|min:0',
         ]);
         if ($validator->fails()) {
@@ -229,6 +233,7 @@ class StockController extends Controller{
             ->where('category_id', $request->category_id)
             ->where('brand_id', $request->brand_id)
             ->whereRaw('LOWER(model) = ?', [strtolower($model)])
+            ->where('model_no', $request->model_no)
             ->update(['qty' => $request->qty]);
 
         // If no row was updated, create a new one
@@ -238,6 +243,7 @@ class StockController extends Controller{
                 'category_id' => $request->category_id,
                 'brand_id' => $request->brand_id,
                 'model' => $model,
+                'model_no' => $request->model_no,
                 'qty' => $request->qty,
                 'user_id' => Auth::id(),
             ]);

@@ -46,8 +46,8 @@
                 searchPlaceholder: "Search details...",
                 search: "", // Remove "Search:" label
                 paginate: {
-                previous: "Previous",
-                next: "Next"
+                    previous: '<i class="fas fa-chevron-left"></i>',
+                    next: '<i class="fas fa-chevron-right"></i>'
                 }
         },
         dom: '<"top"lf>rt<"bottom"ip><"clear">' 

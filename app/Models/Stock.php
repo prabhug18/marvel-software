@@ -8,7 +8,7 @@ class Stock extends Model
 {
     //
     protected $fillable = [
-        'warehouse_id', 'category_id', 'brand_id', 'model', 'qty', 'user_id'
+        'warehouse_id', 'category_id', 'brand_id', 'model', 'model_no', 'qty', 'user_id'
     ];
     
     public function category() {

@@ -102,36 +102,7 @@
             modal.show();
         }
 
-        let page = 1;
-        let loading = false;
-        let lastPage = false;
-
-        function loadMoreProducts() {
-            if (loading || lastPage) return;
-            loading = true;
-            page++;
-            $.ajax({
-                url: '?page=' + page,
-                type: 'GET',
-                success: function(data) {
-                    if (data.trim() === '') {
-                        lastPage = true;
-                    } else {
-                        $('#productTableBody').append(data);
-                    }
-                    loading = false;
-                },
-                error: function() {
-                    loading = false;
-                }
-            });
-        }
-
-        $(window).on('scroll', function() {
-            if ($(window).scrollTop() + $(window).height() >= $(document).height() - 200) {
-                loadMoreProducts();
-            }
-        });
+// Infinite scroll removed as it conflicts with DataTables
 
         function ConfirmDelete()
         {

@@ -1,6 +1,6 @@
 @foreach($products as $i => $productVal)
 <tr>
-    <td data-title="S.NO">{{ ($products->firstItem() ?? 0) + $i }}</td>
+    <td data-title="S.NO">{{ $loop->iteration }}</td>
     <td data-title="CATEGORY">{{ $productVal->category->name }}</td>
     <td data-title="PRODUCT NAME">{{ $productVal->brand->name }}</td>
     <td data-title="MODEL">{{ $productVal->model }}</td>

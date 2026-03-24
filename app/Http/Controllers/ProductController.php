@@ -21,7 +21,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $heading = "Product View";
-        $products = Product::withCount('invoices')->orderBy('updated_at', 'desc')->paginate(10);
+        $products = Product::withCount('invoices')->orderBy('updated_at', 'desc')->get();
         if ($request->ajax()) {
             return view('backend.modules.products.partials.product_rows', compact('products'))->render();
         }
@@ -68,7 +68,19 @@ class ProductController extends Controller
             ], 422);
         }
 
-        // removed validation logic locally as requested
+        // Check for duplicate (Category + Brand + Model + Model No)
+        $exists = Product::where([
+            'category_id' => $request->category_id,
+            'brand_id' => $request->brand_id,
+            'model' => $request->model,
+            'model_no' => $request->model_no,
+        ])->exists();
+
+        if ($exists) {
+            return response()->json([
+                'errors' => ['model' => ['This exact product already exists.']]
+            ], 422);
+        }
 
         if($request->file('product_images')){
             $image              =   $request->file('product_images');
@@ -153,6 +165,20 @@ class ProductController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Check for duplicate (Category + Brand + Model + Model No) excluding current product ID
+        $exists = Product::where([
+            'category_id' => $request->category_id,
+            'brand_id' => $request->brand_id,
+            'model' => $request->model,
+            'model_no' => $request->model_no,
+        ])->where('id', '!=', $id)->exists();
+
+        if ($exists) {
+            return response()->json([
+                'errors' => ['model' => ['This combination of Category, Brand, Model, and Model No already exists.']]
             ], 422);
         }
 

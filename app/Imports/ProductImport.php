@@ -28,26 +28,30 @@ class ProductImport implements ToCollection
                     $errorMessages[] = 'Row '.($index+2).': Missing columns';
                     continue;
                 }
-                // Map columns based on export order, trim values
-                $categoryName = trim($row->get(1));
-                $brandName = trim($row->get(2));
+                // Map columns based on export order, clean values
+                $id = $row->get(0);
+                $categoryName = trim($row->get(1) ?? '');
+                $brandName = trim($row->get(2) ?? '');
                 $category = Category::where('name', $categoryName)->first();
                 $brand = Brand::where('name', $brandName)->first();
-                $model = trim($row->get(3));
-                $model_no = trim($row->get(4));
-                $series = trim($row->get(5));
-                $hsn_code = trim($row->get(6));
+                
+                $model = trim($row->get(3) ?? '');
+                // Convert empty strings to null for consistent DB matching
+                $model_no = ($row->get(4) !== null && trim($row->get(4)) !== '') ? trim($row->get(4)) : null;
+                $series = ($row->get(5) !== null && trim($row->get(5)) !== '') ? trim($row->get(5)) : null;
+                $hsn_code = ($row->get(6) !== null && trim($row->get(6)) !== '') ? trim($row->get(6)) : null;
+                
                 $tax_percentage = is_numeric($row->get(7)) ? $row->get(7) : null;
                 $price_raw = $row->get(8);
                 $price = is_numeric($price_raw) ? $price_raw : preg_replace('/[^\x00-\x7F]+/', '', $price_raw);
                 $offer_price = ($row->get(9) !== null && is_numeric($row->get(9))) ? $row->get(9) : null;
-                $specification = ($row->get(10) !== null) ? trim($row->get(10)) : null;
+                $specification = ($row->get(10) !== null && trim($row->get(10)) !== '') ? trim($row->get(10)) : null;
 
                 if (!$category || !$brand || empty($model)) {
                     $missing = [];
                     if (!$category) $missing[] = 'Category: ' . $categoryName;
                     if (!$brand) $missing[] = 'Brand: ' . $brandName;
-                    if (empty($model)) $missing[] = 'Model No';
+                    if (empty($model)) $missing[] = 'Model';
                     $msg = 'ProductImport: Required fields missing ' . implode(', ', $missing);
                     $hasError = true;
                     $errorMessages[] = $msg;
@@ -55,13 +59,21 @@ class ProductImport implements ToCollection
                 }
 
                 try {
-                    // Always create a new product as requested
-                    Product::create([
+                    // Match ONLY by Category + Brand + Model + Model No (as requested by USER)
+                    $product = Product::withTrashed()
+                        ->where([
+                            'category_id' => $category->id,
+                            'brand_id' => $brand->id,
+                            'model' => $model,
+                            'model_no' => $model_no,
+                        ])->first();
+
+                    $data = [
                         'category_id' => $category->id,
                         'brand_id' => $brand->id,
                         'model' => $model,
                         'model_no' => $model_no,
-                        'series' => $series, // using 'series' internally as it matches DB column
+                        'series' => $series, // Warranty
                         'hsn_code' => $hsn_code,
                         'tax_percentage' => $tax_percentage,
                         'price' => $price,
@@ -70,7 +82,16 @@ class ProductImport implements ToCollection
                         'user_id' => Auth::id() ?? 1,
                         'product_images' => '',
                         'product_images_original' => '',
-                    ]);
+                    ];
+
+                    if ($product) {
+                        if ($product->trashed()) {
+                            $product->restore();
+                        }
+                        $product->update($data);
+                    } else {
+                        Product::create($data);
+                    }
                 } catch (\Exception $e) {
                     $hasError = true;
                     $errorMessages[] = 'Row '.($index+2).': ' . $e->getMessage();
