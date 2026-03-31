@@ -60,6 +60,10 @@ class ProductController extends Controller
             'hsn_code' => 'required|string',
             'product_images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'offer_price' => 'nullable|numeric|min:0',
+            'capacity' => 'nullable|string',
+            'remarks' => 'nullable|string',
+            'foc_months' => 'nullable|string',
+            'prorata_months' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -109,6 +113,10 @@ class ProductController extends Controller
             'product_images_original'   =>  $fileNameOriginal,            
             'user_id'                   =>  auth()->user()->id,
             'offer_price'                =>  $request->input('offer_price'),
+            'capacity'                  =>  $request->input('capacity'),
+            'remarks'                   =>  $request->input('remarks'),
+            'foc_months'                =>  $request->input('foc_months'),
+            'prorata_months'            =>  $request->input('prorata_months'),
         ]);
 
         $product->save();
@@ -160,6 +168,10 @@ class ProductController extends Controller
             'hsn_code' => 'required|string',
             'product_images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'offer_price' => 'nullable|numeric|min:0',
+            'capacity' => 'nullable|string',
+            'remarks' => 'nullable|string',
+            'foc_months' => 'nullable|string',
+            'prorata_months' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -169,17 +181,28 @@ class ProductController extends Controller
         }
 
         // Check for duplicate (Category + Brand + Model + Model No) excluding current product ID
-        $exists = Product::where([
-            'category_id' => $request->category_id,
-            'brand_id' => $request->brand_id,
-            'model' => $request->model,
-            'model_no' => $request->model_no,
-        ])->where('id', '!=', $id)->exists();
+        $product = Product::findOrFail($id);
+        
+        $hasChanged = (
+            $product->category_id != $request->category_id ||
+            $product->brand_id != $request->brand_id ||
+            $product->model != $request->model ||
+            $product->model_no != $request->model_no
+        );
 
-        if ($exists) {
-            return response()->json([
-                'errors' => ['model' => ['This combination of Category, Brand, Model, and Model No already exists.']]
-            ], 422);
+        if ($hasChanged) {
+            $exists = Product::where([
+                'category_id' => $request->category_id,
+                'brand_id' => $request->brand_id,
+                'model' => $request->model,
+                'model_no' => $request->model_no,
+            ])->where('id', '!=', $id)->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'errors' => ['model' => ['This combination already exists in another product record. Please use unique details.']]
+                ], 422);
+            }
         }
 
         if($request->file('product_images')){
@@ -192,9 +215,7 @@ class ProductController extends Controller
             $fileName           =   '';
             $fileNameOriginal   =   '';
         }        
-        $id                                 =   $request->input('id');
 
-        $product                            =   Product::find($id);
         $product->category_id               =   $request->input('category_id');
         $product->brand_id                  =   $request->input('brand_id');
         $product->model                     =   $request->input('model');
@@ -207,10 +228,14 @@ class ProductController extends Controller
         $product->product_images            =   $fileName;   
         $product->product_images_original   =   $fileNameOriginal;
         $product->user_id                   =   auth()->user()->id;
-        $product->offer_price                =   $request->input('offer_price');
+        $product->offer_price               =   $request->input('offer_price');
+        $product->capacity                  =   $request->input('capacity');
+        $product->remarks                   =   $request->input('remarks');
+        $product->foc_months                =   $request->input('foc_months');
+        $product->prorata_months            =   $request->input('prorata_months');
         $product->save();
 
-        return response()->json(['message' => $id. ' Product updated successfully!']);
+        return response()->json(['message' => $product->id. ' Product updated successfully!']);
     }
 
     /**
@@ -246,7 +271,7 @@ class ProductController extends Controller
     {
         try {
             $request->validate([
-                'file' => 'required|mimes:xlsx,xls'
+                'file' => 'required'
             ]);
 
             \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductImport, $request->file('file'));
@@ -262,6 +287,75 @@ class ProductController extends Controller
     }
 
     /**
+     * AJAX: Preview Product Import
+     */
+    public function importPreview(Request $request)
+    {
+        try {
+            $request->validate(['file' => 'required|mimes:xlsx,xls']);
+            $file = $request->file('file');
+            $data = \Maatwebsite\Excel\Facades\Excel::toArray(new \App\Imports\ProductImport, $file);
+
+            if (empty($data) || empty($data[0])) {
+                return response()->json(['error' => 'Excel file is empty.'], 422);
+            }
+
+            $rows = $data[0];
+            $headers = array_shift($rows); // Remove header row
+            
+            $previewData = [];
+            foreach ($rows as $index => $row) {
+                // If row is mostly empty, skip it
+                if (count(array_filter($row)) < 3) continue;
+
+                $categoryName = trim($row[1] ?? '');
+                $brandName = trim($row[2] ?? '');
+                $model = trim($row[3] ?? '');
+                $taxPercentage = is_numeric($row[7] ?? null) ? floatval($row[7]) : null;
+
+                $category = \App\Models\Category::where('name', $categoryName)->first();
+                $brand = \App\Models\Brand::where('name', $brandName)->first();
+                
+                // Fetch valid GST rates once for performance or just check exists
+                $validTax = false;
+                if ($taxPercentage !== null) {
+                    $validTax = \App\Models\GST::where('name', 'like', $taxPercentage . '%')->exists();
+                }
+
+                $isValid = ($category && $brand && !empty($model) && $validTax);
+                $statusMsg = '';
+                if (!$category) $statusMsg .= "Category '$categoryName' not found. ";
+                if (!$brand) $statusMsg .= "Brand '$brandName' not found. ";
+                if (empty($model)) $statusMsg .= "Model is empty. ";
+                if (!$validTax) $statusMsg .= "Tax rate '$taxPercentage%' not found in masters. ";
+
+                $previewData[] = [
+                    'category' => $categoryName,
+                    'brand' => $brandName,
+                    'model' => $model,
+                    'model_no' => $row[4] ?? '',
+                    'warranty' => $row[5] ?? '',
+                    'tax_percentage' => $taxPercentage,
+                    'price' => $row[8] ?? '',
+                    'is_valid' => $isValid,
+                    'status_msg' => trim($statusMsg)
+                ];
+
+                // Limit preview to 50 rows for performance
+                if (count($previewData) >= 50) break;
+            }
+
+            return response()->json([
+                'preview' => $previewData,
+                'total_rows' => count($rows)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * AJAX: Search products for auto-suggestion in invoice
      */
     public function search(Request $request)
@@ -271,6 +365,7 @@ class ProductController extends Controller
         $products = Product::with(['brand', 'category'])
             ->where(function($query) use ($q) {
                 $query->where('model', 'like', "%$q%")
+                    ->orWhere('model_no', 'like', "%$q%")
                     ->orWhere('series', 'like', "%$q%")
                     ->orWhereHas('brand', function($query) use ($q) {
                         $query->where('name', 'like', "%$q%") ;
@@ -279,7 +374,7 @@ class ProductController extends Controller
                         $query->where('name', 'like', "%$q%") ;
                     });
             })
-            ->limit(10)
+            ->limit(20)
             ->get();
         $result = $products->map(function($p) use ($warehouseId) {
             // Get stock for this product (by model, category, brand, and warehouse if provided)
@@ -295,13 +390,14 @@ class ProductController extends Controller
                 'brand' => $p->brand ? $p->brand->name : '',
                 'series' => $p->series,
                 'model' => $p->model,
+                'model_no' => $p->model_no,
                 'category' => $p->category ? $p->category->name : '',
                 'price' => $p->price,
                 'offer_price' => $p->offer_price,
                 'tax_percentage' => $p->tax_percentage,
                 'stock' => $stock,
             ];
-        })->unique('model')->values();
+        })->values();
         return response()->json($result);
     }
 

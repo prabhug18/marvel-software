@@ -44,7 +44,11 @@
                                 <option value="Customer" {{ $customer->customer_type == 'Customer' ? 'selected' : '' }}>Customer</option>
                                 <option value="Dealer" {{ $customer->customer_type == 'Dealer' ? 'selected' : '' }}>Dealer</option>                                
                             </select>
-                        </div>   
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Customer ID / Code</label>
+                            <input class="form-control" type="text" value="{{ $customer->formatted_id }}" readonly disabled/>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label">Customer Name <span class="text-danger">*</span></label>
                             <input class="form-control" type="text" placeholder="Enter Name" required name="name" value="{{ $customer->name }}"/>
@@ -52,6 +56,10 @@
                         <div class="col-md-6">
                             <label class="form-label">Customer Phone <span class="text-danger">*</span></label>
                             <input class="form-control" type="text" placeholder="Enter Phone Number" required name="mobile_no"  value="{{ $customer->mobile_no }}"/>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Alternative Phone</label>
+                            <input class="form-control" type="text" placeholder="Enter Alternative Phone Number" name="alternative_no" value="{{ $customer->alternative_no }}"/>                        
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Email</label>

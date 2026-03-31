@@ -36,6 +36,8 @@
             <tr>
                 <th>S.No</th>
                 <th>Product Name</th>
+                <th>Model No</th>
+                <th>Serial Number</th>
                 <th>Qty</th>
                 <th>Unit Price</th>
                 <th>Total</th>
@@ -44,9 +46,14 @@
         </thead>
         <tbody>
             @forelse($invoice->items as $index => $item)
+                @php
+                    $cleanedName = preg_replace('/\s*-\s*\d+\s*(M|months)\s*-\s*/i', ' - ', $item->name ?? $item->product_name);
+                @endphp
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>{{ $item->name ?? $item->product_name }}</td>
+                    <td>{{ $cleanedName }}</td>
+                    <td>{{ $item->model }}</td>
+                    <td>{{ $item->serial_no }}</td>
                     <td>{{ $item->qty }}</td>
                     <td>₹{{ number_format($item->unit_price, 2) }}</td>
                     <td>₹{{ number_format($item->total, 2) }}</td>
@@ -58,7 +65,7 @@
                 </tr>
             @empty
                 <tr class="text-muted">
-                    <td colspan="6">No products added</td>
+                    <td colspan="8">No products added</td>
                 </tr>
             @endforelse
         </tbody>
@@ -120,7 +127,7 @@ $(document).ready(function() {
                             const display = [p.brand, p.series, p.model].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
                             // prefer offer_price if provided
                             let suggestionPrice = (p.offer_price !== undefined && p.offer_price !== null && p.offer_price !== '') ? p.offer_price : p.price;
-                            $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-id="'+(p.id||'')+'" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-category="'+(p.category||'')+'" data-price="'+(suggestionPrice||'')+'" data-orig-price="'+(p.price||'')+'" data-tax_percentage="'+(p.tax_percentage||'')+'">'+display+'</button>');
+                            $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-id="'+(p.id||'')+'" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-model_no="'+(p.model_no||'')+'" data-category="'+(p.category||'')+'" data-price="'+(suggestionPrice||'')+'" data-orig-price="'+(p.price||'')+'" data-tax_percentage="'+(p.tax_percentage||'')+'">'+display+'</button>');
                         });
                         $suggestions.show();
                     } else {
@@ -151,8 +158,9 @@ $(document).ready(function() {
             gst_exclusive_price = gst_inclusive_price / (1 + gst_percentage / 100);
     
             $('#invoiceProductPrice').data('tax-percentage', gst_percentage);
-            // store selected product id on model input for later
+            // store selected product id and model_no on model input for later
             $('#invoiceProductModel').data('product-id', productIdSelected);
+            $('#invoiceProductModel').data('model-no', $btn.data('model_no') || '');
             $('#productSuggestions').hide();
         $('#invoiceProductModel').val(model);
         // Set GST-exclusive price in textbox, but also update hidden field and label
@@ -260,24 +268,36 @@ function addProduct() {
         Swal.fire({ icon: 'error', title: 'Invalid Details', text: 'Please enter valid product details. Serial Number is required.' });
         return;
     }
-    // --- Stock Validation AJAX ---
+    // --- Strict Stock & Serial Validation ---
     $.ajax({
         url: '/check-stock',
         type: 'GET',
         data: {
             model: model,
-            warehouse_id: warehouseId
+            warehouse_id: warehouseId,
+            serial_no: serial_no // Send the serial No
         },
         dataType: 'json',
         success: function(response) {
-            const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : null;
-            if (availableStock === null) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to check stock. Please try again.' });
+            const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : 0;
+            const unavailable = response.unavailable_serials || [];
+
+            if (unavailable.length > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Serial Number Unavailable',
+                    text: 'The serial number ' + unavailable.join(', ') + ' is already sold or not in this warehouse.',
+                });
                 return;
             }
-            if (availableStock !== null && qty > availableStock) {
-                Swal.fire({ icon: 'warning', title: 'Warning', text: 'Not enough stock available. This will result in negative stock.' });
-                // Allow negative stock, do not return
+            
+            if (qty > availableStock) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Insufficient Stock',
+                    text: 'Only ' + availableStock + ' units are available in this location. You cannot add ' + qty + ' units.',
+                });
+                return;
             }
             // --- Fetch product tax_percentage from backend (AJAX) ---
             $.ajax({
@@ -298,12 +318,14 @@ function addProduct() {
                     const productFullName = `${name}`;
                     // Total should use the GST-inclusive price entered manually
                     let total_inclusive = gst_inclusive_price * qty;
-                    // prefer explicit selected id from UI if available
+                    // prefer explicit selected id and model_no from UI if available
                     const selectedProductId = $('#invoiceProductModel').data('product-id') || null;
+                    const selectedModelNo = $('#invoiceProductModel').data('model-no') || (found ? found.model_no : '');
                     window.productsArr.push({
                         name: productFullName,
                         product_name: productFullName,
                         model,
+                        model_no: selectedModelNo,
                         product_id: selectedProductId,
                         serial_no,
                         qty,
@@ -320,14 +342,16 @@ function addProduct() {
                     $('#origPriceLabel').text('').hide();
                 },
                 error: function() {
-                    const productFullName = `${name} - ${model}`;
+                    const productFullName = `${name}`;
                     let total_inclusive = gst_inclusive_price * qty;
                     let used_tax = gst_percentage || 5;
                     const selectedProductIdFallback = $('#invoiceProductModel').data('product-id') || null;
+                    const selectedModelNoFallback = $('#invoiceProductModel').data('model-no') || '';
                     window.productsArr.push({
                         name: productFullName,
                         product_name: productFullName,
                         model,
+                        model_no: selectedModelNoFallback,
                         product_id: selectedProductIdFallback,
                         serial_no,
                         qty,
@@ -350,11 +374,17 @@ function addProduct() {
         }
     });
 }
+function cleanProductName(name) {
+    if (!name) return "";
+    // Remove warranty strings like " - 48M - " or " - 24 months - "
+    return name.replace(/\s*-\s*\d+\s*(M|months)\s*-\s*/gi, ' - ');
+}
+
 function updateProductTable() {
     const tbody = document.querySelector('#invoiceProductTable tbody');
     tbody.innerHTML = '';
     if (window.productsArr.length === 0) {
-        tbody.innerHTML = '<tr class="text-muted"><td colspan="6">No products added</td></tr>';
+        tbody.innerHTML = '<tr class="text-muted"><td colspan="8">No products added</td></tr>';
         return;
     }
     window.productsArr.forEach((product, index) => {
@@ -363,7 +393,9 @@ function updateProductTable() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
-            <td>${product.name}</td>
+            <td>${cleanProductName(product.name)}</td>
+            <td>${product.model_no || product.model || ''}</td>
+            <td>${product.serial_no || ''}</td>
             <td>${product.qty}</td>
             <td>₹${unitPriceDisplay.toFixed(2)}</td>
             <td>₹${totalDisplay.toFixed(2)}</td>

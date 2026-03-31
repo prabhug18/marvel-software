@@ -52,7 +52,8 @@ class CustomerController extends Controller
         $this->validate($request, [
             'name'      => 'required',            
             'email'     => 'nullable|email',
-            'mobile_no' => 'required|digits:10|unique:customers,mobile_no',
+            'mobile_no' => 'required|digits:10',
+            'alternative_no' => 'nullable|digits:10',
             'address'   => 'nullable|string|max:255',
             'state'     => 'required|exists:states,id',
             'city'      => 'required|exists:cities,id',
@@ -62,7 +63,7 @@ class CustomerController extends Controller
             'customer_type' => 'nullable|string|max:50',
             'remarks'   => 'nullable|string',
         ], [
-            'mobile_no.unique' => 'A customer with this mobile number already exists.',
+            // removed mobile_no.unique custom message
         ]);
 
         $id = Auth::user()->id;
@@ -71,6 +72,7 @@ class CustomerController extends Controller
         $customer->name         =   $request->name;
         $customer->email        =   $request->email;
         $customer->mobile_no    =   $request->mobile_no;
+        $customer->alternative_no = $request->alternative_no;
         $customer->address      =   $request->address;
         $customer->state_id     =   $request->state;
         $customer->city_id      =   $request->city;
@@ -83,6 +85,9 @@ class CustomerController extends Controller
         $customer->customer_type = $request->customer_type;
         $customer->remarks      =   $request->remarks;
         try {
+            $customer->save();
+            $prefix = ($customer->customer_type === 'Dealer') ? 'DLR-' : 'CUST-';
+            $customer->formatted_id = $prefix . str_pad($customer->id, 3, '0', STR_PAD_LEFT);
             $customer->save();
         } catch (\Illuminate\Database\QueryException $e) {
             // Generic DB error (unique constraints removed at app-level if desired)
@@ -138,7 +143,8 @@ class CustomerController extends Controller
     $this->validate($request, [
         'name'      => 'required',            
         'email'     => 'nullable|email',
-        'mobile_no' => 'required|digits:10|unique:customers,mobile_no,' . $id,
+        'mobile_no' => 'required|digits:10',
+        'alternative_no' => 'nullable|digits:10',
             'address'   => 'nullable|string|max:255',
             'state'     => 'required|exists:states,id',
             'city'      => 'required|exists:cities,id',
@@ -148,13 +154,14 @@ class CustomerController extends Controller
             'customer_type' => 'nullable|string|max:50',
             'remarks'   => 'nullable|string',
         ], [
-            'mobile_no.unique' => 'A customer with this mobile number already exists.',
+            // removed mobile_no.unique custom message
         ]);
     
         $customer = Customer::find($id);
         $customer->name = $request->name;
         $customer->email = $request->email;
         $customer->mobile_no = $request->mobile_no;
+        $customer->alternative_no = $request->alternative_no;
         $customer->address = $request->address;
         $customer->state_id = $request->state;
         $customer->city_id = $request->city;
@@ -164,11 +171,21 @@ class CustomerController extends Controller
         $customer->source = $request->source;
         $customer->customer_type = $request->customer_type;
         $customer->remarks = $request->remarks;
+
+        $prefix = ($customer->customer_type === 'Dealer') ? 'DLR-' : 'CUST-';
+        $customer->formatted_id = $prefix . str_pad($customer->id, 3, '0', STR_PAD_LEFT);
+
             try {
                 $customer->save();
             } catch (\Illuminate\Database\QueryException $e) {
-                // Generic DB error during update
-                $msg = 'Failed to update customer due to a database error.';
+                // Return exact DB error during update for debugging
+                $msg = 'Database Error: ' . $e->getMessage();
+                if ($request->ajax()) {
+                    return response()->json(['message' => $msg], 409);
+                }
+                return redirect()->back()->withInput()->with('update_customer_error', $msg);
+            } catch (\Exception $e) {
+                $msg = 'Error: ' . $e->getMessage();
                 if ($request->ajax()) {
                     return response()->json(['message' => $msg], 409);
                 }
@@ -213,12 +230,7 @@ class CustomerController extends Controller
             ->orWhere('email', 'like', "%$q%")
             ->get();
 
-        // Deduplicate by mobile_no and email on the collection
-        $uniqueCustomers = $customers->unique(function ($item) {
-            return $item->mobile_no . $item->email;
-        })->values();
-
-        return response()->json($uniqueCustomers);
+        return response()->json($customers);
     }
     
 }

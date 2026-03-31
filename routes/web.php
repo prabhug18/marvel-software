@@ -13,6 +13,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SourceController;
+use App\Http\Controllers\VendorController;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 
@@ -59,6 +60,7 @@ Route::group(['middleware' => ['auth']], function() {
 
     Route::get('logs', 'App\Http\Controllers\GeneralController@logs');
     Route::get('/get-city', [CustomerController::class, 'getCity']);
+    Route::get('/check-warranty', [InvoiceController::class, 'checkWarranty']);
     Route::get('/generate-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
 });
 
@@ -81,17 +83,15 @@ Route::get('/api/products/search', function (\Illuminate\Http\Request $request) 
 
     return \App\Models\Product::with(['category:id,name', 'brand:id,name'])
         ->where('model', 'like', "%$term%")
+        ->orWhere('model_no', 'like', "%$term%")
         ->orWhereHas('category', function($q) use ($term) {
             $q->where('name', 'like', "%$term%");
         })
         ->orWhereHas('brand', function($q) use ($term) {
             $q->where('name', 'like', "%$term%");
         })
-        ->orWhere('category_id', $term)
-        ->orWhere('brand_id', $term)
-        ->limit(10)
-        ->get(['id', 'model', 'category_id', 'brand_id'])
-        ->unique('model')
+        ->limit(20)
+        ->get(['id', 'model', 'model_no', 'category_id', 'brand_id'])
         ->values();
 });
 
@@ -106,11 +106,13 @@ Route::get('/api/warehouse-stock', [StockController::class, 'warehouseStock']);
 Route::post('/api/update-warehouse-stock', [StockController::class, 'updateWarehouseStock']);
 Route::get('/stock/export', [StockController::class, 'exportPage'])->name('stock.export');
 Route::get('/export/stock', [StockController::class, 'export'])->name('export.stocks');
+Route::get('/export/stock-detailed', [StockController::class, 'exportDetailed'])->name('export.stocks.detailed');
 Route::post('/stocks/import', [StockController::class, 'import'])->name('stocks.import');
 
 Route::get('/export/product', [ProductController::class, 'exportPage'])->name('export.product');
 Route::get('/product/export', [ProductController::class, 'export'])->name('product.export');
 Route::post('/product/import', [ProductController::class, 'import'])->name('product.import');
+Route::post('/product/import-preview', [ProductController::class, 'importPreview'])->name('product.import.preview');
 Route::get('/api/invoice-details', [PaymentController::class, 'invoiceDetailsWithTotal']);
 Route::match(['get', 'post'], 'payment/add-payment', [PaymentController::class, 'addPayment']);
 Route::post('payment/store', [PaymentController::class, 'store'])->name('payment.store');
@@ -133,5 +135,8 @@ Route::post('payment/mark-reconciliation', [PaymentController::class, 'markRecon
 Route::post('payment/confirm', [PaymentController::class, 'confirmPayment'])->name('payment.confirm');
 // Pending Reconciliation modal AJAX endpoint
 Route::get('payment/pending-reconciliation', [App\Http\Controllers\PaymentController::class, 'pendingReconciliation'])->name('payment.pendingReconciliation');
+
+Route::get('/vendor-search', [VendorController::class, 'search']);
+Route::resource('vendors', VendorController::class);
 
 

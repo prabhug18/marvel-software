@@ -191,6 +191,29 @@
                     });
                     </script>
 
+                    <!-- Warranty Checker -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card bg-light border-info">
+                                <div class="card-body">
+                                    <h5 class="card-title text-info mb-3"><i class="fas fa-shield-alt"></i> Warranty Checker</h5>
+                                    <div class="row align-items-end g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label text-muted">Scan / Enter Serial No</label>
+                                            <input type="text" id="warrantyCheckSerial" class="form-control" placeholder="Serial Number">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-info text-white w-100" id="btnCheckWarranty">Check Warranty</button>
+                                        </div>
+                                        <div class="col-md-6" id="warrantyCheckResult">
+                                            <!-- Result will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="w-100 text-start ps-3">
                         <h4 class="mt-5 mb-3">Add Products</h4>
                     </div>
@@ -225,48 +248,62 @@
                                 type="text"
                                 class="form-control"
                                 id="invoiceProductSerialNo"
-                                placeholder="Enter Serial No(s), separated by comma"
+                                placeholder="Enter Serial No(s)"
                                 required
                                 autocomplete="off"
                                 multiple
                             />
-                            
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-md-1 px-1">
                             <label for="invoiceProductQty" class="form-label">Qty <span class="text-danger">*</span></label>
                             <input
                                 type="number"
-                                class="form-control"
+                                class="form-control px-2"
                                 id="invoiceProductQty"
-                                placeholder="Enter Qty"
+                                placeholder="Qty"
                                 min="1"
                                 required
-                                
                             />
-                            <div id="origPriceLabel" class="form-text text-secondary mt-1" style="display:none; font-weight:600; margin-top:6px;">&nbsp;</div>
-                            
+                            <div id="origPriceLabel" class="form-text text-secondary mt-1" style="display:none; font-weight:600; font-size: 0.75rem;">&nbsp;</div>
                         </div>
 
-                        <div class="col-md-2 position-relative d-flex flex-column justify-content-end">
-                            <label for="invoiceProductPrice" class="form-label">Unit Price <span class="text-danger">*</span></label>
+                        <div class="col-md-2 px-1">
+                            <label for="invoiceProductGst" class="form-label">GST AMT</label>
                             <input
-                                type="number"
+                                type="text"
                                 class="form-control"
-                                id="invoiceProductPrice"
-                                placeholder="Enter Unit Price"
-                                min="0"
-                                step="0.01"
-                                required />
-                            <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="display:none; font-weight:bold; min-height:22px; margin-top:6px;"></div>
+                                id="invoiceProductGst"
+                                placeholder="GST Amount"
+                                readonly
+                            />
                         </div>
 
-                        <div class="col-md-2 d-flex align-items-end">
+                        <div class="col-md-2 position-relative px-1">
+                            <label for="invoiceProductPrice" class="form-label">Unit Price <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="invoiceProductPrice"
+                                    placeholder="Price"
+                                    min="0"
+                                    step="0.01"
+                                    required />
+                                <button class="btn btn-outline-secondary btn-sm" type="button" id="verifyPriceBtn" title="Verify / Recalculate"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                            <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="display:none; font-weight:bold; font-size: 0.75rem; min-height:18px;"></div>
+                        </div>
+
+                        <div class="col-md-1 px-1">
+                            <label class="form-label">&nbsp;</label>
                             <button
                             type="button"
                             class="btn custom-orange-btn text-white w-100"
-                            id="invoiceAddProductBtn" >
-                            Add Product
+                            id="invoiceAddProductBtn"
+                            style="height: 38px;"
+                            title="Add Product" >
+                            <i class="fas fa-plus"></i>
                             </button>
                         </div>
 
@@ -439,12 +476,9 @@
                         success: function(customers) {
                             $suggestions.empty();
                             if (Array.isArray(customers) && customers.length > 0) {
-                                const seen = new Set();
                                 customers.forEach(function(c) {
-                                    const key = (c.mobile_no || '') + '|' + (c.email || '');
-                                    if (seen.has(key)) return;
-                                    seen.add(key);
-                                    $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-name="'+c.name+'" data-mobile="'+c.mobile_no+'" data-email="'+c.email+'" data-gst="'+(c.gst_no||'')+'" data-address="'+(c.address||'')+'" data-state="'+(c.state_id||'')+'" data-city="'+(c.city_id||'')+'" data-pincode="'+(c.pincode||'')+'">'+c.name+' ('+c.mobile_no+', '+c.email+')</button>');
+                                    let displayLabel = (c.name || 'Unknown') + ' [' + (c.formatted_id || '') + '] (' + (c.mobile_no || '') + ')';
+                                    $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-name="'+c.name+'" data-mobile="'+c.mobile_no+'" data-email="'+c.email+'" data-gst="'+(c.gst_no||'')+'" data-address="'+(c.address||'')+'" data-state="'+(c.state_id||'')+'" data-city="'+(c.city_id||'')+'" data-pincode="'+(c.pincode||'')+'">'+displayLabel+'</button>');
                                 });
                                 $suggestions.show();
                             } else {
@@ -547,10 +581,10 @@
                                 products.forEach(function(p) {
                                     // Only show products with stock > 0
                                     // if (p.stock !== undefined && Number(p.stock) <= 0) return;
-                                    const key = (p.brand||'')+'|'+(p.series||'')+'|'+(p.model||'');
+                                    const key = (p.brand||'')+'|'+(p.series||'')+'|'+(p.model||'')+'|'+(p.model_no||'');
                                     if (seen.has(key)) return;
                                     seen.add(key);
-                                    const display = [p.brand, p.series, p.model].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
+                                    const display = [p.brand, p.series, p.model, p.model_no].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
                                     // Ensure GST is a number and not empty or null
                                     let tax_percentage = 0;
                                     if (p.tax_percentage !== undefined && p.tax_percentage !== null && p.tax_percentage !== '') {
@@ -559,7 +593,7 @@
                                     }
                                     // prefer offer_price if provided, otherwise fall back to price
                                     let suggestionPrice = (p.offer_price !== undefined && p.offer_price !== null && p.offer_price !== '') ? p.offer_price : p.price;
-                                    $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-id="'+(p.id||'')+'" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-category="'+(p.category||'')+'" data-price="'+(suggestionPrice||'')+'" data-orig-price="'+(p.price||'')+'" data-tax_percentage="'+tax_percentage+'">'+display+'</button>');
+                                    $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-id="'+(p.id||'')+'" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-model_no="'+(p.model_no||'')+'" data-category="'+(p.category||'')+'" data-price="'+(suggestionPrice||'')+'" data-orig-price="'+(p.price||'')+'" data-tax_percentage="'+tax_percentage+'">'+display+'</button>');
                                 });
                                 $suggestions.show();
                             } else {
@@ -600,10 +634,14 @@
                 $('#invoiceProductPriceGstIncl').val(gst_inclusive_price.toFixed(2));
                 $('#invoiceProductPrice').data('gst-inclusive', gst_inclusive_price.toFixed(2));
                 $('#invoiceProductPrice').data('tax-percentage', gst_percentage);
-                // store selected product id on model input for later use
+                // store selected product id and model_no on model input for later use
                 $('#invoiceProductModel').data('product-id', productIdSelected);
+                $('#invoiceProductModel').data('model-no', $btn.data('model_no') || '');
                 // also store on the product name input so selections there carry the id
                 $('#invoiceProductName').data('product-id', productIdSelected);
+                // Populate new GST Amount field instead of GST %
+                const gst_amount = gst_inclusive_price - base_price;
+                $('#invoiceProductGst').val(gst_amount.toFixed(2));
                 $('#productSuggestions').hide();
                 // Show GST-inclusive price under Unit Price input
                 $('#gstInclusivePriceLabel').html('<div>GST Inclusive: ₹' + gst_inclusive_price.toFixed(2) + '</div>').css({'display':'block'});
@@ -619,7 +657,10 @@
             // If user types/selects product name directly (not clicking suggestion), try resolve on blur
             $('#invoiceProductName').on('blur change', function() {
                 const val = $(this).val().trim();
-                if (!val) return;
+                if (!val) {
+                    clearProductFields();
+                    return;
+                }
                 // If already have product-id stored, skip lookup
                 if ($(this).data('product-id')) return;
                 // Query backend for possible product matches
@@ -651,6 +692,9 @@
                                 $('#invoiceProductPriceGstIncl').val(gst_inclusive_price.toFixed(2));
                                 $('#invoiceProductPrice').data('gst-inclusive', gst_inclusive_price.toFixed(2));
                                 $('#invoiceProductPrice').data('tax-percentage', gst_percentage);
+                                // Populate new GST Amount field instead of GST %
+                                const gst_amount_matched = gst_inclusive_price - base_price;
+                                $('#invoiceProductGst').val(gst_amount_matched.toFixed(2));
                                 // Show GST-inclusive price under Unit Price input
                                 $('#gstInclusivePriceLabel').html('<div>GST Inclusive: ₹' + gst_inclusive_price.toFixed(2) + '</div>').css({'display':'block'});
                                 // Show Original price under Serial No input if available
@@ -666,24 +710,76 @@
                 });
             });
             
-            // When user enters price manually, treat as GST-inclusive and reverse-calculate GST-exclusive
-            $('#invoiceProductPrice').on('input', function() {
-                let gst_inclusive_price = parseFloat($(this).val()) || 0;
+            // When user clicks Verify, treat the entered price as GST-inclusive, calculate base price, and update UI
+            $('#verifyPriceBtn').on('click', function() {
+                let entered_price = parseFloat($('#invoiceProductPrice').val()) || 0;
                 let gst_percentage = parseFloat($('#invoiceProductPrice').data('tax-percentage')) || 0;
+                
+                let gst_inclusive_price = entered_price;
                 let base_price = gst_inclusive_price;
                 if (gst_percentage > 0) {
                     base_price = gst_inclusive_price / (1 + gst_percentage / 100);
                 }
+
                 if ($('#invoiceProductPriceGstIncl').length === 0) {
                     $('<input>').attr({type: 'hidden', id: 'invoiceProductPriceGstIncl'}).appendTo('body');
                 }
+                
+                // Set the input field to base price and hidden field to inclusive
+                $('#invoiceProductPrice').val(base_price.toFixed(2));
                 $('#invoiceProductPriceGstIncl').val(gst_inclusive_price.toFixed(2));
-                $(this).data('gst-exclusive', base_price.toFixed(2));
-                // --- Update preview total if qty is filled ---
-                let qty = parseInt($('#invoiceProductQty').val()) || 0;
-                let total = gst_inclusive_price * qty;
-                // Optionally, you can show this total somewhere as a preview if needed
-                // For now, this ensures that when addProduct() is called, the correct values are used
+                
+                $('#invoiceProductPrice').data('gst-exclusive', base_price.toFixed(2));
+                $('#invoiceProductPrice').data('gst-inclusive', gst_inclusive_price.toFixed(2));
+                
+                // Show GST-inclusive price under Unit Price input
+                $('#gstInclusivePriceLabel').html('<div>GST Inclusive: ₹' + gst_inclusive_price.toFixed(2) + '</div>').css({'display':'block'});
+
+                // Recalculate and update the GST Amount field as well
+                const gst_amt_updated = gst_inclusive_price - base_price;
+                $('#invoiceProductGst').val(gst_amt_updated.toFixed(2));
+            });
+
+            // Warranty Check Logic
+            $('#btnCheckWarranty').on('click', function() {
+                let serial = $('#warrantyCheckSerial').val().trim();
+                let resultDiv = $('#warrantyCheckResult');
+                if (!serial) {
+                    resultDiv.html('<div class="text-danger small"><i class="fas fa-exclamation-circle"></i> Please enter a serial number.</div>');
+                    return;
+                }
+                
+                resultDiv.html('<div class="text-info small"><i class="fas fa-spinner fa-spin"></i> Checking warranty...</div>');
+                
+                $.ajax({
+                    url: '/check-warranty',
+                    type: 'GET',
+                    data: { serial_no: serial },
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.status === 'Error' || res.status === 'Not Sold') {
+                            resultDiv.html(`<div class="badge bg-${res.badge} p-2 text-wrap w-100 text-start" style="font-size:0.9rem;">
+                                <i class="fas fa-times-circle"></i> ${res.status}: ${res.message}</div>`);
+                        } else {
+                            resultDiv.html(`
+                            <div class="border rounded p-2 bg-white" style="font-size:0.85rem;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark">Status:</span>
+                                    <span class="badge bg-${res.badge}">${res.status}</span>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6 text-muted">Sold To:</div><div class="col-6 fw-bold text-end">${res.customer ?? 'N/A'}</div>
+                                    <div class="col-6 text-muted">Invoice Date:</div><div class="col-6 fw-bold text-end">${res.invoice_date} (${res.months_passed} mo)</div>
+                                    <div class="col-6 text-muted">Warranty Details:</div><div class="col-6 fw-bold text-end">${res.foc_months} FOC / ${res.prorata_months} Pro-rata</div>
+                                    <div class="col-6 text-muted">Est. Expiry:</div><div class="col-6 fw-bold text-end">${res.warranty_end}</div>
+                                </div>
+                            </div>`);
+                        }
+                    },
+                    error: function(xhr) {
+                        resultDiv.html('<div class="text-danger small"><i class="fas fa-exclamation-circle"></i> Error checking warranty. Please try again.</div>');
+                    }
+                });
             });
 
             $(document).ready(function() {
@@ -789,14 +885,14 @@
             if (!gst_percentage && $('#invoiceProductPriceGstIncl').length > 0) {
                 gst_percentage = parseFloat($('#invoiceProductPriceGstIncl').data('tax-percentage')) || 0;
             }
-            // Detect if product was selected from auto-suggestion (GST-inclusive price is stored in hidden field)
+            // Detect if product was selected from auto-suggestion or verified manually
             let gst_inclusive_price;
             if ($('#invoiceProductPriceGstIncl').length > 0 && $('#invoiceProductPriceGstIncl').val() && !isNaN(parseFloat($('#invoiceProductPriceGstIncl').val()))) {
-                // Product selected from auto-suggestion
                 gst_inclusive_price = parseFloat($('#invoiceProductPriceGstIncl').val());
             } else {
-                // Manual entry
-                gst_inclusive_price = parseFloat(document.getElementById('invoiceProductPrice').value);
+                // If they never clicked Verify, assume they typed base price or manually calculated.
+                let base_val = parseFloat(document.getElementById('invoiceProductPrice').value);
+                gst_inclusive_price = base_val * (1 + gst_percentage / 100);
             }
             // For auto-suggestion, use the price as GST-inclusive and do NOT reverse-calculate
             // For manual entry, reverse-calculate GST-exclusive price
@@ -817,97 +913,135 @@
                 return;
             }
 
-            // --- Stock Validation AJAX (allow negative stock) ---
+            // --- Strict Stock & Serial Validation ---
             $.ajax({
                 url: '/check-stock',
                 type: 'GET',
                 data: {
                     model: model,
-                    warehouse_id: warehouseId
+                    warehouse_id: warehouseId,
+                    serial_no: serialNoRaw // Send the raw string of serials
                 },
                 dataType: 'json',
                 success: function(response) {
-                    const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : null;
-                    if (availableStock !== null && qty > availableStock) {
-                        Swal.fire({ icon: 'warning', title: 'Low Stock API', text: 'Warning: Not enough stock available. This will result in negative stock.' });
+                    const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : 0;
+                    const unavailable = response.unavailable_serials || [];
+
+                    if (unavailable.length > 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Serial Numbers Unavailable',
+                            text: 'The following serial numbers are already sold or not in this warehouse: ' + unavailable.join(', '),
+                        });
+                        return;
                     }
-                    // --- Fetch product tax_percentage from backend (AJAX) ---
-                    $.ajax({
-                        url: '/product-search',
-                        type: 'GET',
-                        data: { q: model },
-                        dataType: 'json',
-                        success: function(products) {
-                            let tax_percentage = gst_percentage;
-                            let foundProductId = null;
-                            if (Array.isArray(products) && products.length > 0) {
-                                const found = products.find(p => {
-                                    return (p.model && p.model.toLowerCase() === model.toLowerCase());
-                                });
-                                if (found) {
-                                    if (found.tax_percentage !== undefined && found.tax_percentage !== null && found.tax_percentage !== '') {
-                                        tax_percentage = parseFloat(found.tax_percentage);
-                                    }
-                                    if (found.id !== undefined) foundProductId = found.id;
-                                }
-                            }
-                            // Always recalculate base_price and gst_inclusive_price for manual entry
-                            let final_gst_inclusive_price = gst_inclusive_price;
-                            let final_base_price = base_price;
-                            if (tax_percentage > 0) {
-                                final_base_price = gst_inclusive_price / (1 + tax_percentage / 100);
-                                final_gst_inclusive_price = final_base_price * (1 + tax_percentage / 100);
-                            }
-                            // Combine serial numbers into a single product entry
-                            const combinedSerials = serialNumbers.join(', ');
-                            // prefer explicit selected id from UI if available
-                            const selectedProductId = $('#invoiceProductModel').data('product-id') || foundProductId || null;
-                            productsArr.push({
-                                name: name,
-                                model: model,
-                                product_id: selectedProductId,
-                                serial_no: combinedSerials,
-                                qty: serialNumbers.length, // store the total qty coming from scanned serials
-                                price: final_base_price,
-                                gst_inclusive_price: final_gst_inclusive_price,
-                                total_incl_gst: final_gst_inclusive_price * serialNumbers.length,
-                                tax_percentage: tax_percentage
-                            });
-                            updateProductTable();
-                            clearProductFields();
-                            updateTotals();
-                        },
-                        error: function(xhr, status, error) {
-                            let final_gst_inclusive_price = gst_inclusive_price;
-                            let final_base_price = base_price;
-                            if (gst_percentage > 0) {
-                                final_base_price = gst_inclusive_price / (1 + gst_percentage / 100);
-                                final_gst_inclusive_price = final_base_price * (1 + gst_percentage / 100);
-                            }
-                            // Combine serial numbers into a single product entry for offline/error path
-                            const combinedSerials = serialNumbers.join(', ');
-                            const selectedProductIdFallback = $('#invoiceProductModel').data('product-id') || null;
-                            productsArr.push({
-                                name: name,
-                                model: model,
-                                product_id: selectedProductIdFallback,
-                                serial_no: combinedSerials,
-                                qty: serialNumbers.length,
-                                price: final_base_price,
-                                gst_inclusive_price: final_gst_inclusive_price,
-                                total_incl_gst: final_gst_inclusive_price * serialNumbers.length,
-                                tax_percentage: gst_percentage
-                            });
-                            updateProductTable();
-                            clearProductFields();
-                            updateTotals();
-                        }
-                    });
+                    
+                    if (qty > availableStock) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Insufficient Stock',
+                            text: 'Only ' + availableStock + ' units are available in this location. You cannot add ' + qty + ' units.',
+                        });
+                        return;
+                    }
+
+                    // All checks passed
+                    performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
                 },
-                error: function(xhr, status, error) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Error checking stock. Please try again.' });
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Unable to verify stock at this time. Please try again.',
+                    });
                 }
             });
+        }
+
+        // Helper to perform the actual product addition logic
+        function performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage) {
+            // --- Fetch product tax_percentage from backend (AJAX) ---
+            $.ajax({
+                url: '/product-search',
+                type: 'GET',
+                data: { q: model },
+                dataType: 'json',
+                success: function(products) {
+                    let tax_percentage = gst_percentage;
+                    let foundProductId = null;
+                    if (Array.isArray(products) && products.length > 0) {
+                        const found = products.find(p => {
+                            return (p.model && p.model.toLowerCase() === model.toLowerCase());
+                        });
+                        if (found) {
+                            if (found.tax_percentage !== undefined && found.tax_percentage !== null && found.tax_percentage !== '') {
+                                tax_percentage = parseFloat(found.tax_percentage);
+                            }
+                            if (found.id !== undefined) foundProductId = found.id;
+                        }
+                    }
+                    // Always recalculate base_price and gst_inclusive_price for manual entry
+                    let final_gst_inclusive_price = gst_inclusive_price;
+                    let final_base_price = base_price;
+                    if (tax_percentage > 0) {
+                        final_base_price = gst_inclusive_price / (1 + tax_percentage / 100);
+                        final_gst_inclusive_price = final_base_price * (1 + tax_percentage / 100);
+                    }
+                    // Combined serial numbers into a single product entry
+                    const combinedSerials = (serialNumbers || []).join(', ');
+                    // prefer explicit selected id and model_no from UI if available
+                    const selectedProductId = $('#invoiceProductModel').data('product-id') || foundProductId || null;
+                    const selectedModelNo = $('#invoiceProductModel').data('model-no') || (found ? found.model_no : '');
+                    productsArr.push({
+                        name: name,
+                        model: model,
+                        model_no: selectedModelNo,
+                        product_id: selectedProductId,
+                        serial_no: combinedSerials,
+                        qty: qty, 
+                        price: final_base_price,
+                        gst_inclusive_price: final_gst_inclusive_price,
+                        total_incl_gst: final_gst_inclusive_price * qty,
+                        tax_percentage: tax_percentage
+                    });
+                    updateProductTable();
+                    clearProductFields();
+                    updateTotals();
+                },
+                error: function(xhr, status, error) {
+                    let final_gst_inclusive_price = gst_inclusive_price;
+                    let final_base_price = base_price;
+                    if (gst_percentage > 0) {
+                        final_base_price = gst_inclusive_price / (1 + gst_percentage / 100);
+                        final_gst_inclusive_price = final_base_price * (1 + gst_percentage / 100);
+                    }
+                    // Combine serial numbers into a single product entry for offline/error path
+                    const combinedSerials = (serialNumbers || []).join(', ');
+                    const selectedProductIdFallback = $('#invoiceProductModel').data('product-id') || null;
+                    const selectedModelNoFallback = $('#invoiceProductModel').data('model-no') || '';
+                    productsArr.push({
+                        name: name,
+                        model: model,
+                        model_no: selectedModelNoFallback,
+                        product_id: selectedProductIdFallback,
+                        serial_no: combinedSerials,
+                        qty: qty,
+                        price: final_base_price,
+                        gst_inclusive_price: final_gst_inclusive_price,
+                        total_incl_gst: final_gst_inclusive_price * qty,
+                        tax_percentage: gst_percentage
+                    });
+                    updateProductTable();
+                    clearProductFields();
+                    updateTotals();
+                }
+            });
+        }
+
+        function cleanProductName(name) {
+            if (!name) return "";
+            // Remove warranty strings like " - 48M - " or " - 24 months - "
+            return name.replace(/\s*-\s*\d+\s*(M|months)\s*-\s*/gi, ' - ');
         }
 
         // === Update Product Table ===
@@ -925,8 +1059,8 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td>${product.name}</td>
-                    <td>${product.model || ''}</td>
+                    <td>${cleanProductName(product.name)}</td>
+                    <td>${product.model_no || product.model || ''}</td>
                     <td>${(product.serial_no || '').split(',').map(s => s.trim()).filter(Boolean).join('<br>')}</td>
                     <td>${product.qty}</td>
                     <td>₹${unit_price.toFixed(2)}</td>
@@ -956,6 +1090,7 @@
             document.getElementById('invoiceProductSerialNo').value = '';
             document.getElementById('invoiceProductQty').value = '';
             document.getElementById('invoiceProductPrice').value = '';
+            document.getElementById('invoiceProductGst').value = '';
         }
 
         // === Update Totals ===
@@ -1029,8 +1164,14 @@
             const igst = parseFloat(document.getElementById('invoiceIGST').textContent) || 0;
             const grand_total = parseFloat(document.getElementById('invoiceGrandTotal').textContent) || 0;
 
+            const generateInvoiceBtn = document.getElementById('invoiceGenerateBtn');
+            generateInvoiceBtn.disabled = true;
+            generateInvoiceBtn.innerHTML = 'Generating... <i class="fas fa-spinner fa-spin"></i>';
+
             if (!customer_name || !mobile_no || !state || !city ||  !invoice_number || !invoice_date || productsArr.length === 0) {
                 Swal.fire({ icon: 'error', title: 'Missing Fields', text: 'Please fill all required fields and add at least one product.' });
+                generateInvoiceBtn.disabled = false;
+                generateInvoiceBtn.innerHTML = 'Generate Invoice';
                 return;
             }
 
@@ -1124,6 +1265,10 @@
                     let msg = 'Error saving invoice.';
                     if (xhr.responseJSON && xhr.responseJSON.message) msg += '\n' + xhr.responseJSON.message;
                     Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    
+                    const generateInvoiceBtn = document.getElementById('invoiceGenerateBtn');
+                    generateInvoiceBtn.disabled = false;
+                    generateInvoiceBtn.innerHTML = 'Generate Invoice';
                 }
             });
         }

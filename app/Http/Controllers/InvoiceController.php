@@ -58,6 +58,82 @@ class InvoiceController extends Controller
     }
 
     /**
+     * AJAX: Check Battery Warranty (Vehicle-based logic)
+     */
+    public function checkWarranty(Request $request)
+    {
+        $serialNo = $request->input('serial_no');
+        if (empty($serialNo)) {
+            return response()->json(['status' => 'Error', 'message' => 'Please enter a serial number.']);
+        }
+
+        // Search for the serial number
+        $item = \App\Models\InvoiceItems::with(['invoice', 'product'])
+            ->where('serial_no', 'LIKE', '%'.$serialNo.'%')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        // Ensure exact match in case of comma separated
+        if ($item && $item->serial_no) {
+            $serials = array_map('trim', explode(',', $item->serial_no));
+            if (!in_array(trim($serialNo), $serials)) {
+                $item = null;
+            }
+        }
+
+        if (!$item) {
+            return response()->json(['status' => 'Not Sold', 'badge' => 'secondary', 'message' => 'Serial number not found in any invoices.']);
+        }
+
+        if (!$item->invoice || !$item->product) {
+            return response()->json(['status' => 'Error', 'badge' => 'danger', 'message' => 'Invoice or Product details missing.']);
+        }
+
+        $invoiceDate = \Carbon\Carbon::parse($item->invoice->invoice_date);
+        $monthsPassed = $invoiceDate->diffInMonths(\Carbon\Carbon::now());
+        
+        $focRaw = $item->product->foc_months ?? '0';
+        $prorataRaw = $item->product->prorata_months ?? '0';
+        
+        // Extract only digits from strings like '24M'
+        $focMonths = (int) preg_replace('/[^0-9]/', '', $focRaw);
+        $prorataMonths = (int) preg_replace('/[^0-9]/', '', $prorataRaw);
+        
+        $totalWarranty = $focMonths + $prorataMonths;
+
+        if ($totalWarranty == 0) {
+            return response()->json([
+                'status' => 'Unknown', 
+                'badge' => 'secondary', 
+                'message' => 'Warranty period not defined for this product.', 
+                'invoice_date' => $invoiceDate->format('d/m/Y')
+            ]);
+        }
+
+        if ($monthsPassed <= $focMonths) {
+            $status = 'Inside FOC';
+            $badge = 'success';
+        } elseif ($monthsPassed <= $totalWarranty) {
+            $status = 'Inside Pro-rata';
+            $badge = 'warning';
+        } else {
+            $status = 'Out of Warranty';
+            $badge = 'danger';
+        }
+
+        return response()->json([
+            'status' => $status,
+            'badge' => $badge,
+            'invoice_date' => $invoiceDate->format('d/m/Y'),
+            'months_passed' => $monthsPassed,
+            'foc_months' => $focMonths,
+            'prorata_months' => $prorataMonths,
+            'customer' => $item->invoice->customer_name,
+            'warranty_end' => $invoiceDate->copy()->addMonths($totalWarranty)->format('d/m/Y')
+        ]);
+    }
+
+    /**
      * AJAX: Return details for modal popup (customer, invoice, payment, reconciliation)
      */
     public function ajaxDetails(Request $request)
@@ -304,6 +380,7 @@ class InvoiceController extends Controller
                 'product_id' => $productIdToSave,
                 'product_name' => $item['name'] ?? $item['product_name'] ?? '',
                 'model' => $item['model'] ?? '',
+                'model_no' => $item['model_no'] ?? null,
                 'serial_no' => $item['serial_no'] ?? null,
                 'qty' => $item['qty'],
                 'tax_percentage' => $item['tax_percentage'] ?? 5,
@@ -507,6 +584,7 @@ class InvoiceController extends Controller
                             'product_id' => $productIdToSave,
                             'product_name' => $item['name'] ?? $item['product_name'] ?? '',
                             'model' => $item['model'] ?? '',
+                            'model_no' => $item['model_no'] ?? null,
                             'serial_no' => $item['serial_no'] ?? null,
                             'qty' => $item['qty'],
                             'tax_percentage' => $item['tax_percentage'] ?? 5,
@@ -687,6 +765,7 @@ class InvoiceController extends Controller
                                 'product_id' => $productIdToSave,
                             'product_name' => $item['name'] ?? $item['product_name'] ?? '',
                             'model' => $item['model'] ?? '',
+                            'model_no' => $item['model_no'] ?? null,
                             'serial_no' => $item['serial_no'] ?? null,
                             'qty' => $item['qty'] ?? 1,
                             'tax_percentage' => $item['tax_percentage'] ?? 5,

@@ -25,6 +25,10 @@ class Product extends Model
         'product_images',
         'product_images_original',
         'user_id',
+        'foc_months',
+        'prorata_months',
+        'capacity',
+        'remarks',
     ];
     
     public function category() {

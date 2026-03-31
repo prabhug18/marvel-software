@@ -37,26 +37,43 @@ class StockExport implements FromCollection, WithHeadings
         $rows = [];
         foreach ($allCombos as $combo) {
             $row = [
-                Category::find($combo['category_id'])?->name ?? '',
-                Brand::find($combo['brand_id'])?->name ?? '',
+                Category::find($combo['category_id'])?->name ?? 'N/A',
+                Brand::find($combo['brand_id'])?->name ?? 'N/A',
                 $combo['model'],
                 $combo['model_no'] ?? '',
             ];
+            
+            $totalQty = 0;
+            $allSerials = [];
+
             foreach ($this->warehouses as $warehouse) {
-                $qty = Stock::where('category_id', $combo['category_id'])
+                // Sum qty to handle multiple serial entries properly
+                $qtySum = Stock::where('category_id', $combo['category_id'])
                     ->where('brand_id', $combo['brand_id'])
                     ->where('model', $combo['model'])
                     ->where('model_no', $combo['model_no'])
                     ->where('warehouse_id', $warehouse->id)
-                    ->first();
-                if (is_null($qty)) {
-                    $row[] = '0';
-                } elseif ($qty->qty == '0') {
-                    $row[] = '0';
-                } else {
-                    $row[] = (int)$qty->qty;
-                }
+                    ->where('qty', '>', 0)
+                    ->sum('qty');
+                
+                // Collect serials for this row
+                $serials = Stock::where('category_id', $combo['category_id'])
+                    ->where('brand_id', $combo['brand_id'])
+                    ->where('model', $combo['model'])
+                    ->where('model_no', $combo['model_no'])
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('qty', '>', 0)
+                    ->pluck('serial_no')
+                    ->filter()
+                    ->toArray();
+
+                $allSerials = array_merge($allSerials, $serials);
+                $row[] = (int)$qtySum;
+                $totalQty += (int)$qtySum;
             }
+
+            $row[] = $totalQty;
+            $row[] = implode(', ', array_unique($allSerials));
             $rows[] = $row;
         }
         return collect($rows);
@@ -65,6 +82,6 @@ class StockExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         $warehouseNames = $this->warehouses->pluck('name')->toArray();
-        return array_merge(['Category', 'Brand', 'Model', 'Model No'], $warehouseNames);
+        return array_merge(['Category', 'Brand', 'Model', 'Model No'], $warehouseNames, ['Total Stock', 'Serial Numbers']);
     }
 }

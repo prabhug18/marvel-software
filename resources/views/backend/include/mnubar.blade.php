@@ -105,6 +105,11 @@
                         <i class="fas fa-database"></i><span>Source</span>
                     </a>
                 </li>
+                <li>
+                    <a href="{{ route('vendors.index') }}">
+                        <i class="fas fa-truck"></i><span>Vendors</span>
+                    </a>
+                </li>
             </ul>
         </li>
 

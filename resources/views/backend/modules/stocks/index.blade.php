@@ -137,6 +137,7 @@
                                     <span class="stock-qty" style="cursor:pointer;" onclick="editStockQty(this, ${item.qty})">${item.qty}</span>
                                 </td>
                                 <td>
+                                    <button class="btn btn-sm btn-info view-serials-btn" onclick="viewSerials('${item.serials || ''}')" title="View Serials"><i class="fas fa-barcode"></i></button>
                                     <button class="btn btn-sm btn-success save-stock-btn" style="display:none;">Save</button>
                                 </td>
                             </tr>`;
@@ -145,6 +146,9 @@
                                 <td>${item.warehouse}</td>
                                 <td>
                                     <span class="stock-qty" style="cursor:default;">${item.qty}</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-info view-serials-btn" onclick="viewSerials('${item.serials || ''}')" title="View Serials"><i class="fas fa-barcode"></i></button>
                                 </td>
                             </tr>`;
                         }
@@ -231,6 +235,7 @@
                                             <span class="stock-qty" style="cursor:pointer;" onclick="editStockQty(this, ${item.qty})">${item.qty}</span>
                                         </td>
                                         <td>
+                                            <button class="btn btn-sm btn-info view-serials-btn" onclick="viewSerials('${item.serials || ''}')" title="View Serials"><i class="fas fa-barcode"></i></button>
                                             <button class="btn btn-sm btn-success save-stock-btn" style="display:none;">Save</button>
                                         </td>
                                     </tr>`;
@@ -241,7 +246,7 @@
                                             <span class="stock-qty" style="cursor:default;">${item.qty}</span>
                                         </td>
                                         <td>
-                                            <span class="text-muted">No permission</span>
+                                            <button class="btn btn-sm btn-info view-serials-btn" onclick="viewSerials('${item.serials || ''}')" title="View Serials"><i class="fas fa-barcode"></i></button>
                                         </td>
                                     </tr>`;
                                 }
@@ -280,6 +285,39 @@
                 }
             });
         });
+
+        // Function to show serial numbers in a SweetAlert2 popup
+        function viewSerials(serials) {
+            if (!serials || serials.trim() === "" || serials.trim() === "null") {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No Serials Found',
+                    text: 'No serial numbers are recorded for this stock.'
+                });
+                return;
+            }
+            // Clean up serials string (remove extra commas/spaces)
+            let cleanedSerials = serials.split(',').map(s => s.trim()).filter(s => s !== "" && s !== "null").join(', ');
+            
+            if (!cleanedSerials) {
+                 Swal.fire({
+                    icon: 'info',
+                    title: 'No Serials Found',
+                    text: 'No serial numbers are recorded for this stock.'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Available Serial Numbers',
+                html: '<div style="max-height: 250px; overflow-y: auto; text-align: left; padding: 10px; border: 1px solid #eee; border-radius: 5px; font-family: monospace; font-size: 0.9rem; line-height: 1.5; background: #f9f9f9;">' + cleanedSerials + '</div>',
+                icon: 'info',
+                confirmButtonText: 'Close',
+                customClass: {
+                    container: 'my-swal'
+                }
+            });
+        }
     </script>
 
 @endsection

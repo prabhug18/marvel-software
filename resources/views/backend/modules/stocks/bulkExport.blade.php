@@ -18,11 +18,19 @@
             <div class="card shadow-sm rounded-4 mt-4">
                 <div class="card-body">
                     <!-- Description & Template Download -->
-                    <p class="mb-3">
-                        Excel Upload –
-                        <a href="{{ route('export.stocks') }}" target="_blank" download class="fw-bold text-decoration-underline">
-                            download template <strong>here</strong>
-                        </a>
+                    <p class="mb-3 d-flex gap-4">
+                        <span>
+                            Stock Matrix –
+                            <a href="{{ route('export.stocks') }}" target="_blank" download class="fw-bold text-decoration-underline">
+                                download <strong>here</strong>
+                            </a>
+                        </span>
+                        <span>
+                            Detailed Report (with Serials) –
+                            <a href="{{ route('export.stocks.detailed') }}" target="_blank" download class="fw-bold text-success text-decoration-underline">
+                                download <strong>here</strong>
+                            </a>
+                        </span>
                     </p>
 
                     <!-- File Input -->

@@ -47,6 +47,7 @@
                     <tr>
                       <th>S.No</th>
                       <th>Type</th>
+                      <th>Customer ID</th>
                       <th>Name</th>
                       <th>Mobile No</th>                      
                       <th>City</th>
@@ -61,9 +62,10 @@
                     <tr>
                       <td><span class="mobile-value">{{ $i }}</span></td>
                       <td><span class="mobile-value">{{ $customerVal->customer_type }}</span></td>
+                      <td><span class="mobile-value">{{ $customerVal->formatted_id }}</span></td>
                       <td><span class="mobile-value">{{ $customerVal->name }}</span></td>
                       <td><span class="mobile-value">{{ $customerVal->mobile_no }}</span></td>                      
-                      <td><span class="mobile-value">{{ $customerVal->city->name }}</span></td>
+                      <td><span class="mobile-value">{{ $customerVal->city->name ?? '' }}</span></td>
                       <td class="action-buttons">                  
                         <span class="mobile-value">
                           <a class="btn btn-sm btn-outline-primary me-1" href="{{ route('customer.edit',$customerVal->id) }}"  style="text-decoration: none;"><i class="fas fa-edit"></i></a>                  

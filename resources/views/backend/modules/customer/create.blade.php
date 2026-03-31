@@ -53,6 +53,11 @@
                         <label class="form-label">Customer Phone <span class="text-danger">*</span></label>
                         <input class="form-control" type="text" placeholder="Enter Phone Number" required name="mobile_no"/>                        
                     </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Alternative Phone</label>
+                        <input class="form-control" type="text" placeholder="Enter Alternative Phone Number" name="alternative_no"/>                        
+                    </div>
 
                     <div class="col-md-6">
                         <label class="form-label">Email</label>

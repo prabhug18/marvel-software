@@ -33,93 +33,202 @@
         
         <div style="padding-top: 30px;"></div>
         <div class="container-fluid px-3">
-            <div class="card shadow-sm rounded-4 mt-4"> 
-                <div class="card-body">
-                <form id="productForm" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="row">     
-                        {{-- Success alert removed in favor of SweetAlert2 modal --}}
-                        <div class="col-lg-7">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="category_id" class="form-label">Category</label>
-                                    <select id="category_id" name="category_id" class="form-select">
-                                        <option value="">Select Category</option>                                       
-                                    </select>
-                                    <div class="invalid-feedback" id="category_id-error"></div>
+            <div class="card border-0 shadow-sm rounded-4 mt-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-plus-circle text-primary me-2"></i>Product Creation</h5>
+                    <p class="text-muted small">Fill in the details below to add a new product to your inventory.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form id="productForm" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="row g-4">
+                            <!-- Left Column: Form Fields -->
+                            <div class="col-lg-8">
+                                <!-- Section 1: Basic Information -->
+                                <div class="bg-light p-4 rounded-4 mb-4">
+                                    <div class="d-flex align-items-center mb-4">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                            <i class="fas fa-info-circle text-primary"></i>
+                                        </div>
+                                        <h6 class="fw-bold mb-0">Basic Information</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="category_id" class="form-label fw-semibold small">Category <span class="text-danger">*</span></label>
+                                            <select id="category_id" name="category_id" class="form-select border-0 shadow-sm py-2 px-3 rounded-3" required>
+                                                <option value="">Select Category</option>
+                                            </select>
+                                            <div class="invalid-feedback" id="category_id-error"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="brand_id" class="form-label fw-semibold small">Brand <span class="text-danger">*</span></label>
+                                            <select id="brand_id" name="brand_id" class="form-select border-0 shadow-sm py-2 px-3 rounded-3" required>
+                                                <option value="">Select Brand</option>
+                                            </select>
+                                            <div class="invalid-feedback" id="brand_id-error"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="model" class="form-label fw-semibold small">Model <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="model" id="model" placeholder="Enter Model" required />
+                                            <div class="invalid-feedback" id="model-error"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="model_no" class="form-label fw-semibold small">Model No <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="model_no" id="model_no" placeholder="Enter Model No" required />
+                                            <div class="invalid-feedback" id="model_no-error"></div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label for="capacity" class="form-label fw-semibold small">Capacity (AH)</label>
+                                            <input type="text" class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="capacity" id="capacity" placeholder="e.g. 40AH, 60-70AH" />
+                                            <div class="invalid-feedback" id="capacity-error"></div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label for="specification" class="form-label fw-semibold small">Specification</label>
+                                            <textarea class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="specification" id="specification" rows="2" placeholder="Dimensions, Weight, Terminal Type..."></textarea>
+                                            <div class="invalid-feedback" id="specification-error"></div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label for="remarks" class="form-label fw-semibold small">Remarks</label>
+                                            <textarea class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="remarks" id="remarks" rows="2" placeholder="Additional notes..."></textarea>
+                                            <div class="invalid-feedback" id="remarks-error"></div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="brand_id" class="form-label">Brand</label>
-                                    <select id="brand_id" name="brand_id" class="form-select">
-                                        <option value="">Select Brand</option>                                       
-                                    </select>
-                                    <div class="invalid-feedback" id="brand_id-error"></div>
+
+                                <!-- Section 2: Warranty & Pricing -->
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="bg-light p-4 rounded-4 h-100">
+                                            <div class="d-flex align-items-center mb-4">
+                                                <div class="bg-warning bg-opacity-10 p-2 rounded-3 me-3">
+                                                    <i class="fas fa-shield-alt text-warning"></i>
+                                                </div>
+                                                <h6 class="fw-bold mb-0">Warranty Details</h6>
+                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-md-12">
+                                                    <label for="series" class="form-label fw-semibold small">Total Warranty</label>
+                                                    <input type="text" class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="series" id="series" placeholder="e.g. 48M, 60M" />
+                                                    <div class="invalid-feedback" id="series-error"></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="foc_months" class="form-label fw-semibold small">FOC Months</label>
+                                                    <input type="text" class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="foc_months" id="foc_months" placeholder="e.g. 24, 24M" />
+                                                    <div class="invalid-feedback" id="foc_months-error"></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="prorata_months" class="form-label fw-semibold small">Pro-rata Months</label>
+                                                    <input type="text" class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="prorata_months" id="prorata_months" placeholder="e.g. 12, 12M" />
+                                                    <div class="invalid-feedback" id="prorata_months-error"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="bg-light p-4 rounded-4 h-100">
+                                            <div class="d-flex align-items-center mb-4">
+                                                <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3">
+                                                    <i class="fas fa-tags text-success"></i>
+                                                </div>
+                                                <h6 class="fw-bold mb-0">Pricing & Tax</h6>
+                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label for="price" class="form-label fw-semibold small">Base Price (₹)</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text border-0 bg-white small fw-bold text-muted px-2">₹</span>
+                                                        <input type="number" class="form-control border-0 shadow-sm py-2 pe-3 rounded-end-3" name="price" id="price" placeholder="0.00" />
+                                                    </div>
+                                                    <div class="invalid-feedback" id="price-error"></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="offer_price" class="form-label fw-semibold small">Offer Price (₹)</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text border-0 bg-white small fw-bold text-muted px-2">₹</span>
+                                                        <input type="number" step="0.01" class="form-control border-0 shadow-sm py-2 pe-3 rounded-end-3" name="offer_price" id="offer_price" placeholder="0.00" />
+                                                    </div>
+                                                    <div class="invalid-feedback" id="offer_price-error"></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="tax_percentage" class="form-label fw-semibold small">GST %</label>
+                                                    <select class="form-select border-0 shadow-sm py-2 px-3 rounded-3" name="tax_percentage" id="tax_percentage">
+                                                        <option value="">Select Tax</option>
+                                                        @foreach($gstRates as $gst)
+                                                            <option value="{{ $gst->name }}">{{ $gst->name }}%</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <div class="invalid-feedback" id="tax_percentage-error"></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="hsn_code" class="form-label fw-semibold small">HSN Code</label>
+                                                    <input type="text" class="form-control border-0 shadow-sm py-2 px-3 rounded-3" name="hsn_code" id="hsn_code" placeholder="Enter HSN" />
+                                                    <div class="invalid-feedback" id="hsn_code-error"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Model</label>
-                                    <input type="text" class="form-control" name="model" id="model" placeholder="Enter Model" />
-                                    <div class="invalid-feedback" id="model-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Model No</label>
-                                    <input type="text" class="form-control" name="model_no" id="model_no" placeholder="Enter Model No" />
-                                    <div class="invalid-feedback" id="model_no-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Warranty</label>
-                                    <input type="text" class="form-control" name="series" id="series" placeholder="Enter Warranty" />
-                                    <div class="invalid-feedback" id="series-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Specification</label>
-                                    <textarea class="form-control" name="specification" id="specification" placeholder="Enter Specification"></textarea>
-                                    <div class="invalid-feedback" id="specification-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Price</label>
-                                    <input type="number" class="form-control" name="price" id="price" placeholder="₹ 0.00" />
-                                    <div class="invalid-feedback" id="price-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Offer Price</label>
-                                    <input type="number" class="form-control" name="offer_price" id="offer_price" placeholder="₹ 0.00" step="0.01" />
-                                    <div class="invalid-feedback" id="offer_price-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">HSN Code</label>
-                                    <input type="text" class="form-control" name="hsn_code" id="hsn_code" placeholder="Enter HSN Code" />
-                                    <div class="invalid-feedback" id="hsn_code-error"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">GST / Tax Percentage</label>
-                                    <select class="form-select" name="tax_percentage" id="tax_percentage">
-                                        <option value="">Select Tax %</option>
-                                        @foreach($gstRates as $gst)
-                                            <option value="{{ $gst->name }}">{{ $gst->name }}%</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="invalid-feedback" id="tax_percentage-error"></div>
+                            </div>
+
+                            <!-- Right Column: Image Upload -->
+                            <div class="col-lg-4">
+                                <div class="bg-light p-4 rounded-4 h-100 position-sticky" style="top: 20px;">
+                                    <div class="d-flex align-items-center mb-4">
+                                        <div class="bg-danger bg-opacity-10 p-2 rounded-3 me-3">
+                                            <i class="fas fa-image text-danger"></i>
+                                        </div>
+                                        <h6 class="fw-bold mb-0">Product Image</h6>
+                                    </div>
+                                    
+                                    <label for="product_images" class="product-upload-area border-2 border-dashed border-primary border-opacity-25 rounded-4 p-5 d-flex flex-column align-items-center justify-content-center text-center cursor-pointer mb-3 transition-all hover-shadow" style="background-color: rgba(var(--bs-primary-rgb), 0.02);">
+                                        <div class="upload-icon bg-primary bg-opacity-10 p-4 rounded-circle mb-3">
+                                            <i class="fas fa-cloud-upload-alt fa-3x text-primary"></i>
+                                        </div>
+                                        <h6 class="fw-bold mb-1">Click to upload</h6>
+                                        <p class="text-muted small mb-0">SVG, PNG, JPG (MAX. 2MB)</p>
+                                        <input type="file" id="product_images" name="product_images" class="d-none" accept="image/*" />
+                                    </label>
+                                    <div class="invalid-feedback d-block mb-3 text-center" id="product_images-error"></div>
+
+                                    <!-- Preview Area -->
+                                    <div id="preview" class="row g-2 mt-4">
+                                        <div class="col-12 text-center p-4 border rounded-4 border-dashed">
+                                            <p class="text-muted small mb-0 italic">Image preview will appear here</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-auto pt-5">
+                                        <button type="submit" class="btn btn-success w-100 py-3 rounded-3 shadow-sm fw-bold d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-check-circle me-2"></i> Save Product
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="col-lg-5">
-                            <label for="product_images" class="form-label w-100 border rounded py-5 bg-light d-flex flex-column align-items-center justify-content-center text-center">
-                                <i class="fas fa-upload fa-2x text-primary mb-2"></i>
-                                <p class="mb-0">Click to upload product images</p>
-                                <input type="file" id="product_images" name="product_images" class="form-control d-none" accept="image/*" />
-                                <div class="invalid-feedback" style="margin-left: 200px;" id="product_images-error"></div>
-                            </label>
-                            
-                            <div class="row mt-3 g-2" id="preview"></div>
-                        </div>
-                        <div class="mt-4 d-flex align-items center">                        
-                            <button type="submit" class="btn btn-primary">Submit</button>
-                        </div>
-                    </div>                    
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>  
+        </div>
+
+        <!-- Custom Styling for Hover Effects -->
+        <style>
+            .cursor-pointer { cursor: pointer; }
+            .transition-all { transition: all 0.3s ease; }
+            .hover-shadow:hover { 
+                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+                border-color: var(--bs-primary) !important;
+                background-color: rgba(var(--bs-primary-rgb), 0.04) !important;
+            }
+            .product-upload-area:hover .upload-icon {
+                transform: scale(1.1);
+                transition: transform 0.3s ease;
+            }
+            .bg-light { background-color: #f8fafc !important; }
+            .form-control:focus, .form-select:focus {
+                border-color: var(--bs-primary);
+                box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.1);
+            }
+        </style>
              
     </main>
      

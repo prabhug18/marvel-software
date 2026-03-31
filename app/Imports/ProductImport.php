@@ -22,10 +22,10 @@ class ProductImport implements ToCollection
             $hasError = false;
             $errorMessages = [];
             foreach ($rows->skip(1) as $index => $row) {
-                // Defensive: check for missing columns
-                if (count($row) < 10) {
+                // Defensive: check for missing columns (now 15 columns)
+                if (count($row) < 14) {
                     $hasError = true;
-                    $errorMessages[] = 'Row '.($index+2).': Missing columns';
+                    $errorMessages[] = 'Row '.($index+2).': Missing columns (expected 15)';
                     continue;
                 }
                 // Map columns based on export order, clean values
@@ -45,7 +45,13 @@ class ProductImport implements ToCollection
                 $price_raw = $row->get(8);
                 $price = is_numeric($price_raw) ? $price_raw : preg_replace('/[^\x00-\x7F]+/', '', $price_raw);
                 $offer_price = ($row->get(9) !== null && is_numeric($row->get(9))) ? $row->get(9) : null;
-                $specification = ($row->get(10) !== null && trim($row->get(10)) !== '') ? trim($row->get(10)) : null;
+                
+                // New Fields
+                $foc_months = ($row->get(10) !== null && trim($row->get(10)) !== '') ? trim($row->get(10)) : null;
+                $prorata_months = ($row->get(11) !== null && trim($row->get(11)) !== '') ? trim($row->get(11)) : null;
+                $capacity = ($row->get(12) !== null && trim($row->get(12)) !== '') ? trim($row->get(12)) : null;
+                $specification = ($row->get(13) !== null && trim($row->get(13)) !== '') ? trim($row->get(13)) : null;
+                $remarks = ($row->get(14) !== null && trim($row->get(14)) !== '') ? trim($row->get(14)) : null;
 
                 if (!$category || !$brand || empty($model)) {
                     $missing = [];
@@ -78,7 +84,11 @@ class ProductImport implements ToCollection
                         'tax_percentage' => $tax_percentage,
                         'price' => $price,
                         'offer_price' => $offer_price,
+                        'foc_months' => $foc_months,
+                        'prorata_months' => $prorata_months,
+                        'capacity' => $capacity,
                         'specification' => $specification,
+                        'remarks' => $remarks,
                         'user_id' => Auth::id() ?? 1,
                         'product_images' => '',
                         'product_images_original' => '',

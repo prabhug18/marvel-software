@@ -14,6 +14,7 @@ class InvoiceItems extends Model
         'user_id',
         'product_name',
         'model',
+        'model_no',
         'qty',
         'tax_percentage',
         'tax_amount',

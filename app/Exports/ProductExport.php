@@ -28,7 +28,11 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, Should
             $product->tax_percentage,
             $product->price,
             $product->offer_price,
+            $product->foc_months,
+            $product->prorata_months,
+            $product->capacity,
             $product->specification,
+            $product->remarks,
         ];
     }
 
@@ -45,7 +49,11 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, Should
             'Tax %',
             'Price',
             'Offer Price',
+            'FOC Months',
+            'Pro-rata Months',
+            'Capacity',
             'Specification',
+            'Remarks',
         ];
     }
 }
