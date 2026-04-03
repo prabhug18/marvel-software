@@ -246,26 +246,31 @@ class InvoiceController extends Controller
         } else {
             $warehouse_id = Auth::user()->warehouse_id ?? null;
         }
-        // --- Invoice Number Generation and Sequence Increment ---
-        $warehouse = \App\Models\Warehouse::find($warehouse_id);
+        // Start Database Transaction for all inserts
+        return DB::transaction(function () use ($request, $cgst, $sgst, $igst, $grand_total, $warehouse_id, $customer) {
+            // --- Invoice Number Generation and Sequence Increment ---
+            $warehouse = \App\Models\Warehouse::find($warehouse_id);
         $prefix = $warehouse->prefix;
-        $sequence = \App\Models\WarehouseInvoiceSequence::firstOrCreate(
-            ['warehouse_id' => $warehouse->id],
-            ['current_number' => 1001]
-        );
-        $nextNumber = $sequence->current_number;
-        $invoiceNumber = $prefix . '/' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        // Increment for next time (only here!)
-        $sequence->current_number = $nextNumber + 1;
-        $sequence->save();
-
-        $invoice = \App\Models\Invoice::create([
-            'customer_id' => $customer->id,
-            'user_id' => Auth::id() ?? 1,
-            'customer_name' => $customer->name ?? $request->customer_name,
-            'invoice_number' => $invoiceNumber,
-            'invoice_date' => $request->invoice_date,
-            'dc_number' => $request->dc_number,
+            $sequence = \App\Models\WarehouseInvoiceSequence::firstOrCreate(
+                ['warehouse_id' => $warehouse->id],
+                ['current_number' => 1001]
+            );
+            // Lock the sequence row to prevent race conditions
+            $sequence = \App\Models\WarehouseInvoiceSequence::where('warehouse_id', $warehouse->id)->lockForUpdate()->first();
+            
+            $nextNumber = $sequence->current_number;
+            $invoiceNumber = $prefix . '/' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            // Increment for next time (only here!)
+            $sequence->current_number = $nextNumber + 1;
+            $sequence->save();
+            
+            $invoice = \App\Models\Invoice::create([
+                'customer_id' => $customer->id,
+                'user_id' => Auth::id() ?? 1,
+                'customer_name' => $customer->name ?? $request->customer_name,
+                'invoice_number' => $invoiceNumber,
+                'invoice_date' => $request->invoice_date,
+                'dc_number' => $request->dc_number,
             'cgst' => $cgst,
             'sgst' => $sgst,
             'igst' => $igst,
@@ -424,12 +429,13 @@ class InvoiceController extends Controller
                     $stockIssues[] = $msg;
                 }
             }
-        }
-        if (!empty($stockIssues)) {
-            return response()->json(['success' => true, 'invoice_id' => $invoice->id, 'stock_warnings' => $stockIssues]);
-        }
-       
-        return response()->json(['success' => true, 'invoice_id' => $invoice->id]);
+            }
+            if (!empty($stockIssues)) {
+                return response()->json(['success' => true, 'invoice_id' => $invoice->id, 'stock_warnings' => $stockIssues]);
+            }
+        
+            return response()->json(['success' => true, 'invoice_id' => $invoice->id]);
+        }); // End DB Transaction
     }
 
     /**
