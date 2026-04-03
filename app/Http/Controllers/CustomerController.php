@@ -90,14 +90,11 @@ class CustomerController extends Controller
             $customer->formatted_id = $prefix . str_pad($customer->id, 3, '0', STR_PAD_LEFT);
             $customer->save();
         } catch (\Illuminate\Database\QueryException $e) {
-            // Generic DB error (unique constraints removed at app-level if desired)
-            $msg = 'Failed to save customer due to a database error.';
-            if ($e->getMessage()) {
-                // keep the raw message only for debugging; present a generic message to users
-                $msg = 'Failed to save customer due to a database error.';
-            }
+            // Log and return the database error
+            \Log::error('Create Customer Error: ' . $e->getMessage());
+            $msg = 'Failed to save customer: ' . (str_contains($e->getMessage(), 'Duplicate entry') ? 'A customer with similar details already exists.' : 'Database Error');
             if ($request->ajax()) {
-                return response()->json(['message' => $msg], 409);
+                return response()->json(['message' => $msg, 'error' => $e->getMessage()], 409);
             }
             return redirect()->back()->withInput()->with('create_customer_error', $msg);
         }
@@ -175,22 +172,23 @@ class CustomerController extends Controller
         $prefix = ($customer->customer_type === 'Dealer') ? 'DLR-' : 'CUST-';
         $customer->formatted_id = $prefix . str_pad($customer->id, 3, '0', STR_PAD_LEFT);
 
-            try {
-                $customer->save();
-            } catch (\Illuminate\Database\QueryException $e) {
-                // Return exact DB error during update for debugging
-                $msg = 'Database Error: ' . $e->getMessage();
-                if ($request->ajax()) {
-                    return response()->json(['message' => $msg], 409);
-                }
-                return redirect()->back()->withInput()->with('update_customer_error', $msg);
-            } catch (\Exception $e) {
-                $msg = 'Error: ' . $e->getMessage();
-                if ($request->ajax()) {
-                    return response()->json(['message' => $msg], 409);
-                }
-                return redirect()->back()->withInput()->with('update_customer_error', $msg);
+        try {
+            $customer->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Update Customer Error: ' . $e->getMessage());
+            $msg = 'Failed to update customer: ' . (str_contains($e->getMessage(), 'Duplicate entry') ? 'A customer with similar details already exists.' : 'Database Error');
+            if ($request->ajax()) {
+                return response()->json(['message' => $msg, 'error' => $e->getMessage()], 409);
             }
+            return redirect()->back()->withInput()->with('update_customer_error', $msg);
+        } catch (\Exception $e) {
+            \Log::error('Update Customer Exception: ' . $e->getMessage());
+            $msg = 'Error: ' . $e->getMessage();
+            if ($request->ajax()) {
+                return response()->json(['message' => $msg], 409);
+            }
+            return redirect()->back()->withInput()->with('update_customer_error', $msg);
+        }
 
         if ($request->ajax()) {
             return response()->json(['message' => 'Customer edited successfully'], 200);
