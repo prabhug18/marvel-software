@@ -11,30 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            // 1. Broadly drop unique indexes by their common names to avoid integrity errors.
-            try {
-                $table->dropUnique('customers_email_unique');
-            } catch (\Exception $e) {}
+        $table = 'customers';
 
-            try {
-                $table->dropUnique('customers_mobile_no_unique');
-            } catch (\Exception $e) {}
-            
-            try {
-                $table->dropUnique(['email']);
-            } catch (\Exception $e) {}
+        // 1. Robustly drop any unique indexes on email/mobile_no using raw SQL
+        // This is safer than dropUnique([]) because it handles naming mismatches.
+        $indexes = DB::select("SHOW INDEX FROM $table");
+        foreach ($indexes as $index) {
+            if ($index->Key_name === 'PRIMARY') continue;
+            if (in_array($index->Column_name, ['email', 'mobile_no'])) {
+                try {
+                    DB::statement("ALTER TABLE $table DROP INDEX `{$index->Key_name}`");
+                } catch (\Exception $e) {
+                    // Ignore if already dropped
+                }
+            }
+        }
 
-            try {
-                $table->dropUnique(['mobile_no']);
-            } catch (\Exception $e) {}
-        });
+        // 2. Data Cleanup: Set existing empty string emails to NULL to avoid duplicate key issues
+        DB::table($table)->where('email', '')->update(['email' => null]);
 
-        // 2. Data Cleanup: Set existing empty string emails to NULL to avoid duplicate key issues during the change.
-        DB::table('customers')->where('email', '')->update(['email' => null]);
-
-        // 3. Now make the email field nullable
-        Schema::table('customers', function (Blueprint $table) {
+        // 3. Make the email field nullable
+        Schema::table($table, function (Blueprint $table) {
             $table->string('email')->nullable()->change();
         });
     }
