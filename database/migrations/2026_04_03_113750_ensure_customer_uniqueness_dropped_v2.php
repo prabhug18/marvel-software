@@ -11,30 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            // Drop unique indexes on email and mobile_no if they exist.
-            // Using dropUnique([column]) is safer as Laravel handles the naming convention.
-            // Wrap in try-catch to ignore if they are already dropped.
-            try {
-                $table->dropUnique(['email']);
-            } catch (\Exception $e) {
-                // Already dropped or different name
+        $table = 'customers';
+        $indexes = DB::select("SHOW INDEX FROM $table");
+        foreach ($indexes as $index) {
+            if ($index->Key_name === 'PRIMARY') continue;
+            if (in_array($index->Column_name, ['email', 'mobile_no'])) {
+                try {
+                    DB::statement("ALTER TABLE $table DROP INDEX `{$index->Key_name}`");
+                } catch (\Exception $e) {
+                    // Fail silently if already dropped
+                }
             }
-
-            try {
-                $table->dropUnique(['mobile_no']);
-            } catch (\Exception $e) {
-                // Already dropped or different name
-            }
-
-            // Fallback: try common manual naming patterns if the above fails
-            try {
-                $table->dropUnique('customers_email_unique');
-            } catch (\Exception $e) {}
-            try {
-                $table->dropUnique('customers_mobile_no_unique');
-            } catch (\Exception $e) {}
-        });
+        }
     }
 
     /**
