@@ -86,8 +86,14 @@ class CustomerController extends Controller
         $customer->remarks      =   $request->remarks;
         try {
             $customer->save();
+            
+            // Calculate type-specific sequence
+            $nextSequence = Customer::where('customer_type', $customer->customer_type)->max('type_sequence') + 1;
+            if (!$nextSequence) $nextSequence = 1;
+            
             $prefix = ($customer->customer_type === 'Dealer') ? 'DLR-' : 'CUST-';
-            $customer->formatted_id = $prefix . str_pad($customer->id, 3, '0', STR_PAD_LEFT);
+            $customer->type_sequence = $nextSequence;
+            $customer->formatted_id = $prefix . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
             $customer->save();
         } catch (\Illuminate\Database\QueryException $e) {
             // Log and return the database error
