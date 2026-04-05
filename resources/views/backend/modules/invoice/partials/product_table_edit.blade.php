@@ -74,6 +74,30 @@
 <script>
 // --- Product Autosuggestion, Add/Edit/Remove, and Totals Logic (copied from create page) ---
 $(document).ready(function() {
+    // Barcode/Serial No input: auto-add comma after scan
+    const serialInput = document.getElementById('invoiceProductSerialNo');
+    const qtyInput = document.getElementById('invoiceProductQty');
+    function updateQtyFromSerials() {
+        if (!serialInput || !qtyInput) return;
+        const rawValue = serialInput.value;
+        // Split by comma for separate quantities, but ignore & for combo (qty 1)
+        const commaSerials = rawValue.split(',').map(s => s.trim()).filter(Boolean);
+        qtyInput.value = commaSerials.length > 0 ? commaSerials.length : '';
+    }
+    if (serialInput) {
+        serialInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (serialInput.value.trim() !== '' && !serialInput.value.trim().endsWith(',')) {
+                    serialInput.value = serialInput.value.trim() + ', ';
+                }
+                updateQtyFromSerials();
+            }
+        });
+        serialInput.addEventListener('input', updateQtyFromSerials);
+        serialInput.addEventListener('blur', updateQtyFromSerials);
+    }
+
     // Pre-fill productsArr from window.productsArr if available (set in edit.blade.php)
     if (window.productsArr && Array.isArray(window.productsArr) && window.productsArr.length > 0) {
         // Defensive: ensure all required fields exist, including serial_no.
@@ -232,7 +256,9 @@ window.addEventListener("DOMContentLoaded", () => {
 function addProduct() {
     const name = document.getElementById('invoiceProductName').value.trim();
     const model = document.getElementById('invoiceProductModel').value.trim();
-    const serial_no = document.getElementById('invoiceProductSerialNo').value.trim();
+    const serialNoRaw = document.getElementById('invoiceProductSerialNo').value.trim();
+    // Accept multiple serial numbers separated by comma
+    const serialNumbers = serialNoRaw.split(',').map(s => s.trim()).filter(Boolean);
     const qty = parseInt(document.getElementById('invoiceProductQty').value);
     let gst_percentage = 0;
     if ($('#invoiceProductPrice').data('tax-percentage') !== undefined) {
@@ -264,8 +290,8 @@ function addProduct() {
         }
     }
     const warehouseId = $('#warehouse_id').val();
-    if (!name || !model || !serial_no || isNaN(qty) || qty <= 0 || isNaN(gst_inclusive_price) || gst_inclusive_price < 0) {
-        Swal.fire({ icon: 'error', title: 'Invalid Details', text: 'Please enter valid product details. Serial Number is required.' });
+    if (!name || !model || serialNumbers.length === 0 || isNaN(qty) || qty <= 0 || isNaN(gst_inclusive_price) || gst_inclusive_price < 0) {
+        Swal.fire({ icon: 'error', title: 'Invalid Details', text: 'Please enter valid product details. At least one Serial Number is required.' });
         return;
     }
     // --- Strict Stock & Serial Validation ---
@@ -275,30 +301,48 @@ function addProduct() {
         data: {
             model: model,
             warehouse_id: warehouseId,
-            serial_no: serial_no // Send the serial No
+            serial_no: serialNoRaw // Send the raw string of serials
         },
         dataType: 'json',
         success: function(response) {
             const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : 0;
             const unavailable = response.unavailable_serials || [];
 
-            if (unavailable.length > 0) {
+            if (unavailable.length > 0 || qty > availableStock) {
+                let warningText = '';
+                if (unavailable.length > 0) {
+                    warningText += 'The following serial numbers may already be sold or not in this warehouse: ' + unavailable.join(', ') + '. ';
+                }
+                if (qty > availableStock) {
+                    warningText += 'Only ' + availableStock + ' units are available in this location, but you are adding ' + qty + '. ';
+                }
+                
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Serial Number Unavailable',
-                    text: 'The serial number ' + unavailable.join(', ') + ' is already sold or not in this warehouse.',
+                    icon: 'warning',
+                    title: 'Stock Warning',
+                    text: warningText + 'Do you still want to add this product to the invoice?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, add it',
+                    cancelButtonText: 'No, cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
+                    }
                 });
-                return;
+            } else {
+                // All checks passed
+                performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
             }
-            
-            if (qty > availableStock) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Insufficient Stock',
-                    text: 'Only ' + availableStock + ' units are available in this location. You cannot add ' + qty + ' units.',
-                });
-                return;
-            }
+        },
+        error: function() {
+            // Fail gracefully - allow adding if verification fails
+            performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
+        }
+    });
+}
+
+// Helper to perform result addition logic (adapted for edit page)
+function performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage) {
             // --- Fetch product tax_percentage from backend (AJAX) ---
             $.ajax({
                 url: '/product-search',
@@ -307,19 +351,25 @@ function addProduct() {
                 dataType: 'json',
                 success: function(products) {
                     let tax_percentage = gst_percentage || 5;
+                    let foundProductId = null;
                     if (Array.isArray(products) && products.length > 0) {
                         const found = products.find(p => {
                             return (p.model && p.model.toLowerCase() === model.toLowerCase());
                         });
-                        if (found && found.tax_percentage !== undefined && found.tax_percentage !== null && found.tax_percentage !== '') {
-                            tax_percentage = parseFloat(found.tax_percentage);
+                        if (found) {
+                            if (found.tax_percentage !== undefined && found.tax_percentage !== null && found.tax_percentage !== '') {
+                                tax_percentage = parseFloat(found.tax_percentage);
+                            }
+                            if (found.id !== undefined) foundProductId = found.id;
                         }
                     }
                     const productFullName = `${name}`;
                     // Total should use the GST-inclusive price entered manually
                     let total_inclusive = gst_inclusive_price * qty;
+                    // Combined serial numbers logic
+                    const combinedSerials = (serialNumbers || []).join(', ');
                     // prefer explicit selected id and model_no from UI if available
-                    const selectedProductId = $('#invoiceProductModel').data('product-id') || null;
+                    const selectedProductId = $('#invoiceProductModel').data('product-id') || foundProductId || null;
                     const selectedModelNo = $('#invoiceProductModel').data('model-no') || (found ? found.model_no : '');
                     window.productsArr.push({
                         name: productFullName,
@@ -327,7 +377,7 @@ function addProduct() {
                         model,
                         model_no: selectedModelNo,
                         product_id: selectedProductId,
-                        serial_no,
+                        serial_no: combinedSerials,
                         qty,
                         price: base_price, // GST-exclusive for table
                         gst_inclusive_price: gst_inclusive_price,
@@ -345,6 +395,7 @@ function addProduct() {
                     const productFullName = `${name}`;
                     let total_inclusive = gst_inclusive_price * qty;
                     let used_tax = gst_percentage || 5;
+                    const combinedSerialsFallback = (serialNumbers || []).join(', ');
                     const selectedProductIdFallback = $('#invoiceProductModel').data('product-id') || null;
                     const selectedModelNoFallback = $('#invoiceProductModel').data('model-no') || '';
                     window.productsArr.push({
@@ -353,7 +404,7 @@ function addProduct() {
                         model,
                         model_no: selectedModelNoFallback,
                         product_id: selectedProductIdFallback,
-                        serial_no,
+                        serial_no: combinedSerialsFallback,
                         qty,
                         price: base_price,
                         gst_inclusive_price: gst_inclusive_price,
@@ -368,11 +419,6 @@ function addProduct() {
                     $('#origPriceLabel').text('').hide();
                 }
             });
-        },
-        error: function() {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Error checking stock. Please try again.' });
-        }
-    });
 }
 function cleanProductName(name) {
     if (!name) return "";
