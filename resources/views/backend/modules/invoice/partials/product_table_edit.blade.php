@@ -1,34 +1,34 @@
 <!-- Add Product Form (Pixel-perfect match with create page) -->
-<form class="row g-4 mb-5 align-items-end" id="editProductFormRow">
+<div class="row g-4 mb-5 align-items-end" id="editProductFormRow">
     <div class="col-md-2 position-relative">
-        <label for="invoiceProductName" class="form-label">Product Name <span class="text-danger">*</span></label>
+        <label for="invoiceProductName" class="form-label text-nowrap">Product Name <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductName" placeholder="Enter Product Name" autocomplete="off" />
         <div id="productSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
     </div>
     <div class="col-md-2">
-        <label for="invoiceProductModel" class="form-label">Model <span class="text-danger">*</span></label>
+        <label for="invoiceProductModel" class="form-label text-nowrap">Model <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductModel" placeholder="Enter Model" />
     </div>
     <div class="col-md-2">
-        <label for="invoiceProductSerialNo" class="form-label">Serial No <span class="text-danger">*</span></label>
+        <label for="invoiceProductSerialNo" class="form-label text-nowrap">Serial No <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductSerialNo" placeholder="Enter Serial No(s)" autocomplete="off" />
     </div>
     <div class="col-md-1 px-1">
-        <label for="invoiceProductQty" class="form-label">Qty <span class="text-danger">*</span></label>
+        <label for="invoiceProductQty" class="form-label text-nowrap">Qty <span class="text-danger">*</span></label>
         <input type="number" class="form-control px-2" id="invoiceProductQty" placeholder="Qty" min="1" />
-        <div id="origPriceLabel" class="form-text text-secondary mt-1" style="display:none; font-weight:600; font-size: 0.75rem;">&nbsp;</div>
+        <div id="origPriceLabel" class="form-text text-secondary mt-1 text-nowrap" style="display:none; font-weight:600; font-size: 0.75rem;">&nbsp;</div>
     </div>
     <div class="col-md-2 px-1">
-        <label for="invoiceProductGst" class="form-label">GST AMT</label>
+        <label for="invoiceProductGst" class="form-label text-nowrap">GST AMT</label>
         <input type="text" class="form-control" id="invoiceProductGst" placeholder="GST Amount" readonly />
     </div>
     <div class="col-md-2 position-relative px-1">
-        <label for="invoiceProductPrice" class="form-label">Unit Price <span class="text-danger">*</span></label>
+        <label for="invoiceProductPrice" class="form-label text-nowrap">Unit Price <span class="text-danger">*</span></label>
         <div class="input-group">
             <input type="number" class="form-control" id="invoiceProductPrice" placeholder="Price" min="0" step="0.01" />
             <button class="btn btn-outline-secondary btn-sm" type="button" id="verifyPriceBtn" title="Verify / Recalculate"><i class="fas fa-sync-alt"></i></button>
         </div>
-        <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="display:none; font-weight:bold; font-size: 0.75rem; min-height:18px;"></div>
+        <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1 text-nowrap" style="display:none; font-weight:bold; font-size: 0.75rem; min-height:18px;"></div>
     </div>
     <div class="col-md-1 px-1">
         <label class="form-label">&nbsp;</label>
@@ -36,7 +36,7 @@
             <i class="fas fa-plus"></i>
         </button>
     </div>
-</form>
+</div>
 <form id="editProductForm" style="display:none;"></form>
 <div class="table-responsive">
     <table class="table table-striped table-bordered text-center" id="invoiceProductTable">
