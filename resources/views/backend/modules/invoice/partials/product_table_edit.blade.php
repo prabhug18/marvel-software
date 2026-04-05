@@ -1,5 +1,5 @@
 <!-- Add Product Form (Pixel-perfect match with create page) -->
-<div class="row g-4 mb-5 align-items-end" id="editProductFormRow">
+<div class="row g-4 mb-5" id="editProductFormRow">
     <div class="col-md-2 position-relative">
         <label for="invoiceProductName" class="form-label text-nowrap">Product Name <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductName" placeholder="Enter Product Name" autocomplete="off" />
@@ -16,11 +16,12 @@
     <div class="col-md-1 px-1">
         <label for="invoiceProductQty" class="form-label text-nowrap">Qty <span class="text-danger">*</span></label>
         <input type="number" class="form-control px-2" id="invoiceProductQty" placeholder="Qty" min="1" />
-        <div id="origPriceLabel" class="form-text text-secondary mt-1 text-nowrap" style="display:none; font-weight:600; font-size: 0.75rem;">&nbsp;</div>
+        <div id="origPriceLabel" class="form-text text-secondary mt-1 text-nowrap" style="display:none; font-weight:600; font-size: 0.75rem; min-height: 18px;">&nbsp;</div>
     </div>
     <div class="col-md-2 px-1">
-        <label for="invoiceProductGst" class="form-label text-nowrap">GST AMT</label>
+        <label for="invoiceProductGst" class="form-label text-nowrap">GST Amt</label>
         <input type="text" class="form-control" id="invoiceProductGst" placeholder="GST Amount" readonly />
+        <div class="form-text mt-1" style="min-height: 18px;">&nbsp;</div>
     </div>
     <div class="col-md-2 position-relative px-1">
         <label for="invoiceProductPrice" class="form-label text-nowrap">Unit Price <span class="text-danger">*</span></label>
@@ -28,7 +29,7 @@
             <input type="number" class="form-control" id="invoiceProductPrice" placeholder="Price" min="0" step="0.01" />
             <button class="btn btn-outline-secondary btn-sm" type="button" id="verifyPriceBtn" title="Verify / Recalculate"><i class="fas fa-sync-alt"></i></button>
         </div>
-        <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1 text-nowrap" style="display:none; font-weight:bold; font-size: 0.75rem; min-height:18px;"></div>
+        <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1 text-nowrap" style="display:none; font-weight:bold; font-size: 0.75rem; min-height: 18px;">&nbsp;</div>
     </div>
     <div class="col-md-1 px-1">
         <label class="form-label">&nbsp;</label>
