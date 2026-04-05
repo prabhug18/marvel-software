@@ -170,6 +170,7 @@ $(document).ready(function() {
             });
         } else {
             $suggestions.hide();
+            clearProductFields();
         }
     });
     $(document).on('click', '#productSuggestions button', function() {
@@ -517,12 +518,33 @@ window.removeProduct = function(index) {
     updateTotals();
 };
 function clearProductFields() {
-    document.getElementById('invoiceProductName').value = '';
-    document.getElementById('invoiceProductModel').value = '';
-    document.getElementById('invoiceProductSerialNo').value = '';
-    document.getElementById('invoiceProductQty').value = '';
-    document.getElementById('invoiceProductPrice').value = '';
-    document.getElementById('invoiceProductGst').value = '';
+    const fields = [
+        'invoiceProductName', 'invoiceProductModel', 'invoiceProductSerialNo', 
+        'invoiceProductQty', 'invoiceProductPrice', 'invoiceProductGst'
+    ];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    // Clear data attributes and labels
+    const priceEl = document.getElementById('invoiceProductPrice');
+    if (priceEl) {
+        priceEl.removeAttribute('data-tax_percentage');
+        priceEl.removeAttribute('data-orig-price');
+    }
+    
+    const gstLabel = document.getElementById('gstInclusivePriceLabel');
+    if (gstLabel) {
+        gstLabel.textContent = '';
+        gstLabel.style.display = 'none';
+    }
+    
+    const origLabel = document.getElementById('origPriceLabel');
+    if (origLabel) {
+        origLabel.innerHTML = '&nbsp;';
+        origLabel.style.display = 'none';
+    }
 }
 function updateTotals() {
     // Grand total should be the sum of GST-inclusive totals for all products
