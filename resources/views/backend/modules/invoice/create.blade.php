@@ -828,8 +828,10 @@
         const qtyInput = document.getElementById('invoiceProductQty');
         function updateQtyFromSerials() {
             if (!serialInput || !qtyInput) return;
-            const serials = serialInput.value.split(',').map(s => s.trim()).filter(Boolean);
-            qtyInput.value = serials.length > 0 ? serials.length : '';
+            const rawValue = serialInput.value;
+            // Split by comma for separate quantities, but ignore & for combo (qty 1)
+            const commaSerials = rawValue.split(',').map(s => s.trim()).filter(Boolean);
+            qtyInput.value = commaSerials.length > 0 ? commaSerials.length : '';
         }
         if (serialInput) {
             serialInput.addEventListener('keydown', function(e) {
@@ -927,33 +929,35 @@
                     const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : 0;
                     const unavailable = response.unavailable_serials || [];
 
-                    if (unavailable.length > 0) {
+                    if (unavailable.length > 0 || qty > availableStock) {
+                        let warningText = '';
+                        if (unavailable.length > 0) {
+                            warningText += 'The following serial numbers may already be sold or not in this warehouse: ' + unavailable.join(', ') + '. ';
+                        }
+                        if (qty > availableStock) {
+                            warningText += 'Only ' + availableStock + ' units are available in this location, but you are adding ' + qty + '. ';
+                        }
+                        
                         Swal.fire({
-                            icon: 'error',
-                            title: 'Serial Numbers Unavailable',
-                            text: 'The following serial numbers are already sold or not in this warehouse: ' + unavailable.join(', '),
+                            icon: 'warning',
+                            title: 'Stock Warning',
+                            text: warningText + 'Do you still want to add this product to the invoice?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, add it',
+                            cancelButtonText: 'No, cancel'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
+                            }
                         });
-                        return;
+                    } else {
+                        // All checks passed
+                        performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
                     }
-                    
-                    if (qty > availableStock) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Insufficient Stock',
-                            text: 'Only ' + availableStock + ' units are available in this location. You cannot add ' + qty + ' units.',
-                        });
-                        return;
-                    }
-
-                    // All checks passed
-                    performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
                 },
                 error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Validation Error',
-                        text: 'Unable to verify stock at this time. Please try again.',
-                    });
+                    // Fail gracefully - allow adding if verification fails
+                    performAddProduct(name, model, serialNumbers, qty, base_price, gst_inclusive_price, gst_percentage);
                 }
             });
         }

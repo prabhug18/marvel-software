@@ -217,7 +217,10 @@ class StockController extends Controller{
 
         $unavailableSerials = [];
         if ($serialNoRaw) {
-            $serialsToCheck = array_map('trim', explode(',', $serialNoRaw));
+            // Support both comma and ampersand as separators for validation
+            $serialsToCheck = preg_split('/[,&]+/', $serialNoRaw, -1, PREG_SPLIT_NO_EMPTY);
+            $serialsToCheck = array_map('trim', $serialsToCheck);
+            
             foreach ($serialsToCheck as $sn) {
                 if ($sn === '') continue;
                 $exists = (clone $query)->where('serial_no', $sn)->where('qty', '>', 0)->exists();

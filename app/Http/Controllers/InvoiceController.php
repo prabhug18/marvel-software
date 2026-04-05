@@ -413,7 +413,7 @@ class InvoiceController extends Controller
                     $stock = $stockQuery->first();
                     if ($stock) {
                         $oldQty = $stock->qty;
-                        $stock->qty = max(0, $stock->qty - $item['qty']);
+                        $stock->qty = $stock->qty - $item['qty'];
                         $stock->save();
                     } else {
                         $msg = 'Stock not found for product: ' . json_encode([
