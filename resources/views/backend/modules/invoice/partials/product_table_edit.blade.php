@@ -140,11 +140,11 @@ $(document).ready(function() {
             $(this).after($suggestions);
         }
         
-        if (productSearchXhr) {
-            productSearchXhr.abort();
-        }
-
         if (val.length > 0) {
+            // Immediately clear the associated fields (Model, Qty, Price, etc) 
+            // but keep the current product name input.
+            clearProductFields(true);
+            
             productSearchXhr = $.ajax({
                 url: '/product-search',
                 type: 'GET',
@@ -520,11 +520,15 @@ window.removeProduct = function(index) {
     updateProductTable();
     updateTotals();
 };
-function clearProductFields() {
+function clearProductFields(excludeName = false) {
     const fields = [
-        'invoiceProductName', 'invoiceProductModel', 'invoiceProductSerialNo', 
+        'invoiceProductModel', 'invoiceProductSerialNo', 
         'invoiceProductQty', 'invoiceProductPrice', 'invoiceProductGst'
     ];
+    if (!excludeName) {
+        fields.unshift('invoiceProductName');
+    }
+    
     fields.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
