@@ -207,7 +207,7 @@ class InvoiceController extends Controller
             'vehicle_type' => 'nullable|string',
             'vehicle_details' => 'nullable|string',
             'products' => 'required|array|min:1',
-            'products.*.serial_no' => 'required|string',
+            'products.*.serial_no' => 'nullable|string',
         ]);
 
         // ...existing customer logic...
@@ -493,7 +493,7 @@ class InvoiceController extends Controller
                 'invoice_number' => 'required|string',
                 'invoice_date' => 'required|date',
                 'products' => 'required|array|min:1',
-                'products.*.serial_no' => 'required|string',
+                'products.*.serial_no' => 'nullable|string',
                 'products.*.qty' => 'required|integer|min:1',
                 'products.*.unit_price' => 'required|numeric|min:0',
                 // payments are optional here; handled in Payment Reconciliation

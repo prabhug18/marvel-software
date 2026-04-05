@@ -910,8 +910,8 @@
                 }
             }
             const warehouseId = $('#warehouse_id').val();
-            if (!name || !model || serialNumbers.length === 0 || isNaN(qty) || qty <= 0 || isNaN(gst_inclusive_price) || gst_inclusive_price < 0) {
-                Swal.fire({ icon: 'error', title: 'Invalid Details', text: 'Please enter valid product details. At least one Serial No is required.' });
+            if (!name || !model || isNaN(qty) || qty <= 0 || isNaN(gst_inclusive_price) || gst_inclusive_price < 0) {
+                Swal.fire({ icon: 'error', title: 'Invalid Details', text: 'Please enter valid product details.' });
                 return;
             }
 
@@ -929,8 +929,11 @@
                     const availableStock = response.available_stock !== undefined ? parseInt(response.available_stock) : 0;
                     const unavailable = response.unavailable_serials || [];
 
-                    if (unavailable.length > 0 || qty > availableStock) {
+                    if (unavailable.length > 0 || qty > availableStock || serialNumbers.length === 0) {
                         let warningText = '';
+                        if (serialNumbers.length === 0) {
+                            warningText += 'No serial numbers have been entered for this product. ';
+                        }
                         if (unavailable.length > 0) {
                             warningText += 'The following serial numbers may already be sold or not in this warehouse: ' + unavailable.join(', ') + '. ';
                         }
