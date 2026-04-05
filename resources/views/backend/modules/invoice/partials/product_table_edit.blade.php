@@ -1,32 +1,40 @@
-<!-- Add Product Form (single row, horizontal like create page) -->
-<div class="row g-3 mb-4 align-items-end" id="editProductFormRow">
-    <div class="col-md-2 position-relative">
-        <label for="invoiceProductName" class="form-label">Product Name <span class="text-danger">*</span></label>
+<!-- Add Product Form (single row, horizontal match create page) -->
+<div class="row g-1 mb-4 align-items-end" id="editProductFormRow">
+    <div class="col-md-2 px-1 position-relative">
+        <label for="invoiceProductName" class="form-label">PRODUCT NAME <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductName" placeholder="Enter Product Name" autocomplete="off" />
         <div id="productSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
     </div>
-    <div class="col-md-2">
-        <label for="invoiceProductModel" class="form-label">Model <span class="text-danger">*</span></label>
+    <div class="col-md-1 px-1">
+        <label for="invoiceProductModel" class="form-label">MODEL <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductModel" placeholder="Enter Model" />
     </div>
-    <div class="col-md-2">
-        <label for="invoiceProductSerialNo" class="form-label">Serial Number <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" id="invoiceProductSerialNo" placeholder="Enter Serial Number" />
+    <div class="col-md-2 px-1">
+        <label for="invoiceProductSerialNo" class="form-label">SERIAL NO <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="invoiceProductSerialNo" placeholder="Enter Serial No(s)" autocomplete="off" />
     </div>
-    <div class="col-md-2">
-        <label for="invoiceProductQty" class="form-label">Qty <span class="text-danger">*</span></label>
-        <input type="number" class="form-control" id="invoiceProductQty" placeholder="Enter Qty" min="1" />
-        <div id="origPriceLabel" class="form-text text-secondary mt-1" style="display:none; font-weight:600; margin-top:6px;">&nbsp;</div>
+    <div class="col-md-1 px-1">
+        <label for="invoiceProductQty" class="form-label">QTY <span class="text-danger">*</span></label>
+        <input type="number" class="form-control px-2" id="invoiceProductQty" placeholder="Qty" min="1" />
+        <div id="origPriceLabel" class="form-text text-secondary mt-1" style="display:none; font-weight:600; font-size: 0.75rem;">&nbsp;</div>
     </div>
-    <div class="col-md-2">
-        <label for="invoiceProductPrice" class="form-label">Unit Price <span class="text-danger">*</span></label>
-        <div style="position:relative;">
-            <input type="number" class="form-control" id="invoiceProductPrice" placeholder="Enter Unit Price" min="0" step="0.01" />
-            <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="display:none; font-weight:bold; min-height:22px; position:absolute; left:0; right:0; bottom:-28px; z-index:2;"></div>
+    <div class="col-md-2 px-1">
+        <label for="invoiceProductGst" class="form-label">GST AMT</label>
+        <input type="text" class="form-control" id="invoiceProductGst" placeholder="GST Amount" readonly />
+    </div>
+    <div class="col-md-2 px-1 position-relative">
+        <label for="invoiceProductPrice" class="form-label">UNIT PRICE <span class="text-danger">*</span></label>
+        <div class="input-group">
+            <input type="number" class="form-control" id="invoiceProductPrice" placeholder="Price" min="0" step="0.01" />
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="verifyPriceBtn" title="Verify / Recalculate"><i class="fas fa-sync-alt"></i></button>
         </div>
+        <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="display:none; font-weight:bold; font-size: 0.75rem; min-height:18px;"></div>
     </div>
-    <div class="col-md-2 d-flex align-items-end">
-        <button type="button" class="btn custom-orange-btn text-white w-100" id="invoiceAddProductBtn">Add Product</button>
+    <div class="col-md-1 px-1">
+        <label class="form-label">&nbsp;</label>
+        <button type="button" class="btn custom-orange-btn text-white w-100" id="invoiceAddProductBtn" style="height: 38px;" title="Add Product">
+            <i class="fas fa-plus"></i>
+        </button>
     </div>
 </div>
 <form id="editProductForm" style="display:none;"></form>
@@ -201,6 +209,11 @@ $(document).ready(function() {
             $('<div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="font-weight:bold; min-height:22px; margin-top:6px;"></div>').insertAfter('#invoiceProductPrice');
         }
         $('#gstInclusivePriceLabel').text('GST Inclusive: ₹' + gst_inclusive_price.toFixed(2)).css('display','block');
+        
+        // Show GST Amount 
+        let gst_amt = gst_inclusive_price - gst_exclusive_price;
+        $('#invoiceProductGst').val(gst_amt.toFixed(2));
+
         // Show Original price under Qty input if available
         var orig_price = parseFloat($btn.data('orig-price')) || null;
         if (orig_price && !isNaN(orig_price)) {
@@ -231,14 +244,53 @@ $(document).ready(function() {
             $('<div id="gstInclusivePriceLabel" class="form-text text-primary mt-1" style="font-weight:bold; min-height:22px; margin-top:6px;"></div>').insertAfter('#invoiceProductPrice');
         }
         $('#gstInclusivePriceLabel').text('GST Inclusive: ₹' + entered_price.toFixed(2)).css('display','block');
+
+        // Update GST Amount field
+        let gst_amt = entered_price - gst_exclusive_price;
+        $('#invoiceProductGst').val(gst_amt.toFixed(2));
+
         // --- Update preview total if qty is filled ---
         let qty = parseInt($('#invoiceProductQty').val()) || 0;
         let total = entered_price * qty;
     });
     $(document).on('click', function(e) {
-        if (!$(e.target).closest('#invoiceProductName, #productSuggestions').length) {
+        if (!$(e.target).closest('#invoiceProductName, #productSuggestions, #verifyPriceBtn').length) {
             $('#productSuggestions').hide();
         }
+    });
+
+    // Verify / Recalculate Button Logic
+    $('#verifyPriceBtn').on('click', function() {
+        let entered_price = parseFloat($('#invoiceProductPrice').val()) || 0;
+        let gst_percentage = parseFloat($('#invoiceProductPrice').data('tax-percentage')) || 0;
+        
+        let gst_exclusive_price = entered_price;
+        if (gst_percentage > 0) {
+            gst_exclusive_price = entered_price / (1 + gst_percentage / 100);
+        }
+        
+        // Store the GST-inclusive price for the final addProduct logic
+        if ($('#invoiceProductPriceGstIncl').length === 0) {
+            $('<input>').attr({type: 'hidden', id: 'invoiceProductPriceGstIncl'}).appendTo('body');
+        }
+        $('#invoiceProductPriceGstIncl').val(entered_price.toFixed(2));
+        
+        // Update the unit price field to be the GST-exclusive value (to match create page behavior)
+        $('#invoiceProductPrice').val(gst_exclusive_price.toFixed(2));
+        $('#invoiceProductPrice').data('gst-exclusive', gst_exclusive_price);
+        
+        // Show labels
+        $('#gstInclusivePriceLabel').text('GST Inclusive: ₹' + entered_price.toFixed(2)).css('display','block');
+        let gst_amt = entered_price - gst_exclusive_price;
+        $('#invoiceProductGst').val(gst_amt.toFixed(2));
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Verified',
+            text: 'Unit Price updated (GST Reverse-calculated).',
+            timer: 1500,
+            showConfirmButton: false
+        });
     });
 });
 window.productsArr = window.productsArr || [];
@@ -469,6 +521,7 @@ function clearProductFields() {
     document.getElementById('invoiceProductSerialNo').value = '';
     document.getElementById('invoiceProductQty').value = '';
     document.getElementById('invoiceProductPrice').value = '';
+    document.getElementById('invoiceProductGst').value = '';
 }
 function updateTotals() {
     // Subtotal: sum of GST-exclusive prices × qty
