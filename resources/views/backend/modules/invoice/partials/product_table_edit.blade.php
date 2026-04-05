@@ -7,7 +7,7 @@
     </div>
     <div class="col-md-2">
         <label for="invoiceProductModel" class="form-label text-nowrap">Model <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" id="invoiceProductModel" placeholder="Enter Model" />
+        <input type="text" class="form-control" id="invoiceProductModel" placeholder="Enter Model" autocomplete="off" />
     </div>
     <div class="col-md-2">
         <label for="invoiceProductSerialNo" class="form-label text-nowrap">Serial No <span class="text-danger">*</span></label>
@@ -15,18 +15,18 @@
     </div>
     <div class="col-md-1 px-1">
         <label for="invoiceProductQty" class="form-label text-nowrap">Qty <span class="text-danger">*</span></label>
-        <input type="number" class="form-control px-2" id="invoiceProductQty" placeholder="Qty" min="1" />
+        <input type="number" class="form-control px-2" id="invoiceProductQty" placeholder="Qty" min="1" autocomplete="off" />
         <div id="origPriceLabel" class="form-text text-secondary mt-1 text-nowrap" style="display:none; font-weight:600; font-size: 0.75rem; min-height: 18px;">&nbsp;</div>
     </div>
     <div class="col-md-2 px-1">
         <label for="invoiceProductGst" class="form-label text-nowrap">GST Amt</label>
-        <input type="text" class="form-control" id="invoiceProductGst" placeholder="GST Amount" readonly />
+        <input type="text" class="form-control" id="invoiceProductGst" placeholder="GST Amount" readonly autocomplete="off" />
         <div class="form-text mt-1" style="min-height: 18px;">&nbsp;</div>
     </div>
     <div class="col-md-2 position-relative px-1">
         <label for="invoiceProductPrice" class="form-label text-nowrap">Unit Price <span class="text-danger">*</span></label>
         <div class="input-group">
-            <input type="number" class="form-control" id="invoiceProductPrice" placeholder="Price" min="0" step="0.01" />
+            <input type="number" class="form-control" id="invoiceProductPrice" placeholder="Price" min="0" step="0.01" autocomplete="off" />
             <button class="btn btn-outline-secondary btn-sm" type="button" id="verifyPriceBtn" title="Verify / Recalculate"><i class="fas fa-sync-alt"></i></button>
         </div>
         <div id="gstInclusivePriceLabel" class="form-text text-primary mt-1 text-nowrap" style="display:none; font-weight:bold; font-size: 0.75rem; min-height: 18px;">&nbsp;</div>
@@ -83,6 +83,8 @@
 <script>
 // --- Product Autosuggestion, Add/Edit/Remove, and Totals Logic (copied from create page) ---
 $(document).ready(function() {
+    // Explicitly clear all product fields on load (prevents browser autocomplete/caching)
+    clearProductFields();
     // Barcode/Serial No input: auto-add comma after scan
     const serialInput = document.getElementById('invoiceProductSerialNo');
     const qtyInput = document.getElementById('invoiceProductQty');
