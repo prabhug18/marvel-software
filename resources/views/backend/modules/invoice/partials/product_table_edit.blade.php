@@ -198,6 +198,9 @@ $(document).ready(function() {
             $('#invoiceProductModel').data('product-id', productIdSelected);
             $('#invoiceProductModel').data('model-no', $btn.data('model_no') || '');
             $('#productSuggestions').hide();
+
+        const nameDisplay = [brand, series, model].filter(Boolean).join(' - ');
+        $('#invoiceProductName').val(nameDisplay);
         $('#invoiceProductModel').val(model);
         // Set GST-exclusive price in textbox, but also update hidden field and label
         $('#invoiceProductPrice').val(gst_exclusive_price ? gst_exclusive_price.toFixed(2) : '');
