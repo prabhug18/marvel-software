@@ -46,9 +46,17 @@ class RoleController extends Controller
      */
     public function create(): View
     {
-        $permission = Permission::get();
+        $permissions = Permission::get();
+        // Group permissions by module
+        $modules = [];
+        foreach ($permissions as $p) {
+            $parts = explode('-', $p->name);
+            $moduleName = $parts[0];
+            $action = $parts[1] ?? 'list';
+            $modules[$moduleName][$action] = $p;
+        }
         $heading    =   "Create Role";
-        return view('roles.create',compact('permission','heading'));
+        return view('roles.create', compact('modules', 'heading'));
     }
     
     /**
@@ -64,13 +72,8 @@ class RoleController extends Controller
             'permission' => 'required',
         ]);
 
-        $permissionsID = array_map(
-            function($value) { return (int)$value; },
-            $request->input('permission')
-        );
-    
         $role = Role::create(['name' => $request->input('name')]);
-        $role->syncPermissions($permissionsID);
+        $role->syncPermissions($request->input('permission'));
     
         return redirect()->route('roles.index')
                         ->with('success','Role created successfully');
@@ -102,12 +105,22 @@ class RoleController extends Controller
     {
         $heading    =   "Edit Role";
         $role = Role::find($id);
-        $permission = Permission::get();
+        $permissions = Permission::get();
+        
+        // Group permissions by module
+        $modules = [];
+        foreach ($permissions as $p) {
+            $parts = explode('-', $p->name);
+            $moduleName = $parts[0];
+            $action = $parts[1] ?? 'list';
+            $modules[$moduleName][$action] = $p;
+        }
+
         $rolePermissions = DB::table("role_has_permissions")->where("role_has_permissions.role_id",$id)
             ->pluck('role_has_permissions.permission_id','role_has_permissions.permission_id')
             ->all();
     
-        return view('roles.edit',compact('role','permission','rolePermissions','heading'));
+        return view('roles.edit',compact('role','modules','rolePermissions','heading'));
     }
     
     /**

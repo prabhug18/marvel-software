@@ -13,44 +13,35 @@ class PermissionTableSeeder extends Seeder
      */
     public function run(): void
     {
-        //
-        $permissions = [
-            'role-list',
-            'role-create',
-            'role-edit',
-            'role-delete',
-            'warehouse-list',
-            'warehouse-create',
-            'warehouse-edit',
-            'warehouse-delete',
-            'product-list',
-            'product-create',
-            'product-edit',
-            'product-delete',
-            'stock-list',
-            'stock-create',
-            'stock-edit',
-            'stock-delete',
-            'price-list',
-            'price-create',
-            'price-edit',
-            'price-delete',
-            'customer-list',
-            'customer-create',
-            'customer-edit',
-            'customer-delete',
-            'brand-list',
-            'brand-create',
-            'brand-edit',
-            'brand-delete',
-            'category-list',
-            'category-create',
-            'category-edit',
-            'category-delete',
+        $modules = [
+            'dashboard',
+            'role',
+            'warehouse',
+            'product',
+            'stock',
+            'customer',
+            'brand',
+            'category',
+            'invoice',
+            'payment',
+            'source',
+            'vendor',
+            'user',
+            'settings',
         ];
-         
-         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+
+        $actions = ['list', 'create', 'edit', 'delete'];
+
+        foreach ($modules as $module) {
+            foreach ($actions as $action) {
+                // Special case: dashboard usually only has list, settings usually only has edit/list
+                if ($module === 'dashboard' && $action !== 'list') continue;
+                
+                Permission::firstOrCreate([
+                    'name' => $module . '-' . $action,
+                    'guard_name' => 'web'
+                ]);
+            }
         }
     }
 }

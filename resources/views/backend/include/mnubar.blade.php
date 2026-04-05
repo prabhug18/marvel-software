@@ -3,13 +3,19 @@
         <img src="{{ asset('assets/images/logo.jpg') }}" alt="Logo" />
     </div>
     <ul>
+        @can('dashboard-list')
         <li><a href="{{ url('/') }}"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+        @endcan
+        
+        @can('customer-list')
         <li>
             <a href="{{ url('/customer') }}">
                 <i class="fa-solid fa-user"></i><span>Customers</span>
             </a>
         </li> 
+        @endcan
         
+        @can('stock-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fas fa-warehouse"></i><span>Stock</span><i class="fas fa-chevron-down arrow"></i>
@@ -20,7 +26,7 @@
                         <i class="fa-solid fa-list"></i><span> Stock List</span>
                     </a>
                 </li>
-                @if(Auth::user() && Auth::user()->hasRole('Admin'))
+                @can('stock-create')
                 <li>
                     <a href="{{ url('/stocks/create') }}">
                         <i class="fas fa-plus-circle"></i><span>Add Stock</span>
@@ -31,10 +37,12 @@
                         <i class="fas fa-plus-circle"></i><span>Bulk Stock</span>
                     </a>
                 </li>    
-                @endif            
+                @endcan            
             </ul>
         </li>
+        @endcan
         
+        @can('product-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fas fa-boxes-stacked"></i><span>Products</span><i class="fas fa-chevron-down arrow"></i>
@@ -45,7 +53,7 @@
                         <i class="fas fa-list"></i><span> Products List</span>
                     </a>
                 </li>
-                @if(Auth::user() && Auth::user()->hasRole('Admin'))
+                @can('product-create')
                 <li>
                     <a href="{{ url('/products/create') }}">
                         <i class="fas fa-plus-circle"></i><span> Add Products</span>
@@ -56,26 +64,32 @@
                         <i class="fas fa-box-open"></i><span> Bulk Products</span>
                     </a>
                 </li>
-                @endif
+                @endcan
             </ul>
         </li>
-        @if(Auth::user() && Auth::user()->hasRole('Admin'))
+        @endcan
+        @can('warehouse-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fas fa-warehouse"></i><span>Locations</span><i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="submenu">
+                @can('warehouse-create')
                 <li>
                     <a href="{{ url('/locations/create') }}">
                         <i class="fas fa-plus-circle"></i><span> Add Locations</span>
                     </a>
-                </li>                
+                </li>
+                @endcan                
             </ul>
         </li>
-        @endif
+        @endcan
+
+        @can('invoice-list')
         <li><a href="{{ url('/invoice') }}"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></a></li>
+        @endcan
         
-        @if(Auth::user() && Auth::user()->hasRole('Admin'))
+        @can('payment-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fas fa-warehouse"></i><span>Payment</span><i class="fas fa-chevron-down arrow"></i>
@@ -84,35 +98,47 @@
                 <li><a href="{{ url('/payment/view') }}"><i class="fas fa-plus-circle"></i><span> Payment List</span></a></li>
             </ul>
         </li>
+        @endcan
        
+        @if(auth()->user()->can('brand-list') || auth()->user()->can('category-list') || auth()->user()->can('source-list') || auth()->user()->can('vendor-list'))
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fas fa-sitemap"></i><span>Masters</span><i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="submenu">
+                @can('brand-list')
                 <li>
                     <a href="{{ url('/brands/create') }}">
                         <i class="fas fa-tags"></i><span>Brands</span>
                     </a>
                 </li>
+                @endcan
+                @can('category-list')
                 <li>
                     <a href="{{ url('/categories/create') }}">
                         <i class="fas fa-th-large"></i><span>Categories</span>
                     </a>
                 </li>
+                @endcan
+                @can('source-list')
                 <li>
                     <a href="{{ url('/source/create') }}">
                         <i class="fas fa-database"></i><span>Source</span>
                     </a>
                 </li>
+                @endcan
+                @can('vendor-list')
                 <li>
                     <a href="{{ route('vendors.index') }}">
                         <i class="fas fa-truck"></i><span>Vendors</span>
                     </a>
                 </li>
+                @endcan
             </ul>
         </li>
+        @endif
 
+        @can('user-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fas fa-person"></i><span>User Creation</span><i class="fas fa-chevron-down arrow"></i>
@@ -123,13 +149,24 @@
                         <i class="fas fa-tags"></i><span>View User</span>
                     </a>
                 </li>
+                @can('role-list')
+                <li>
+                    <a href="{{ url('/roles') }}">
+                        <i class="fas fa-user-shield"></i><span>Roles & Permissions</span>
+                    </a>
+                </li>
+                @endcan
+                @can('user-create')
                 <li>
                     <a href="{{ url('/users/create') }}">
                         <i class="fas fa-th-large"></i><span>Create User</span>
                     </a>
                 </li>
+                @endcan
             </ul>
         </li>
+        @endcan
+        @can('settings-edit')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
                 <i class="fas fa-cog"></i><span>Settings</span><i class="fas fa-chevron-down arrow"></i>
@@ -147,6 +184,6 @@
                 </li>
             </ul>
         </li>
-     @endif
+        @endcan
     </ul>
 </nav>

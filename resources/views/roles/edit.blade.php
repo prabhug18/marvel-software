@@ -40,28 +40,90 @@
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="form-group mb-3">
-                                <label class="form-label"><strong>Permissions</strong></label>
-                                <div class="row">
-                                    @foreach($permission as $value)
-                                        <div class="col-6 col-md-4 mb-2">
-                                            <div class="form-check">
-                                                <input type="checkbox" name="permission[{{$value->id}}]" value="{{$value->id}}" class="form-check-input" id="perm{{$value->id}}" {{ in_array($value->id, $rolePermissions) ? 'checked' : ''}}>
-                                                <label class="form-check-label" for="perm{{$value->id}}">{{ $value->name }}</label>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                <label class="form-label"><strong>Manage Permissions</strong></label>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="30%">Module</th>
+                                                <th class="text-center">Create</th>
+                                                <th class="text-center">Read (List)</th>
+                                                <th class="text-center">Update (Edit)</th>
+                                                <th class="text-center">Delete</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($modules as $moduleName => $actions)
+                                                <tr>
+                                                    <td class="fw-bold text-capitalize">
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input select-all-row" id="row-{{ $moduleName }}">
+                                                            <label class="form-check-label ms-1" for="row-{{ $moduleName }}">
+                                                                {{ str_replace('_', ' ', $moduleName) }}
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                    @php
+                                                        $crudMap = [
+                                                            'create' => 'create',
+                                                            'read'   => 'list',
+                                                            'update' => 'edit',
+                                                            'delete' => 'delete'
+                                                        ];
+                                                    @endphp
+                                                    @foreach(['create', 'list', 'edit', 'delete'] as $actionKey)
+                                                        <td class="text-center">
+                                                            @if(isset($actions[$actionKey]))
+                                                                <input type="checkbox" name="permission[]" value="{{ $actions[$actionKey]->id }}" 
+                                                                       class="form-check-input permission-check"
+                                                                       {{ in_array($actions[$actionKey]->id, $rolePermissions) ? 'checked' : '' }}>
+                                                            @endif
+                                                        </td>
+                                                    @endforeach
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-12 text-center">
-                            <button type="submit" class="btn btn-primary btn-sm mb-3"><i class="fa-solid fa-floppy-disk"></i> Update</button>
+                            <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 mb-3">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Update Role Permissions
+                            </button>
                         </div>
                     </div>
                 </form>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Select All Row functionality
+                        const selectAllRowChecks = document.querySelectorAll('.select-all-row');
+                        selectAllRowChecks.forEach(rowCheck => {
+                            rowCheck.addEventListener('change', function() {
+                                const checkboxes = this.closest('tr').querySelectorAll('.permission-check');
+                                checkboxes.forEach(cb => {
+                                    cb.checked = this.checked;
+                                });
+                            });
+                        });
+
+                        // If all actions in a row are checked, check the "Select All" row checkbox
+                        const rows = document.querySelectorAll('tbody tr');
+                        rows.forEach(row => {
+                            const totalCheckboxes = row.querySelectorAll('.permission-check').length;
+                            const checkedCheckboxes = row.querySelectorAll('.permission-check:checked').length;
+                            const selectAllCheck = row.querySelector('.select-all-row');
+                            if (totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes) {
+                                selectAllCheck.checked = true;
+                            }
+                        });
+                    });
+                </script>
             </div>
         </div>
     </div>
