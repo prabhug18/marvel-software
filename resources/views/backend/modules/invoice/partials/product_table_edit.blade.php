@@ -1,20 +1,20 @@
-<!-- Add Product Form (single row, horizontal match create page) -->
-<div class="row g-1 mb-4 align-items-end" id="editProductFormRow">
-    <div class="col-md-2 px-1 position-relative">
-        <label for="invoiceProductName" class="form-label">PRODUCT NAME <span class="text-danger">*</span></label>
+<!-- Add Product Form (Pixel-perfect match with create page) -->
+<form class="row g-4 mb-5 align-items-end" id="editProductFormRow">
+    <div class="col-md-2 position-relative">
+        <label for="invoiceProductName" class="form-label">Product Name <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductName" placeholder="Enter Product Name" autocomplete="off" />
         <div id="productSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
     </div>
-    <div class="col-md-1 px-1">
-        <label for="invoiceProductModel" class="form-label">MODEL <span class="text-danger">*</span></label>
+    <div class="col-md-2">
+        <label for="invoiceProductModel" class="form-label">Model <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductModel" placeholder="Enter Model" />
     </div>
-    <div class="col-md-2 px-1">
-        <label for="invoiceProductSerialNo" class="form-label">SERIAL NO <span class="text-danger">*</span></label>
+    <div class="col-md-2">
+        <label for="invoiceProductSerialNo" class="form-label">Serial No <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductSerialNo" placeholder="Enter Serial No(s)" autocomplete="off" />
     </div>
     <div class="col-md-1 px-1">
-        <label for="invoiceProductQty" class="form-label">QTY <span class="text-danger">*</span></label>
+        <label for="invoiceProductQty" class="form-label">Qty <span class="text-danger">*</span></label>
         <input type="number" class="form-control px-2" id="invoiceProductQty" placeholder="Qty" min="1" />
         <div id="origPriceLabel" class="form-text text-secondary mt-1" style="display:none; font-weight:600; font-size: 0.75rem;">&nbsp;</div>
     </div>
@@ -22,8 +22,8 @@
         <label for="invoiceProductGst" class="form-label">GST AMT</label>
         <input type="text" class="form-control" id="invoiceProductGst" placeholder="GST Amount" readonly />
     </div>
-    <div class="col-md-2 px-1 position-relative">
-        <label for="invoiceProductPrice" class="form-label">UNIT PRICE <span class="text-danger">*</span></label>
+    <div class="col-md-2 position-relative px-1">
+        <label for="invoiceProductPrice" class="form-label">Unit Price <span class="text-danger">*</span></label>
         <div class="input-group">
             <input type="number" class="form-control" id="invoiceProductPrice" placeholder="Price" min="0" step="0.01" />
             <button class="btn btn-outline-secondary btn-sm" type="button" id="verifyPriceBtn" title="Verify / Recalculate"><i class="fas fa-sync-alt"></i></button>
@@ -36,7 +36,7 @@
             <i class="fas fa-plus"></i>
         </button>
     </div>
-</div>
+</form>
 <form id="editProductForm" style="display:none;"></form>
 <div class="table-responsive">
     <table class="table table-striped table-bordered text-center" id="invoiceProductTable">
@@ -44,8 +44,8 @@
             <tr>
                 <th>S.No</th>
                 <th>Product Name</th>
-                <th>Model No</th>
-                <th>Serial Number</th>
+                <th>Model</th>
+                <th>Serial No</th>
                 <th>Qty</th>
                 <th>Unit Price</th>
                 <th>Total</th>
@@ -60,13 +60,13 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $cleanedName }}</td>
-                    <td>{{ $item->model }}</td>
-                    <td>{{ $item->serial_no }}</td>
+                    <td>{{ $item->model_no || $item->model }}</td>
+                    <td>{!! nl2br(e(str_replace(',', "\n", $item->serial_no))) !!}</td>
                     <td>{{ $item->qty }}</td>
                     <td>₹{{ number_format($item->unit_price, 2) }}</td>
                     <td>₹{{ number_format($item->total, 2) }}</td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-danger remove-product-btn" data-index="{{ $index }}">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeProduct({{ $index }})">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </td>
@@ -489,17 +489,18 @@ function updateProductTable() {
         return;
     }
     window.productsArr.forEach((product, index) => {
-        const unitPriceDisplay = (product.gst_inclusive_price !== undefined && product.gst_inclusive_price !== null) ? Number(product.gst_inclusive_price) : Number(product.price);
-        const totalDisplay = (product.total !== undefined && product.total !== null) ? Number(product.total) : (Number(product.qty || 0) * unitPriceDisplay);
+        const unit_price = (product.gst_inclusive_price !== undefined && product.gst_inclusive_price !== null) ? Number(product.gst_inclusive_price) : Number(product.price);
+        const total_incl_gst = (product.gst_inclusive_price !== undefined && product.gst_inclusive_price !== null) ? (Number(product.gst_inclusive_price) * Number(product.qty)) : (Number(product.total) || 0);
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>${cleanProductName(product.name)}</td>
             <td>${product.model_no || product.model || ''}</td>
-            <td>${product.serial_no || ''}</td>
+            <td>${(product.serial_no || '').split(',').map(s => s.trim()).filter(Boolean).join('<br>')}</td>
             <td>${product.qty}</td>
-            <td>₹${unitPriceDisplay.toFixed(2)}</td>
-            <td>₹${totalDisplay.toFixed(2)}</td>
+            <td>₹${unit_price.toFixed(2)}</td>
+            <td>₹${total_incl_gst.toFixed(2)}</td>
             <td>
                 <button class="btn btn-sm btn-danger" onclick="removeProduct(${index})">
                     <i class="fas fa-trash-alt"></i>
@@ -524,50 +525,51 @@ function clearProductFields() {
     document.getElementById('invoiceProductGst').value = '';
 }
 function updateTotals() {
-    // Subtotal: sum of GST-exclusive prices × qty
-    const subtotal = window.productsArr.reduce((sum, p) => sum + (p.price * p.qty), 0);
+    // Grand total should be the sum of GST-inclusive totals for all products
+    let grandTotal = window.productsArr.reduce((sum, p) => sum + ((p.gst_inclusive_price !== undefined && p.qty !== undefined) ? (p.gst_inclusive_price * p.qty) : (p.total || 0)), 0);
+
+    let cgst = 0, sgst = 0, igst = 0;
     const stateId = document.getElementById('state') ? document.getElementById('state').value : null;
-    let cgst = 0, sgst = 0, igst = 0, tax = 0;
+
     if (stateId == '35') {
         cgst = window.productsArr.reduce((sum, p) => {
+            let base_price = p.price;
             let gst_amt = 0;
             if (p.tax_percentage > 0) {
-                gst_amt = (p.price * p.qty) * (p.tax_percentage / 100);
+                gst_amt = (base_price * p.tax_percentage / 100) * p.qty;
             }
             return sum + (gst_amt / 2);
         }, 0);
         sgst = window.productsArr.reduce((sum, p) => {
+            let base_price = p.price;
             let gst_amt = 0;
             if (p.tax_percentage > 0) {
-                gst_amt = (p.price * p.qty) * (p.tax_percentage / 100);
+                gst_amt = (base_price * p.tax_percentage / 100) * p.qty;
             }
             return sum + (gst_amt / 2);
         }, 0);
         igst = 0;
-        tax = cgst + sgst;
     } else {
         cgst = 0;
         sgst = 0;
         igst = window.productsArr.reduce((sum, p) => {
+            let base_price = p.price;
             let gst_amt = 0;
             if (p.tax_percentage > 0) {
-                gst_amt = (p.price * p.qty) * (p.tax_percentage / 100);
+                gst_amt = (base_price * p.tax_percentage / 100) * p.qty;
             }
             return sum + gst_amt;
         }, 0);
-        tax = igst;
     }
-    // Grand Total: subtotal + GST
-    const grandTotal = subtotal + tax;
+
     const cgstEl = document.getElementById('invoiceCGST');
     const sgstEl = document.getElementById('invoiceSGST');
     const igstEl = document.getElementById('invoiceIGST');
     const grandTotalEl = document.getElementById('invoiceGrandTotal');
-    const subtotalEl = document.getElementById('invoiceSubtotal');
+
     if (cgstEl) cgstEl.textContent = cgst.toFixed(2);
     if (sgstEl) sgstEl.textContent = sgst.toFixed(2);
     if (igstEl) igstEl.textContent = igst.toFixed(2);
     if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(2);
-    if (subtotalEl) subtotalEl.textContent = subtotal.toFixed(2);
 }
 </script>
