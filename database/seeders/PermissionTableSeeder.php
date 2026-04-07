@@ -43,5 +43,10 @@ class PermissionTableSeeder extends Seeder
                 ]);
             }
         }
+
+        // Auto-assign to Admin role
+        $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+        $permissions = Permission::pluck('id', 'id')->all();
+        $role->syncPermissions($permissions);
     }
 }
