@@ -120,19 +120,20 @@ class ReportController extends Controller
     public function customerHistory(Request $request)
     {
         $heading = "Customer Purchase History";
-        $search = $request->get('q');
+        $search = $request->get('search');
         
-        $customers = [];
+        $customerRecords = [];
         if ($search) {
-            $customers = Customer::where('name', 'LIKE', "%$search%")
+            $customerRecords = Customer::where('name', 'LIKE', "%$search%")
                 ->orWhere('mobile_no', 'LIKE', "%$search%")
                 ->orWhere('gst_no', 'LIKE', "%$search%")
-                ->orWhere('remarks', 'LIKE', "%$search%")
                 ->with('invoices')
                 ->get();
         }
 
-        return view('backend.modules.reports.customer_history', compact('customers', 'heading'));
+        $allCustomers = Customer::orderBy('name')->get(['name', 'mobile_no', 'gst_no']);
+
+        return view('backend.modules.reports.customer_history', compact('customerRecords', 'allCustomers', 'heading'));
     }
 
     public function warrantyCheck(Request $request)
