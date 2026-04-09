@@ -148,17 +148,6 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/reports/warranty', [ReportController::class, 'warrantyCheck'])->name('reports.warranty_check');
 });
 
-// Temporary route to sync permissions on live - Visit /sync-permissions once and then remove this
-Route::get('/sync-permissions', function() {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('db:seed', [
-            '--class' => 'PermissionTableSeeder',
-            '--force' => true
-        ]);
-        return "SUCCESS: Permissions synced! Roles updated with 'report' module. Please remove this from web.php now.";
-    } catch (\Exception $e) {
-        return "ERROR: " . $e->getMessage();
-    }
-});
+
 
 
