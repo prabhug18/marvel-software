@@ -14,6 +14,7 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SourceController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\Backend\ReportController;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 
@@ -138,5 +139,13 @@ Route::get('payment/pending-reconciliation', [App\Http\Controllers\PaymentContro
 
 Route::get('/vendor-search', [VendorController::class, 'search']);
 Route::resource('vendors', VendorController::class);
+
+// Reports Module
+Route::group(['middleware' => ['auth']], function () {
+    Route::get('/reports/invoice', [ReportController::class, 'invoiceReport'])->name('reports.invoice');
+    Route::get('/reports/payment', [ReportController::class, 'paymentReport'])->name('reports.payment');
+    Route::get('/reports/customer-history', [ReportController::class, 'customerHistory'])->name('reports.customer_history');
+    Route::get('/reports/warranty', [ReportController::class, 'warrantyCheck'])->name('reports.warranty_check');
+});
 
 

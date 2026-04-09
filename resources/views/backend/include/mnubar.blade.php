@@ -99,6 +99,20 @@
             </ul>
         </li>
         @endcan
+
+        @can('report-list')
+        <li class="has-submenu">
+            <a href="#" class="submenu-toggle">
+                <i class="fa-solid fa-chart-line"></i><span>Reports</span><i class="fas fa-chevron-down arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li><a href="{{ route('reports.invoice') }}"><i class="fas fa-file-invoice"></i><span> Invoice Report</span></a></li>
+                <li><a href="{{ route('reports.payment') }}"><i class="fas fa-money-bill-wave"></i><span> Payment Report</span></a></li>
+                <li><a href="{{ route('reports.customer_history') }}"><i class="fas fa-history"></i><span> Customer History</span></a></li>
+                <li><a href="{{ route('reports.warranty_check') }}"><i class="fas fa-shield-halved"></i><span> Warranty Check</span></a></li>
+            </ul>
+        </li>
+        @endcan
        
         @if(auth()->user()->can('brand-list') || auth()->user()->can('category-list') || auth()->user()->can('source-list') || auth()->user()->can('vendor-list'))
         <li class="has-submenu">
