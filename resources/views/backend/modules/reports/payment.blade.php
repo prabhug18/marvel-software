@@ -114,7 +114,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <a href="{{ url('payment/payment-reconciliation?invoice_id=' . $payment->invoice_id) }}" class="btn btn-sm btn-outline-primary shadow-sm">
+                                            <a href="{{ url('payment/payment-reconciliation?invoice_id=' . $payment->invoice_id) }}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm">
                                                 <i class="fas fa-check-double"></i> Reconcile
                                             </a>
                                         </td>
