@@ -95,6 +95,7 @@
                                     <th>Amount</th>
                                     <th>Mode</th>
                                     <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -111,6 +112,11 @@
                                             @else
                                                 <span class="badge bg-warning text-dark rounded-pill px-3">Pending</span>
                                             @endif
+                                        </td>
+                                        <td>
+                                            <a href="{{ url('payment/payment-reconciliation?invoice_id=' . $payment->invoice_id) }}" class="btn btn-sm btn-outline-primary shadow-sm">
+                                                <i class="fas fa-check-double"></i> Reconcile
+                                            </a>
                                         </td>
                                     </tr>
                                 @empty
