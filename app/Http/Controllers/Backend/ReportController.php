@@ -24,18 +24,31 @@ class ReportController extends Controller
     {
         $heading = "Invoice Report";
         
+        $range = $request->get('range', 'today');
         $from = $request->get('from_date');
         $to = $request->get('to_date');
         $customer_id = $request->get('customer_id');
 
         $query = Invoice::query()->with(['customer', 'warehouse']);
 
-        if ($from) {
-            $query->whereDate('invoice_date', '>=', $from);
+        // Date Range Logic
+        if ($range == 'today') {
+            $query->whereDate('invoice_date', Carbon::today());
+        } elseif ($range == '7days') {
+            $query->whereDate('invoice_date', '>=', Carbon::today()->subDays(7));
+        } elseif ($range == '30days') {
+            $query->whereDate('invoice_date', '>=', Carbon::today()->subDays(30));
+        } elseif ($range == '90days') {
+            $query->whereDate('invoice_date', '>=', Carbon::today()->subDays(90));
+        } elseif ($range == 'custom') {
+            if ($from) {
+                $query->whereDate('invoice_date', '>=', $from);
+            }
+            if ($to) {
+                $query->whereDate('invoice_date', '<=', $to);
+            }
         }
-        if ($to) {
-            $query->whereDate('invoice_date', '<=', $to);
-        }
+
         if ($customer_id) {
             $query->where('customer_id', $customer_id);
         }
@@ -63,27 +76,45 @@ class ReportController extends Controller
     {
         $heading = "Payment Report";
         
+        $range = $request->get('range', 'today');
         $from = $request->get('from_date');
         $to = $request->get('to_date');
         $mode = $request->get('payment_mode');
 
+        // Table Query
         $query = Payment::query()->with('customer');
 
-        if ($from) {
-            $query->whereDate('payment_date', '>=', $from);
+        if ($range == 'today') {
+            $query->whereDate('payment_date', Carbon::today());
+        } elseif ($range == '7days') {
+            $query->whereDate('payment_date', '>=', Carbon::today()->subDays(7));
+        } elseif ($range == '30days') {
+            $query->whereDate('payment_date', '>=', Carbon::today()->subDays(30));
+        } elseif ($range == '90days') {
+            $query->whereDate('payment_date', '>=', Carbon::today()->subDays(90));
+        } elseif ($range == 'custom') {
+            if ($from) {
+                $query->whereDate('payment_date', '>=', $from);
+            }
+            if ($to) {
+                $query->whereDate('payment_date', '<=', $to);
+            }
         }
-        if ($to) {
-            $query->whereDate('payment_date', '<=', $to);
-        }
+
         if ($mode) {
             $query->where('payment_mode', $mode);
         }
 
         $payments = $query->orderBy('payment_date', 'desc')->paginate(50);
 
-        $totalReceived = $query->sum('paid_amount');
+        // Summaries (Lifetime - No date limit)
+        $summary = [
+            'total_collection' => Payment::sum('paid_amount'),
+            'confirmed_collection' => Payment::where('is_confirmed', 1)->sum('paid_amount'),
+            'pending_collection' => Payment::where('is_confirmed', 0)->sum('paid_amount'),
+        ];
 
-        return view('backend.modules.reports.payment', compact('payments', 'totalReceived', 'heading'));
+        return view('backend.modules.reports.payment', compact('payments', 'summary', 'heading'));
     }
 
     public function customerHistory(Request $request)

@@ -53,28 +53,40 @@
                         <div class="col-md-12">
                             <form method="GET" action="{{ route('reports.invoice') }}" class="row g-3">
                                 <div class="col-md-3">
+                                    <label class="form-label">Date Range</label>
+                                    <select name="range" id="dateRange" class="form-select">
+                                        <option value="today" {{ request('range') == 'today' ? 'selected' : '' }}>Today</option>
+                                        <option value="7days" {{ request('range') == '7days' ? 'selected' : '' }}>Last 7 Days</option>
+                                        <option value="30days" {{ request('range') == '30days' ? 'selected' : '' }}>Last 30 Days</option>
+                                        <option value="90days" {{ request('range') == '90days' ? 'selected' : '' }}>Last 90 Days</option>
+                                        <option value="custom" {{ request('range') == 'custom' ? 'selected' : '' }}>Custom Range</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-2 custom-date" style="display: {{ request('range') == 'custom' ? 'block' : 'none' }}">
                                     <label class="form-label">From Date</label>
                                     <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2 custom-date" style="display: {{ request('range') == 'custom' ? 'block' : 'none' }}">
                                     <label class="form-label">To Date</label>
                                     <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}">
                                 </div>
+
                                 <div class="col-md-3">
                                     <label class="form-label">Customer</label>
-                                    <select name="customer_id" class="form-select select2">
+                                    <select name="customer_id" id="customerSelect" class="form-select">
                                         <option value="">All Customers</option>
                                         @foreach($customers as $customer)
                                             <option value="{{ $customer->id }}" {{ request('customer_id') == $customer->id ? 'selected' : '' }}>
-                                                {{ $customer->name }}
+                                                {{ $customer->name }} ({{ $customer->mobile_no }})
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-3 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100 me-2">Filter</button>
-                                    <a href="{{ route('reports.invoice', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success w-100 me-2">Export</a>
-                                    <a href="{{ route('reports.invoice') }}" class="btn btn-secondary w-100">Reset</a>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100 me-2 mt-4">Filter</button>
+                                    <a href="{{ route('reports.invoice', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success w-100 me-2 mt-4">Export</a>
+                                    <a href="{{ route('reports.invoice') }}" class="btn btn-secondary w-100 mt-4">Reset</a>
                                 </div>
                             </form>
                         </div>
@@ -122,3 +134,25 @@
         </div>
     </main>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 for Customer Search
+        $('#customerSelect').select2({
+            placeholder: "Search Customer...",
+            allowClear: true,
+            width: '100%'
+        });
+
+        // Toggle Custom Date Inputs
+        $('#dateRange').on('change', function() {
+            if ($(this).val() === 'custom') {
+                $('.custom-date').fadeIn();
+            } else {
+                $('.custom-date').fadeOut();
+            }
+        });
+    });
+</script>
+@endpush

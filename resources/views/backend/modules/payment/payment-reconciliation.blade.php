@@ -284,22 +284,22 @@
                 // description textarea removed; default to 'Invoice Payment'
                 description: 'Invoice Payment'
             };
-            // Basic client-side validation
-            if (!entry.paid_amount || isNaN(parseFloat(entry.paid_amount))) {
-                alert('Please enter a valid amount');
-                return;
-            }
-            if (!entry.payment_mode) {
-                alert('Please select payment mode');
-                return;
-            }
-            // Prevent adding amount that would exceed invoice total (considering saved + pending)
-            var paidSoFar = existingPaid + pendingPayments.reduce(function(s, it){ return s + parseFloat(it.paid_amount || 0); }, 0);
-            var entryAmount = parseFloat(entry.paid_amount || 0);
-            if (paidSoFar + entryAmount > grandTotal + 0.0001) {
-                alert('Amount exceeds invoice balance. Cannot add payment larger than remaining invoice amount.');
-                return;
-            }
+                    // Basic client-side validation
+                    if (!entry.paid_amount || isNaN(parseFloat(entry.paid_amount))) {
+                        Swal.fire('Error', 'Please enter a valid amount', 'error');
+                        return;
+                    }
+                    if (!entry.payment_mode) {
+                        Swal.fire('Error', 'Please select payment mode', 'error');
+                        return;
+                    }
+                    // Prevent adding amount that would exceed invoice total (considering saved + pending)
+                    var paidSoFar = existingPaid + pendingPayments.reduce(function(s, it){ return s + parseFloat(it.paid_amount || 0); }, 0);
+                    var entryAmount = parseFloat(entry.paid_amount || 0);
+                    if (paidSoFar + entryAmount > grandTotal + 0.0001) {
+                        Swal.fire('Warning', 'Amount exceeds invoice balance. Cannot add payment larger than remaining invoice amount.', 'warning');
+                        return;
+                    }
             pendingPayments.push(entry);
             renderPending();
             addForm.reset();
@@ -320,10 +320,20 @@
 
         if (clearBtn) {
             clearBtn.addEventListener('click', function() {
-                if (confirm('Clear all pending payments?')) {
-                    pendingPayments = [];
-                    renderPending();
-                }
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "Clear all pending payments?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, clear it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        pendingPayments = [];
+                        renderPending();
+                    }
+                });
             });
         }
 
@@ -359,15 +369,16 @@
                     });
                 }).then(function(data) {
                     if (data && data.success) {
-                        alert('Payments saved successfully');
-                        location.reload();
+                        Swal.fire('Saved!', 'Payments saved successfully', 'success').then(() => {
+                            location.reload();
+                        });
                     } else {
-                        alert((data && data.message) ? data.message : 'Failed to save payments');
+                        Swal.fire('Error', (data && data.message) ? data.message : 'Failed to save payments', 'error');
                     }
                 }).catch(function(err) {
                     var msg = 'Error saving payments.';
                     if (err && err.message) msg = err.message;
-                    alert(msg);
+                    Swal.fire('Error', msg, 'error');
                 }).finally(function() {
                     submitBtn.disabled = false;
                     submitBtn.innerText = 'Submit All Payments';
