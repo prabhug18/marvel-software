@@ -1,17 +1,21 @@
-<div id="mainHeader" class="header d-flex justify-content-between align-items-center px-4 py-3 bg-white border-bottom shadow-sm w-100 position-sticky top-0 z-3" style="min-height: 70px; padding-left: 60px !important;">
+<div id="mainHeader"
+    class="header d-flex justify-content-between align-items-center px-4 py-3 bg-white border-bottom shadow-sm w-100 position-sticky top-0 z-3"
+    style="min-height: 70px; padding-left: 60px !important;">
     <h5 class="fw-bold mb-0 text-dark ms-3" style="color: #334155 !important;">{{ $heading ?? 'Dashboard' }}</h5>
     <div class="d-flex align-items-center">
         @if(Auth::user() && Auth::user()->hasRole('Admin'))
             <div class="position-relative me-4" style="cursor: pointer;" id="notificationBellWrapper">
                 <i id="notificationBell" class="bi bi-bell fs-5 text-secondary"></i>
-                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                <span
+                    class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
                     <span class="visually-hidden">New alerts</span>
                 </span>
             </div>
         @endif
         <div class="d-flex align-items-center" id="profileIcon" style="cursor: pointer;">
             <i class="bi bi-person-circle fs-3 text-primary me-2"></i>
-            <span class="fw-medium text-secondary d-none d-md-block">{{ Auth::user() ? Auth::user()->name : 'Guest' }} <i class="bi bi-chevron-down ms-1" style="font-size: 0.8rem;"></i></span>
+            <span class="fw-medium text-secondary d-none d-md-block">{{ Auth::user() ? Auth::user()->name : 'Guest' }}
+                <i class="bi bi-chevron-down ms-1" style="font-size: 0.8rem;"></i></span>
         </div>
     </div>
 </div>
@@ -19,18 +23,19 @@
 <!-- Profile Icon and Dropdown -->
 <!-- Profile Icon and Dropdown Positioned Top Right -->
 <div class="position-fixed top-0 end-0 p-3 z-3">
-  <div class="position-relative d-inline-block">
-    <!-- Dropdown Menu -->
-    <div id="profileDropdown" class="dropdown-menu show shadow" style="display: none; position: absolute; right: 0; top: 50px;">
-      @if(Auth::check())
-        <a class="dropdown-item" href="#">Welcome {{ Auth::user()->name }}</a>
-      @else
-        <a class="dropdown-item" href="#">Welcome Guest</a>
-      @endif     
-      <div class="dropdown-divider"></div>
-      <a class="dropdown-item text-danger" href="{{ url('logout') }}">Logout</a>
+    <div class="position-relative d-inline-block">
+        <!-- Dropdown Menu -->
+        <div id="profileDropdown" class="dropdown-menu show shadow"
+            style="display: none; position: absolute; right: 0; top: 50px;">
+            @if(Auth::check())
+                <a class="dropdown-item" href="#">Welcome {{ Auth::user()->name }}</a>
+            @else
+                <a class="dropdown-item" href="#">Welcome Guest</a>
+            @endif
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item text-danger" href="{{ url('logout') }}">Logout</a>
+        </div>
     </div>
-  </div>
 </div>
 
 
@@ -40,19 +45,21 @@
         <h3>Recent Activity Logs</h3>
         <span class="close-log" id="closeLogBtn">&times;</span>
     </div>
-        @php
-            $logs = App\Http\Controllers\GeneralController::logs();
-        @endphp
+    @php
+    $logs = App\Http\Controllers\GeneralController::logs();
+    @endphp
     <ul class="log-list">
         @foreach($logs as $logsval)
-            <li><span class="log-time">{{ $logsval->created_at->diffForHumans(); }}</span> - {{ $logsval->description }}</li>
+        <li><span class="log-time">{{ $logsval->created_at->diffForHumans(); }}</span> - {{ $logsval->description }}
+        </li>
         @endforeach
     </ul>
 </div> --}}
 
 
 <!-- Notification Panel -->
-<div id="notificationPanel" class="position-fixed top-0 end-0 bg-white border shadow z-3 p-3" style="display: none; width: 300px; height: 100vh;">
+<div id="notificationPanel" class="position-fixed top-0 end-0 bg-white border shadow z-3 p-3"
+    style="display: none; width: 300px; height: 100vh;">
     <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
         <h5 class="mb-0">Notifications</h5>
         <button id="closeNotification" class="btn-close"></button>
@@ -63,63 +70,65 @@
     <div class="notification-body px-3 py-2">
         <!-- Notification 1 -->
         @foreach($logs as $logsval)
-        @php
+            @php
 
-            $details = json_decode($logsval->details, true);
-            if(is_array($details)) {
-                unset($details['created_at'], 
-                $details['status_id'], 
-                $details['id'],
-                $details['user_id'],
-                $details['password'],
-                $details['updated_at'],
-                $details['deleted_at']);
-            }
+                $details = json_decode($logsval->details, true);
+                if (is_array($details)) {
+                    unset(
+                        $details['created_at'],
+                        $details['status_id'],
+                        $details['id'],
+                        $details['user_id'],
+                        $details['password'],
+                        $details['updated_at'],
+                        $details['deleted_at']
+                    );
+                }
 
-            $user = \App\Models\User::find($logsval->performed_by);
-            
-            // Get related names if present in details
-            $customerName = null;
-            if(isset($details['customer_id'])) {
-                $customer = \App\Models\Customer::find($details['customer_id']);
-                $customerName = $customer ? $customer->name : $details['customer_id'];
-                $details['customer_id'] = $customerName;
-            }
+                $user = \App\Models\User::find($logsval->performed_by);
 
-            $warehouseName = null;
-            if(isset($details['warehouse_id'])) {
-                $warehouse = \App\Models\Warehouse::find($details['warehouse_id']);
-                $warehouseName = $warehouse ? $warehouse->name : $details['warehouse_id'];
-                $details['warehouse_id'] = $warehouseName;
-            }
+                // Get related names if present in details
+                $customerName = null;
+                if (isset($details['customer_id'])) {
+                    $customer = \App\Models\Customer::find($details['customer_id']);
+                    $customerName = $customer ? $customer->name : $details['customer_id'];
+                    $details['customer_id'] = $customerName;
+                }
 
-            $userIdName = null;
-            if(isset($details['user_id'])) {
-                $userObj = \App\Models\User::find($details['user_id']);
-                $userIdName = $userObj ? $userObj->name : $details['user_id'];
-                $details['user_id'] = $userIdName;
-            }
-            
-        @endphp
+                $warehouseName = null;
+                if (isset($details['warehouse_id'])) {
+                    $warehouse = \App\Models\Warehouse::find($details['warehouse_id']);
+                    $warehouseName = $warehouse ? $warehouse->name : $details['warehouse_id'];
+                    $details['warehouse_id'] = $warehouseName;
+                }
 
-        <div class="mb-3 border-bottom pb-2">
-            <h6> Page : {{ $logsval->log_type === 'warehouse' ? 'location' : $logsval->log_type }}</h6>
-            <h6 class="mb-1">
-                @if(is_array($details))
-                    <ul class="mb-1">
-                        @foreach($details as $key => $value)
-                            <li><strong>{{ ucfirst($key) }}:</strong> {{ is_array($value) ? json_encode($value) : $value }}</li>
-                        @endforeach
-                    </ul>
-                @else
-                    <span>{{ $logsval->details }}</span>
-                @endif
-            </h6>
-            <h6> Action : {{ $logsval->action }}</h6>
-            <h6> Performed By : {{ $user ? $user->name : 'Unknown User' }}</h6>
-            <small class="text-muted">{{ \Carbon\Carbon::parse($logsval->created_at)->diffForHumans(); }}</small>
-           
-        </div>
+                $userIdName = null;
+                if (isset($details['user_id'])) {
+                    $userObj = \App\Models\User::find($details['user_id']);
+                    $userIdName = $userObj ? $userObj->name : $details['user_id'];
+                    $details['user_id'] = $userIdName;
+                }
+
+            @endphp
+
+            <div class="mb-3 border-bottom pb-2">
+                <h6> Page : {{ $logsval->log_type === 'warehouse' ? 'location' : $logsval->log_type }}</h6>
+                <h6 class="mb-1">
+                    @if(is_array($details))
+                        <ul class="mb-1">
+                            @foreach($details as $key => $value)
+                                <li><strong>{{ ucfirst($key) }}:</strong> {{ is_array($value) ? json_encode($value) : $value }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <span>{{ $logsval->details }}</span>
+                    @endif
+                </h6>
+                <h6> Action : {{ $logsval->action }}</h6>
+                <h6> Performed By : {{ $user ? $user->name : 'Unknown User' }}</h6>
+                <small class="text-muted">{{ \Carbon\Carbon::parse($logsval->created_at)->diffForHumans() }}</small>
+
+            </div>
         @endforeach
     </div>
 </div>

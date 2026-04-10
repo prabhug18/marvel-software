@@ -852,18 +852,47 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Show a single invoice view page
+     * Show a single invoice view page based on selected template setting
      */
     public function viewInvoice(Request $request)
     {
         $heading = "Invoice Details";
         $invoiceId = $request->invoice_id;
-        $invoice = \App\Models\Invoice::with(['customer', 'items', 'warehouse'])->find($invoiceId);
+        
+        // Load all relationships that might be needed by any template
+        $invoice = \App\Models\Invoice::with([
+            'customer.state',
+            'items.product',
+            'warehouse',
+            'deliveryAddress',
+            'payments'
+        ])->find($invoiceId);
+
         if (!$invoice) {
             abort(404, 'Invoice not found');
         }
-        // You can pass more data as needed
-        return view('backend.modules.invoice.invoice-view', compact('invoice','heading'));
+
+        // Get the selected template from settings
+        $template = \App\Models\Setting::get('invoice_template', 'default');
+        
+        // Map template setting to view file
+        $viewMap = [
+            'default' => 'backend.modules.invoice.invoice-view',
+            'gst'     => 'backend.modules.invoice.invoice-view-two',
+            'three'   => 'backend.modules.invoice.invoice-view-three',
+            'four'    => 'backend.modules.invoice.invoice-view-four',
+        ];
+
+        $view = $viewMap[$template] ?? $viewMap['default'];
+
+        // Consistent approval check for all templates
+        if ($invoice->status !== 'approved') {
+            if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
+                abort(403, 'Invoice not approved for viewing details.');
+            }
+        }
+
+        return view($view, compact('invoice', 'heading'));
     }
 
     /**
