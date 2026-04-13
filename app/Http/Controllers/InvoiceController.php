@@ -819,7 +819,7 @@ class InvoiceController extends Controller
             ['current_number' => 1001]
         );
         $nextNumber = $sequence->current_number;
-        $invoiceNumber = $prefix . '-' . str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+        $invoiceNumber = $prefix . '/' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
         // DO NOT increment here!
         return response()->json(['invoice_number' => $invoiceNumber]);
     }
