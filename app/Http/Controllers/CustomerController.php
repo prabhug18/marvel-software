@@ -8,6 +8,7 @@ use App\Models\State;
 use App\Models\Source;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 class CustomerController extends Controller
@@ -66,37 +67,53 @@ class CustomerController extends Controller
             // removed mobile_no.unique custom message
         ]);
 
-        $id = Auth::user()->id;
+        // --- Duplicate Check: same name (case-insensitive) + mobile_no ---
+        $exists = Customer::whereRaw('LOWER(name) = ?', [strtolower($request->name)])
+                          ->where('mobile_no', $request->mobile_no)
+                          ->exists();
+        if ($exists) {
+            $msg = 'A customer with this name and mobile number already exists.';
+            if ($request->ajax()) {
+                return response()->json(['message' => $msg], 409);
+            }
+            return redirect()->back()->withInput()->with('create_customer_error', $msg);
+        }
 
-        $customer               =   new Customer();
-        $customer->name         =   $request->name;
-        $customer->email        =   $request->email;
-        $customer->mobile_no    =   $request->mobile_no;
-        $customer->alternative_no = $request->alternative_no;
-        $customer->address      =   $request->address;
-        $customer->state_id     =   $request->state;
-        $customer->city_id      =   $request->city;
-    $customer->pincode      =   $request->pincode;
-    // warehouse_id: prefer request value, fallback to authenticated user's warehouse
-    $customer->warehouse_id = $request->input('warehouse_id') ?? Auth::user()->warehouse_id ?? null;
-    $customer->user_id      =   $id;
-        $customer->gst_no       =   $request->gst_no;
-        $customer->source       =   $request->source;
-        $customer->customer_type = $request->customer_type;
-        $customer->remarks      =   $request->remarks;
+        $id = Auth::user()->id;
+        $prefix = ($request->customer_type === 'Dealer') ? 'DLR-' : 'CUST-';
+
         try {
-            $customer->save();
-            
-            // Calculate type-specific sequence
-            $nextSequence = Customer::where('customer_type', $customer->customer_type)->max('type_sequence') + 1;
-            if (!$nextSequence) $nextSequence = 1;
-            
-            $prefix = ($customer->customer_type === 'Dealer') ? 'DLR-' : 'CUST-';
-            $customer->type_sequence = $nextSequence;
-            $customer->formatted_id = $prefix . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
-            $customer->save();
+            DB::transaction(function () use ($request, $id, $prefix, &$customer) {
+                $customer               = new Customer();
+                $customer->name         = $request->name;
+                $customer->email        = $request->email;
+                $customer->mobile_no    = $request->mobile_no;
+                $customer->alternative_no = $request->alternative_no;
+                $customer->address      = $request->address;
+                $customer->state_id     = $request->state;
+                $customer->city_id      = $request->city;
+                $customer->pincode      = $request->pincode;
+                $customer->warehouse_id = $request->input('warehouse_id') ?? Auth::user()->warehouse_id ?? null;
+                $customer->user_id      = $id;
+                $customer->gst_no       = $request->gst_no;
+                $customer->source       = $request->source;
+                $customer->customer_type = $request->customer_type;
+                $customer->remarks      = $request->remarks;
+                $customer->save();
+
+                // Use withTrashed() so soft-deleted customer IDs are counted,
+                // preventing duplicate formatted_id after a customer is deleted.
+                $maxSeq = Customer::withTrashed()
+                                  ->where('customer_type', $request->customer_type)
+                                  ->lockForUpdate()
+                                  ->max('type_sequence') ?? 0;
+                $nextSeq = $maxSeq + 1;
+
+                $customer->type_sequence = $nextSeq;
+                $customer->formatted_id  = $prefix . str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
+                $customer->save();
+            });
         } catch (\Illuminate\Database\QueryException $e) {
-            // Log and return the database error
             \Log::error('Create Customer Error: ' . $e->getMessage());
             $msg = 'Failed to save customer: ' . (str_contains($e->getMessage(), 'Duplicate entry') ? 'A customer with similar details already exists.' : 'Database Error');
             if ($request->ajax()) {
@@ -108,8 +125,7 @@ class CustomerController extends Controller
         if ($request->ajax()) {
             return response()->json(['message' => 'Customer created successfully'], 200);
         }
-        Session::flash('create_customer','Customer created successfully');
-
+        Session::flash('create_customer', 'Customer created successfully');
         return redirect('customer');
     }
 
@@ -161,6 +177,20 @@ class CustomerController extends Controller
         ]);
     
         $customer = Customer::find($id);
+
+        // Duplicate check: same name + mobile, excluding current customer
+        $duplicate = Customer::whereRaw('LOWER(name) = ?', [strtolower($request->name)])
+                             ->where('mobile_no', $request->mobile_no)
+                             ->where('id', '!=', $id)
+                             ->exists();
+        if ($duplicate) {
+            $msg = 'Another customer with this name and mobile number already exists.';
+            if ($request->ajax()) {
+                return response()->json(['message' => $msg], 409);
+            }
+            return redirect()->back()->withInput()->with('update_customer_error', $msg);
+        }
+
         $customer->name = $request->name;
         $customer->email = $request->email;
         $customer->mobile_no = $request->mobile_no;
@@ -169,14 +199,12 @@ class CustomerController extends Controller
         $customer->state_id = $request->state;
         $customer->city_id = $request->city;
         $customer->pincode = $request->pincode;
-    $customer->warehouse_id = $request->input('warehouse_id') ?? Auth::user()->warehouse_id ?? $customer->warehouse_id;
+        $customer->warehouse_id = $request->input('warehouse_id') ?? Auth::user()->warehouse_id ?? $customer->warehouse_id;
         $customer->gst_no = $request->gst_no;
         $customer->source = $request->source;
         $customer->customer_type = $request->customer_type;
         $customer->remarks = $request->remarks;
-
-        $prefix = ($customer->customer_type === 'Dealer') ? 'DLR-' : 'CUST-';
-        $customer->formatted_id = $prefix . str_pad($customer->id, 3, '0', STR_PAD_LEFT);
+        // Keep formatted_id unchanged — do NOT recalculate to avoid conflicts
 
         try {
             $customer->save();
