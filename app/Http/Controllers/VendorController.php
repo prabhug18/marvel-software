@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Vendor;
+use App\Models\Stock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class VendorController extends Controller
 {
@@ -58,9 +60,18 @@ class VendorController extends Controller
 
     public function destroy($id)
     {
+        // Check if vendor is used in stocks
+        $stockCount = Stock::where('vendor_id', $id)->count();
+
+        if ($stockCount > 0) {
+            Session::flash('error', 'Cannot delete Vendor: It is currently linked to ' . $stockCount . ' Stock records.');
+            return redirect()->back();
+        }
+
         $vendor = Vendor::findOrFail($id);
         $vendor->delete();
-        return redirect()->back()->with('success', 'Vendor deleted successfully.');
+        Session::flash('success', 'Vendor deleted successfully.');
+        return redirect()->back();
     }
 
     /**

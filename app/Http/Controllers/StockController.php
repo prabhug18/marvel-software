@@ -51,11 +51,13 @@ class StockController extends Controller{
         $validator = Validator::make($request->all(), [
             'product_id' => 'required|exists:products,id',
             'purchase_date' => 'nullable|date',
+            'invoice_no' => 'nullable|string',
             'vendor_id' => 'nullable|exists:vendors,id',
             'purchased_from' => 'nullable|string',
             'purchase_rate' => 'nullable|numeric|min:0',
             'remarks' => 'nullable|string',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'qty' => 'nullable|integer|min:1',
             'serial_no' => 'nullable|array',
             'serial_no.*' => 'nullable|string',
             'bulk_serials' => 'nullable|string',
@@ -80,40 +82,57 @@ class StockController extends Controller{
             }
         }
         
-        $serialsArray = array_unique($serialsArray);
-
-        if (empty($serialsArray)) {
-            return response()->json(['errors' => ['serial_no' => ['At least one serial number is required.']]], 422);
-        }
+        $serialsArray = array_unique(array_filter($serialsArray));
 
         $product = \App\Models\Product::with(['category', 'brand'])->findOrFail($request->product_id);
 
-        // Custom duplicate check - check if serial no already exists anywhere
-        $duplicateErrors = [];
-        foreach ($serialsArray as $index => $serialNo) {
-            $exists = \App\Models\Stock::where('serial_no', $serialNo)->exists();
+        if (!empty($serialsArray)) {
+            // Custom duplicate check - check if serial no already exists anywhere
+            $duplicateErrors = [];
+            foreach ($serialsArray as $index => $serialNo) {
+                $exists = \App\Models\Stock::where('serial_no', $serialNo)->exists();
 
-            if ($exists) {
-                $duplicateErrors["serial_no"] = ["Serial Number '$serialNo' already exists in the system."];
-                break; // Stop at first error for bulk
+                if ($exists) {
+                    $duplicateErrors["serial_no"] = ["Serial Number '$serialNo' already exists in the system."];
+                    break; // Stop at first error for bulk
+                }
             }
-        }
 
-        if (!empty($duplicateErrors)) {
-            return response()->json([
-                'errors' => $duplicateErrors
-            ], 422);
-        }
+            if (!empty($duplicateErrors)) {
+                return response()->json([
+                    'errors' => $duplicateErrors
+                ], 422);
+            }
 
-        foreach ($serialsArray as $serialNo) {
+            foreach ($serialsArray as $serialNo) {
+                Stock::create([
+                    'warehouse_id'   => $request->warehouse_id,
+                    'category_id'    => $product->category_id,
+                    'brand_id'       => $product->brand_id,
+                    'model'          => $product->model,
+                    'model_no'       => $product->model_no,
+                    'qty'            => 1, // Fixed to 1 for serial tracked items
+                    'serial_no'      => $serialNo,
+                    'invoice_no'     => $request->invoice_no,
+                    'vendor_id'      => $request->vendor_id,
+                    'purchase_date'  => $request->purchase_date,
+                    'purchased_from' => $request->purchased_from,
+                    'purchase_rate'  => $request->purchase_rate,
+                    'remarks'        => $request->remarks,
+                    'user_id'        => Auth::id(),
+                ]);
+            }
+        } elseif ($request->qty > 0) {
+            // Single record for bulk quantity without serial numbers
             Stock::create([
                 'warehouse_id'   => $request->warehouse_id,
                 'category_id'    => $product->category_id,
                 'brand_id'       => $product->brand_id,
                 'model'          => $product->model,
                 'model_no'       => $product->model_no,
-                'qty'            => 1, // Fixed to 1 for serial tracked items
-                'serial_no'      => $serialNo,
+                'qty'            => $request->qty,
+                'serial_no'      => null,
+                'invoice_no'     => $request->invoice_no,
                 'vendor_id'      => $request->vendor_id,
                 'purchase_date'  => $request->purchase_date,
                 'purchased_from' => $request->purchased_from,
@@ -121,6 +140,8 @@ class StockController extends Controller{
                 'remarks'        => $request->remarks,
                 'user_id'        => Auth::id(),
             ]);
+        } else {
+            return response()->json(['errors' => ['qty' => ['Either serial numbers or a quantity greater than zero is required.']]], 422);
         }
 
         return response()->json(['message' => 'Stock created successfully!']);

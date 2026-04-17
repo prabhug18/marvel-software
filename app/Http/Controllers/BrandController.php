@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Models\Product;
+use App\Models\Stock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -103,9 +105,17 @@ class BrandController extends Controller
      */
     public function destroy($id)
     {
-        //
+        // Check if brand is used in products or stocks
+        $productCount = Product::where('brand_id', $id)->count();
+        $stockCount = Stock::where('brand_id', $id)->count();
+
+        if ($productCount > 0 || $stockCount > 0) {
+            Session::flash('error', 'Cannot delete Brand: It is currently assigned to ' . $productCount . ' Products and ' . $stockCount . ' Stocks.');
+            return redirect('brands');
+        }
+
         Brand::where('id', $id)->delete();
-        Session::flash('delete_brand','Brand deleted successfully');
+        Session::flash('delete_brand', 'Brand deleted successfully');
         return redirect('brands');
     }
 }

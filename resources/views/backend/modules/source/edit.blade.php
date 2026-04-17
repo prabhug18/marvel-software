@@ -13,16 +13,25 @@
                         @csrf
                         @method('PUT')
                         <div class="col-md-6">
-                            <input type="text" name="name" placeholder="Enter source name" class="form-control" value="{{ $source->name }}" required>
+                            <label class="form-label">Source Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" placeholder="Enter source name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $source->name) }}" required>
+                            @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
-                            <select name="status" class="form-select">
-                                <option value="1" {{ $source->status ? 'selected' : '' }}>Active</option>
-                                <option value="0" {{ !$source->status ? 'selected' : '' }}>Inactive</option>
+                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                            <select name="status" class="form-select @error('status') is-invalid @enderror">
+                                <option value="1" {{ old('status', $source->status) == '1' ? 'selected' : '' }}>Active</option>
+                                <option value="0" {{ old('status', $source->status) == '0' ? 'selected' : '' }}>Inactive</option>
                             </select>
+                            @error('status')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">Update</button>
+                        <div class="col-md-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-success px-4">Update</button>
+                            <a href="{{ route('source.index') }}" class="btn btn-secondary px-4">Cancel</a>
                         </div>
                     </form>
                 </div>

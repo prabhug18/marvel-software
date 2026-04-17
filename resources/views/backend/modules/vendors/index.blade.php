@@ -14,12 +14,7 @@
                 </a>
             </div>
 
-            @if(session('success'))
-                <div id="successAlert" class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
-                    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
+            {{-- Success alerts are now handled globally by SweetAlert2 in layouts.backend --}}
 
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="card-body p-0">
@@ -60,13 +55,13 @@
                                                 <a href="{{ route('vendors.edit', $vendor->id) }}" class="btn btn-sm btn-white text-primary px-3" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <form action="{{ route('vendors.destroy', $vendor->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this vendor?')">
+                                                <form id="delete-form-{{ $vendor->id }}" action="{{ route('vendors.destroy', $vendor->id) }}" method="POST" style="display:none;">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-white text-danger px-3" title="Delete">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
                                                 </form>
+                                                <button type="button" class="btn btn-sm btn-white text-danger px-3" title="Delete" onclick="confirmDelete({{ $vendor->id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -94,5 +89,49 @@
         .btn-white:hover { background: #f8f9fa; }
         .table-hover tbody tr:hover { background-color: rgba(0,0,0,.01); }
         .badge { font-weight: 500; font-size: 0.8rem; }
+        /* Style adjustments for DataTables top elements */
+        .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0 1rem; }
+        .dataTables_filter input { border-radius: 20px; padding: 5px 15px; border: 1px solid #dee2e6; outline: none; }
     </style>
+
+    @push('scripts')
+    <script>
+        function confirmDelete(id) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this vendor record!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-form-' + id).submit();
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            $('#vendorTable').DataTable({
+                paging: true,
+                searching: true,
+                info: true,
+                lengthChange: true,
+                pageLength: 10,
+                language: {
+                    searchPlaceholder: "Search vendors...",
+                    search: "",
+                    paginate: {
+                        previous: '<i class="fas fa-chevron-left"></i>',
+                        next: '<i class="fas fa-chevron-right"></i>'
+                    }
+                },
+                dom: '<"top"lf>rt<"bottom"ip><"clear">'
+            });
+        });
+    </script>
+    @endpush
 @endsection

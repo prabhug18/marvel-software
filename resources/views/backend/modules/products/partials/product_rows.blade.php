@@ -8,7 +8,7 @@
     <td data-title="WARRANTY">{{ $productVal->series }}</td>
     <td data-title="PRICE">{{ $productVal->price }}</td>
     <td data-title="OFFER PRICE">{{ $productVal->offer_price !== null ? rtrim(rtrim(number_format($productVal->offer_price, 2, '.', ''), '0'), '.') : '' }}</td>
-    <td data-title="SPECIFICATION">{{ $productVal->specification ?? '-' }}</td>
+    <td data-title="REMARKS">{{ $productVal->remarks ?? '-' }}</td>
     <td class="action-buttons"> 
         <a class="btn btn-sm btn-outline-primary me-1" href="{{ auth()->user() && auth()->user()->hasRole('Admin') ? route('products.edit',$productVal->id) : '#' }}" style="text-decoration: none; @if(!auth()->user() || !auth()->user()->hasRole('Admin')) pointer-events: none; opacity: 0.6; @endif" @if(!auth()->user() || !auth()->user()->hasRole('Admin')) tabindex="-1" aria-disabled="true" title="Only admin can edit" @endif><i class="fas fa-edit"></i></a>
         @if(auth()->user() && auth()->user()->hasRole('Admin'))

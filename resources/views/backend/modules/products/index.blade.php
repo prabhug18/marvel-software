@@ -52,7 +52,7 @@
                             <th>Warranty</th>
                             <th>Price</th>
                             <th>Offer Price</th>
-                            <th>Specification</th>
+                            <th>Remarks</th>
                             <th>Action</th>
                         </tr>
                         </thead>

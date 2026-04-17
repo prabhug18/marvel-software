@@ -12,16 +12,25 @@
                     <form class="row g-4" method="POST" action="{{ route('source.store') }}">
                         @csrf
                         <div class="col-md-6">
-                            <input type="text" name="name" placeholder="Enter source name" class="form-control" required>
+                            <label class="form-label">Source Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" placeholder="Enter source name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
+                            @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
-                            <select name="status" class="form-select">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                            <select name="status" class="form-select @error('status') is-invalid @enderror">
+                                <option value="1" {{ old('status') == '1' ? 'selected' : '' }}>Active</option>
+                                <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Inactive</option>
                             </select>
+                            @error('status')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">Submit</button>
+                        <div class="col-md-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-success px-4">Submit</button>
+                            <a href="{{ route('source.index') }}" class="btn btn-secondary px-4">Cancel</a>
                         </div>
                     </form>
                 </div>

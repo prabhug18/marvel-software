@@ -42,7 +42,7 @@
                             </div>
                         </div>
 
-                        <div class="row mb-4">
+                        <div class="row mb-3">
                             <div class="col-md-4">
                                 <label class="form-label">Purchased From (Vendor)</label>
                                 <input type="text" class="form-control" name="purchased_from" id="vendor_search" placeholder="Search Vendor Name..." list="vendorOptions" autocomplete="off">
@@ -50,10 +50,22 @@
                                 <input type="hidden" name="vendor_id" id="vendor_id">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Purchase Rate (₹)</label>
-                                <input type="number" step="0.01" class="form-control" name="purchase_rate" placeholder="0.00">
+                                <label class="form-label">Invoice Number</label>
+                                <input type="text" class="form-control" name="invoice_no" placeholder="Enter Invoice Number">
                             </div>
                             <div class="col-md-4">
+                                <label class="form-label">Purchase Rate (Including GST) (₹)</label>
+                                <input type="number" step="0.01" class="form-control" name="purchase_rate" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">Qty <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="qty" id="stock_qty" placeholder="0" required>
+                                <small class="text-muted">Auto-calculates from serial numbers but can be edited.</small>
+                            </div>
+                            <div class="col-md-8">
                                 <label class="form-label">Remarks</label>
                                 <input type="text" class="form-control" name="remarks" placeholder="Enter Remarks">
                             </div>
@@ -71,8 +83,8 @@
                         <div id="addStockWarehouseFields">
                             <div class="row g-2 align-items-end mb-3 warehouse-entry">
                                 <div class="col-md-6">
-                                    <label class="form-label">Serial Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="Scan or Enter Serial No" name="serial_no[]" required>
+                                    <label class="form-label">Serial Number</label>
+                                    <input type="text" class="form-control" placeholder="Scan or Enter Serial No" name="serial_no[]">
                                 </div>
                                 <div class="col-md-3 d-flex gap-2">
                                     <button type="button" class="btn btn-success" onclick="addField()"><i class="fas fa-plus"></i></button>
@@ -168,6 +180,37 @@
             loadWarehouses();
         });
 
+        function updateQtyCount() {
+            let count = 0;
+            
+            // 1. Count from bulk textarea
+            let bulkVal = $('textarea[name="bulk_serials"]').val().trim();
+            let bulkSerials = bulkVal ? bulkVal.split(/[\n\r,]+/) : [];
+            bulkSerials = bulkSerials.map(s => s.trim()).filter(s => s !== '');
+            
+            // 2. Count from individual inputs
+            let individualSerials = [];
+            $('input[name="serial_no[]"]').each(function() {
+                let val = $(this).val().trim();
+                if (val) individualSerials.push(val);
+            });
+            
+            // Combine and unique
+            let totalSerials = [...new Set([...bulkSerials, ...individualSerials])];
+            count = totalSerials.length;
+            
+            // Only update if count > 0 to allow manual entry for non-serialed items
+            if (count > 0) {
+                $('#stock_qty').val(count);
+            }
+        }
+
+        // Listen for changes
+        $(document).on('input', 'textarea[name="bulk_serials"], input[name="serial_no[]"]', function() {
+            updateQtyCount();
+        });
+
+        // Update addField to trigger recount or at least hook the new field
         function addField() {
             const container = document.getElementById('addStockWarehouseFields');
             const newRow = document.createElement('div');
@@ -175,14 +218,15 @@
 
             newRow.innerHTML = `
                 <div class="col-md-6">
-                    <input type="text" class="form-control" placeholder="Scan or Enter Serial No" name="serial_no[]" required>
+                    <input type="text" class="form-control" placeholder="Scan or Enter Serial No" name="serial_no[]">
                 </div>
                 <div class="col-md-3 d-flex gap-2">
                     <button type="button" class="btn btn-success" onclick="addField()"><i class="fas fa-plus"></i></button>
-                    <button type="button" class="btn btn-danger" onclick="this.closest('.row').remove()"><i class="fas fa-minus"></i></button>
+                    <button type="button" class="btn btn-danger" onclick="this.closest('.row').remove(); updateQtyCount();"><i class="fas fa-minus"></i></button>
                 </div>
             `;
             container.appendChild(newRow);
+            // new fields will be caught by the delegated listener $(document).on('input', ...)
         } 
 
         // State to store current search results

@@ -905,28 +905,42 @@ class InvoiceController extends Controller
             'email' => 'required|email',
             'pdf' => 'required|file|mimes:pdf',
         ]);
+
         $invoice = \App\Models\Invoice::with(['customer'])->findOrFail($request->invoice_id);
-        // Only allow sending if invoice is approved
+
         if ($invoice->status !== 'approved') {
             if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
                 return response()->json(['success' => false, 'message' => 'Invoice not approved for sending.'], 403);
             }
         }
+
         $customerEmail = $request->email;
         $pdfFile = $request->file('pdf');
-        $fileName = 'Invoice-' . ($invoice->invoice_number ?? $invoice->id) . '.pdf';
-        // Send email with PDF attachment
-        // Mail::send([], [], function ($message) use ($customerEmail, $pdfFile, $fileName, $invoice) {
-        //     $message->to($customerEmail)
-        //         ->subject('Your Invoice from Phoenix Infoways')
-        //         ->html('Dear ' . ($invoice->customer->name ?? 'Customer') . ',<br><br>Please find attached your invoice.<br><br>Thank you.')
-        //         ->attach($pdfFile->getRealPath(), [
-        //             'as' => $fileName,
-        //             'mime' => 'application/pdf',
-        //         ]);
-        // });
-        //return response()->json(['success' => true, 'message' => 'Invoice sent to ' . $customerEmail]);
-        return response()->json(['success' => true, 'message' => 'Invoice not actually sent - email stubbed']);
+        
+        // Save PDF to a temporary directory in storage/app/attachments
+        $subDir = 'attachments/invoices';
+        $fileName = 'Invoice-' . ($invoice->invoice_number ? str_replace('/', '_', $invoice->invoice_number) : $invoice->id) . '-' . time() . '.pdf';
+        
+        // Ensure directory exists
+        if (!\Illuminate\Support\Facades\Storage::exists($subDir)) {
+            \Illuminate\Support\Facades\Storage::makeDirectory($subDir);
+        }
+        
+        $path = $pdfFile->storeAs($subDir, $fileName);
+        $fullPath = storage_path('app/' . $path);
+
+        // Dispatch email sending after the response is sent to the user
+        dispatch(function () use ($customerEmail, $invoice, $fullPath) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($customerEmail)->send(new \App\Mail\InvoiceMail($invoice, $fullPath));
+                // Optional: Delete physical file after success
+                if (file_exists($fullPath)) { unlink($fullPath); }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to send invoice email: ' . $e->getMessage());
+            }
+        })->afterResponse();
+
+        return response()->json(['success' => true, 'message' => 'Invoice is being sent to ' . $customerEmail]);
     }
 
     /**

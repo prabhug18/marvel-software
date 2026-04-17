@@ -9,7 +9,7 @@ class Stock extends Model
     //
     protected $fillable = [
         'warehouse_id', 'category_id', 'brand_id', 'model', 'model_no', 'qty', 'user_id',
-        'vendor_id', 'purchase_date', 'purchased_from', 'purchase_rate', 'remarks', 'serial_no'
+        'vendor_id', 'purchase_date', 'purchased_from', 'purchase_rate', 'remarks', 'serial_no', 'invoice_no'
     ];
     
     public function vendor() {

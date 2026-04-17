@@ -136,7 +136,7 @@
                 @endcan
                 @can('source-list')
                 <li>
-                    <a href="{{ url('/source/create') }}">
+                    <a href="{{ url('/source') }}">
                         <i class="fas fa-database"></i><span>Source</span>
                     </a>
                 </li>

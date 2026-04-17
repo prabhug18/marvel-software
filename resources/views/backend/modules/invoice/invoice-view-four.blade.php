@@ -38,7 +38,18 @@
                 .invoice-page table th, .invoice-page table td { padding: 4px 6px; line-height: 1; }
                 .invoice-page .small { font-size: 11px; }
             </style>
-                <div class="invoice-page">
+            <div class="no-print" style="text-align:center; margin-bottom:15px; margin-top:10px;">
+                <div style="display:inline-flex; gap:10px;">
+                    <button id="printThreeCopiesBtn" class="btn btn-primary" style="padding:8px 25px; font-weight:700;">
+                        <i class="fas fa-print me-2"></i> Print
+                    </button>
+                    <button id="sendEmailBtn" class="btn btn-success" style="padding:8px 25px; font-weight:700;">
+                        <i class="fas fa-envelope me-2"></i> Send Email
+                    </button>
+                </div>
+            </div>
+
+            <div class="invoice-page">
                 @php
                     // Determine head office warehouse (optional setting 'head_office_warehouse_id')
                     $headOfficeId = \App\Models\Setting::get('head_office_warehouse_id');
@@ -125,30 +136,30 @@
 
                 <!-- Bill To / Ship To and Eway / Transport small columns -->
                 <div style="display:flex; gap:12px;">
-                    <div style="flex:1; border:1px solid #000; padding:8px;">
-                        <div style="font-weight:700;">Bill To : {{ $invoice->customer_name ?? ($invoice->customer->name ?? '') }}</div>
-                        <div style="font-size:12px; margin-top:6px;">{{ $invoice->customer->address ?? '' }}</div>
-                        <div style="font-size:12px; margin-top:4px;">{{ $invoice->customer->city->name ?? '' }}, {{ $invoice->customer->state->name ?? '' }} - {{ $invoice->customer->pincode ?? '' }}</div>
-                        <div style="font-size:12px; margin-top:4px;">GSTIN: {{ $invoice->customer->gst_no ?? '' }}</div>
+                    <div style="flex:1; border:1px solid #000; padding:8px; text-transform: uppercase;">
+                        <div style="font-weight:700;">Bill To : {{ strtoupper($invoice->customer_name ?? ($invoice->customer->name ?? '')) }}</div>
+                        <div style="font-size:12px; margin-top:6px;">{{ strtoupper($invoice->customer->address ?? '') }}</div>
+                        <div style="font-size:12px; margin-top:4px;">{{ strtoupper($invoice->customer->city->name ?? '') }}, {{ strtoupper($invoice->customer->state->name ?? '') }} - {{ $invoice->customer->pincode ?? '' }}</div>
+                        <div style="font-size:12px; margin-top:4px;">GSTIN: {{ strtoupper($invoice->customer->gst_no ?? '') }}</div>
                         <div style="font-size:12px; margin-top:4px;">Ph: {{ $invoice->customer->mobile_no ?? '' }}</div>
                     </div>
-                    <div style="flex:1; border:1px solid #000; padding:8px;">
-                        <div style="font-weight:700;">Ship To :</div>
+                    <div style="flex:1; border:1px solid #000; padding:8px; text-transform: uppercase;">
                         @php
                             $ship = $invoice->deliveryAddress ?? null;
                             if (!$ship) { $ship = $invoice->customer; }
+                            $shipName = $invoice->customer_name ?? ($invoice->customer->name ?? '');
                         @endphp
-                        <div style="font-size:12px; margin-top:6px;">{{ $ship->address ?? ($invoice->customer->address ?? '') }}</div>
-                        <div style="font-size:12px; margin-top:4px;">{{ $ship->city->name ?? '' }}, {{ $ship->state->name ?? '' }} - {{ $ship->pincode ?? '' }}</div>
-                        <div style="font-size:12px; margin-top:4px;">GSTIN: {{ $ship->gst_no ?? ($invoice->customer->gst_no ?? '') }}</div>
+                        <div style="font-weight:700;">Ship To : {{ strtoupper($shipName) }}</div>
+                        <div style="font-size:12px; margin-top:6px;">{{ strtoupper($ship->address ?? ($invoice->customer->address ?? '')) }}</div>
+                        <div style="font-size:12px; margin-top:4px;">{{ strtoupper($ship->city->name ?? '') }}, {{ strtoupper($ship->state->name ?? '') }} - {{ $ship->pincode ?? '' }}</div>
+                        <div style="font-size:12px; margin-top:4px;">GSTIN: {{ strtoupper($ship->gst_no ?? ($invoice->customer->gst_no ?? '')) }}</div>
                         <div style="font-size:12px; margin-top:4px;">Ph: {{ $ship->mobile_no ?? ($invoice->customer->mobile_no ?? '') }}</div>
                     </div>
                     <div style="flex:0 0 260px; border:1px solid #000; padding:8px; text-align:left;">
                         <div style="font-weight:700; font-size:14px;">TAX INVOICE</div>
                         <div style="margin-top:6px; font-size:13px;">Invoice No: <strong>{{ $invoice->invoice_number }}</strong></div>
                         <div style="margin-top:6px; font-size:12px;">Date: {{ \Carbon\Carbon::parse($invoice->invoice_date)->format('d/m/Y') }}</div>
-                        <div style="margin-top:6px; font-size:12px;">State: {{ $invoice->customer->state->name ?? '' }}</div>
-                    
+                        <div style="margin-top:6px; font-size:12px;">State: {{ strtoupper($invoice->customer->state->name ?? '') }}</div>
                     </div>
                 </div>
 
@@ -402,7 +413,7 @@
                                         $taxable = $row['taxable'];
                                         $taxamt = $row['tax_amount'];
                                         $gstRate = $row['gst_rate'] ?? 0; // total GST % for this HSN
-
+ 
                                         // If invoice-level totals are present, distribute them proportionally across HSN rows
                                         if (($invoiceCgst + $invoiceSgst + $invoiceIgst) > 0 && $totalTaxableFromSummary > 0) {
                                             $cgst = ($invoiceCgst * ($taxable / $totalTaxableFromSummary));
@@ -424,9 +435,9 @@
                                                 }
                                             }
                                         }
-
+ 
                                         $total_line_tax = $cgst + $sgst + $igst;
-
+ 
                                         $totalTaxable += $taxable;
                                         $totalTaxSum += $total_line_tax;
                                         $totalCgst += $cgst;
@@ -472,60 +483,55 @@
                     </div>
                 </div>
 
-                <!-- Footer signature -->
-                    <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:flex-end;">
-                        <div></div>
-                        <div style="text-align:center;">
-                            <div style="font-size:12px">For : Marvel Batteries</div>
-                            <div style="margin-top:28px;">(Authorized Signatory)</div>
-                        </div>
-                    </div>
-
-                <!-- Terms & Conditions: include any active terms (rendered as bullet points) -->
-                <h6>Terms & Conditions</h6>
-                @php
-                    $termsToShow = collect();
-                    try {
-                        if (\Illuminate\Support\Facades\Schema::hasTable('terms')) {
-                            // get all active terms, oldest first
-                            $termsToShow = \App\Models\Term::where('active', 1)->orderBy('created_at', 'asc')->get();
-                        }
-                    } catch (\Exception $e) {
-                        $termsToShow = collect();
-                    }
-                @endphp
-
-                @if($termsToShow->isNotEmpty())
+                <!-- Terms & Conditions Block (Relocated) -->
+                <div style="margin-top:12px;">
+                    <h6 style="margin:0 0 6px 0; font-weight:700; font-size:13px;">Terms & Conditions</h6>
                     @php
-                        // flatten all active term contents into lines (preserve order)
-                        $allLines = [];
-                        foreach($termsToShow as $t) {
-                            if (trim($t->content) === '') continue;
-                            $lines = preg_split('/\r\n|\r|\n/', trim($t->content));
-                            $lines = array_filter(array_map('trim', $lines), function($v){ return $v !== ''; });
-                            foreach($lines as $ln) { $allLines[] = $ln; }
-                        }
+                        $termsToShow = collect();
+                        try {
+                            if (\Illuminate\Support\Facades\Schema::hasTable('terms')) {
+                                $termsToShow = \App\Models\Term::where('active', 1)->orderBy('created_at', 'asc')->get();
+                            }
+                        } catch (\Exception $e) { $termsToShow = collect(); }
                     @endphp
-
-                    @if(count($allLines) > 0)
-                        <div style="margin-top:12px; padding:0;">
+                    @if($termsToShow->isNotEmpty())
+                        @php
+                            $allLines = [];
+                            foreach($termsToShow as $t) {
+                                if (trim($t->content) === '') continue;
+                                $lines = preg_split('/\r\n|\r|\n/', trim($t->content));
+                                $lines = array_filter(array_map('trim', $lines), function($v){ return $v !== ''; });
+                                foreach($lines as $ln) { $allLines[] = $ln; }
+                            }
+                        @endphp
+                        @if(count($allLines) > 0)
                             <ul style="font-size:11px; margin:0 0 0 18px; padding:0;">
                                 @foreach($allLines as $line)
-                                    <li style="margin-bottom:4px;">{{ $line }}</li>
+                                    <li style="margin-bottom:3px;">{{ $line }}</li>
                                 @endforeach
                             </ul>
-                        </div>
+                        @endif
                     @endif
-                @endif
+                </div>
+
+                <!-- Footer signature -->
+                <div style="margin-top:30px; display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="text-align:left;">
+                        <div style="font-weight:700; font-size:12px;">Customer Seal and Signature</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:12px; font-weight:700;">For : {{ $locName ?? 'Marvel Batteries' }}</div>
+                        <div style="margin-top:40px; font-style:italic;">(Authorized Signatory)</div>
+                    </div>
+                </div>
 
                 </div>
             </div>
 
-            <!-- Bottom print control (hidden when printing) -->
-            <div class="no-print" style="text-align:center; margin-top:12px;">
-                <button id="printThreeCopiesBtn" class="btn btn-primary" style="padding:6px 12px; font-size:13px;">Print</button>
-            </div>
 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
             <script>
                 (function(){
                     function getInvoiceHtml() {
@@ -612,11 +618,73 @@
                         }, 800);
                     }
 
-                    var btn = document.getElementById('printThreeCopiesBtn');
-                    if (btn) {
-                        btn.addEventListener('click', function(e){ e.preventDefault(); setTimeout(doPrintThreeCopies, 50); });
+                    async function sendInvoiceEmail() {
+                        const element = document.querySelector('.invoice-page');
+                        const invoiceNumber = @json($invoice->invoice_number);
+                        const customerEmail = @json($invoice->customer->email);
+
+                        if (!customerEmail) {
+                            Swal.fire({ icon: 'warning', title: 'Missing Email', text: 'No customer email found for this customer.' });
+                            return;
+                        }
+
+                        const btn = document.getElementById('sendEmailBtn');
+                        btn.disabled = true;
+                        btn.innerText = 'Sending...';
+
+                        try {
+                            // Only capture the Original (which is the current .invoice-page)
+                            // We temporarily add an 'Original' label at the very top for the capture if desired, 
+                            // but usually the main layout is what's sent.
+                            const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true });
+                            const imgData = canvas.toDataURL('image/png');
+                            const { jsPDF } = window.jspdf;
+                            const pdf = new jsPDF('p', 'mm', 'a4');
+                            const pageWidth = pdf.internal.pageSize.getWidth();
+                            const imgProps = pdf.getImageProperties(imgData);
+                            const pdfWidth = pageWidth;
+                            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                            
+                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                            const pdfBlob = pdf.output('blob');
+
+                            const formData = new FormData();
+                            formData.append('pdf', new Blob([pdfBlob], { type: 'application/pdf' }), invoiceNumber + '.pdf');
+                            formData.append('invoice_id', @json($invoice->id));
+                            formData.append('email', customerEmail);
+                            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                            const response = await fetch('/invoice/send-email', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            if (response.ok) {
+                                Swal.fire({ icon: 'success', title: 'Sent!', text: 'Invoice sent successfully to ' + customerEmail });
+                            } else {
+                                const err = await response.json();
+                                Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'Failed to send email.' });
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.' });
+                        }
+
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-envelope me-2"></i> Send Email';
+                    }
+
+                    var btnPrint = document.getElementById('printThreeCopiesBtn');
+                    if (btnPrint) {
+                        btnPrint.addEventListener('click', function(e){ e.preventDefault(); setTimeout(doPrintThreeCopies, 50); });
+                    }
+
+                    var btnEmail = document.getElementById('sendEmailBtn');
+                    if (btnEmail) {
+                        btnEmail.addEventListener('click', function(e){ e.preventDefault(); sendInvoiceEmail(); });
                     }
                 })();
             </script>
     </main>
 @endsection
+

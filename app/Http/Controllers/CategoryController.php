@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\Stock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -103,9 +105,17 @@ class CategoryController extends Controller
      */
     public function destroy($id)
     {
-        //
+        // Check if category is used in products or stocks
+        $productCount = Product::where('category_id', $id)->count();
+        $stockCount = Stock::where('category_id', $id)->count();
+
+        if ($productCount > 0 || $stockCount > 0) {
+            Session::flash('error', 'Cannot delete Category: It is currently assigned to ' . $productCount . ' Products and ' . $stockCount . ' Stocks.');
+            return redirect('categories');
+        }
+
         Category::where('id', $id)->delete();
-        Session::flash('delete_category','Category deleted successfully');
+        Session::flash('delete_category', 'Category deleted successfully');
         return redirect('categories');
     }
 }
