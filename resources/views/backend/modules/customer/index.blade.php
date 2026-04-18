@@ -70,23 +70,19 @@
                         <span class="mobile-value">
                           <a class="btn btn-sm btn-outline-primary me-1" href="{{ route('customer.edit',$customerVal->id) }}"  style="text-decoration: none;"><i class="fas fa-edit"></i></a>                  
                           @if($customerVal->invoices_count == 0)
-                            <form method="POST" action="{{ route('customer.destroy', $customerVal->id) }}" class="btn"  onsubmit="return ConfirmDelete()">
+                            {{-- Hidden delete form --}}
+                            <form id="deleteForm-{{ $customerVal->id }}" method="POST" action="{{ route('customer.destroy', $customerVal->id) }}" style="display:none;">
                               @csrf
                               @method('DELETE')
-                              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
                             </form>
+                            <button type="button"
+                              class="btn btn-sm btn-outline-danger btn-delete-customer"
+                              data-id="{{ $customerVal->id }}"
+                              data-name="{{ $customerVal->name }}">
+                              <i class="fas fa-trash-alt"></i>
+                            </button>
                           @endif
                         </span>
-                        <script>
-                          function ConfirmDelete()
-                          {
-                              var x = confirm("Are you sure you want to delete?");
-                              if (x)
-                                  return true;
-                              else
-                                  return false;
-                          }
-                      </script>
                       </td>
                     </tr>
                     <?php $i++; ?>
@@ -168,6 +164,36 @@ function setCustomerTableDataLabels() {
 }
 document.addEventListener('DOMContentLoaded', function() {
     setCustomerTableDataLabels();
+
+    // SweetAlert2 delete confirmation
+    document.querySelectorAll('.btn-delete-customer').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var customerId = this.getAttribute('data-id');
+            var customerName = this.getAttribute('data-name');
+            Swal.fire({
+                title: 'Delete Customer?',
+                html: 'Are you sure you want to delete <br><strong>' + customerName + '</strong>?<br><span style="font-size:0.85rem;color:#888;">This action cannot be undone.</span>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Yes, Delete',
+                cancelButtonText: '<i class="fas fa-times me-1"></i> Cancel',
+                customClass: {
+                    popup: 'rounded-4 shadow-lg',
+                    title: 'fw-bold fs-5',
+                    confirmButton: 'btn btn-danger px-4',
+                    cancelButton: 'btn btn-secondary px-4',
+                },
+                buttonsStyling: false,
+                reverseButtons: true,
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteForm-' + customerId).submit();
+                }
+            });
+        });
+    });
 });
 </script>
 @endsection
