@@ -16,7 +16,7 @@
                 <div class="card-body">
 
                     <!-- Customer Info -->
-                    <form class="row g-4">
+                    <form class="row g-4" autocomplete="off">
 
                         @php
                             $isAdmin = auth()->user() && auth()->user()->hasRole('Admin');
@@ -39,7 +39,7 @@
                         <!-- Customer & Invoice Info -->
                         <div class="col-md-4 position-relative">
                             <label for="name" class="form-label">Customer Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="customer_name" name="name" placeholder="Enter Name / Mobile / Email" required autocomplete="off">
+                            <input type="text" class="form-control" id="customer_name" name="name" placeholder="Enter Name / Mobile / Email" required autocomplete="new-password" readonly>
                             <div id="customerSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
                         </div>
 
@@ -66,17 +66,17 @@
                         <!-- Address Info -->
                         <div class="col-md-4">
                             <label for="mobile_no" class="form-label">Mobile Number <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" id="mobile_no" name="mobile_no" placeholder="Enter Mobile" required>
+                            <input type="tel" class="form-control" id="mobile_no" name="mobile_no" placeholder="Enter Mobile" required autocomplete="new-password" readonly>
                         </div>
 
                         <div class="col-md-4">
                             <label for="email" class="form-label">Email ID</label>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="Enter Email ID" required>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="Enter Email ID" required autocomplete="new-password" readonly>
                         </div>
 
                         <div class="col-md-4">
                             <label for="address" class="form-label">Address 1</label>
-                            <input type="text" class="form-control" id="address" name="address" placeholder="Enter Address" required>
+                            <input type="text" class="form-control" id="address" name="address" placeholder="Enter Address" required autocomplete="new-password" readonly>
                         </div>
 
                         <div class="col-md-4">
@@ -240,6 +240,8 @@
                             id="invoiceProductModel"
                             placeholder="Enter Model"
                             required />
+                            <input type="hidden" id="invoiceProductBrand">
+                            <input type="hidden" id="invoiceProductModelNo">
                         </div>
 
                         <div class="col-md-2">
@@ -315,8 +317,9 @@
                             <thead class="custom-thead table-primary">
                                 <tr>
                                     <th>S.No</th>
-                                    <th>Product Name</th>
-                                    <th>Model</th>
+                                    <th>Brand</th>
+                                    <th>Model Name</th>
+                                    <th>Model No</th>
                                     <th>Serial No</th>
                                     <th>Qty</th>
                                     <th>Unit Price</th>
@@ -637,6 +640,9 @@
                 // store selected product id and model_no on model input for later use
                 $('#invoiceProductModel').data('product-id', productIdSelected);
                 $('#invoiceProductModel').data('model-no', $btn.data('model_no') || '');
+                $('#invoiceProductModelNo').val($btn.data('model_no') || '');
+                $('#invoiceProductModel').data('brand', brand || '');
+                $('#invoiceProductBrand').val(brand || '');
                 // also store on the product name input so selections there carry the id
                 $('#invoiceProductName').data('product-id', productIdSelected);
                 // Populate new GST Amount field instead of GST %
@@ -821,6 +827,23 @@
 
 
         window.addEventListener("DOMContentLoaded", () => {
+        // Readonly trick: prevent browser autocomplete on customer fields.
+        // Chrome ignores autocomplete="off" but always respects readonly.
+        // We remove readonly after 500ms so the user can type normally.
+        const autoCompleteFields = ['customer_name', 'mobile_no', 'email', 'address'];
+        autoCompleteFields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el && !el.hasAttribute('readonly')) {
+                // already readonly in HTML; this is a safety net
+            }
+        });
+        setTimeout(function() {
+            autoCompleteFields.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.removeAttribute('readonly');
+            });
+        }, 500);
+
         let productsArr = [];
 
         // Barcode/Serial No input: auto-add comma after scan (barcode scanners usually send Enter or Tab)
@@ -998,9 +1021,11 @@
                     const combinedSerials = (serialNumbers || []).join(', ');
                     // prefer explicit selected id and model_no from UI if available
                     const selectedProductId = $('#invoiceProductModel').data('product-id') || foundProductId || null;
-                    const selectedModelNo = $('#invoiceProductModel').data('model-no') || (found ? found.model_no : '');
+                    const selectedModelNo = $('#invoiceProductModelNo').val() || $('#invoiceProductModel').data('model-no') || (found ? found.model_no : '');
+                    const selectedBrand = $('#invoiceProductBrand').val() || $('#invoiceProductModel').data('brand') || (found ? found.brand : '');
                     productsArr.push({
                         name: name,
+                        brand: selectedBrand,
                         model: model,
                         model_no: selectedModelNo,
                         product_id: selectedProductId,
@@ -1025,9 +1050,11 @@
                     // Combine serial numbers into a single product entry for offline/error path
                     const combinedSerials = (serialNumbers || []).join(', ');
                     const selectedProductIdFallback = $('#invoiceProductModel').data('product-id') || null;
-                    const selectedModelNoFallback = $('#invoiceProductModel').data('model-no') || '';
+                    const selectedModelNoFallback = $('#invoiceProductModelNo').val() || $('#invoiceProductModel').data('model-no') || '';
+                    const selectedBrandFallback = $('#invoiceProductBrand').val() || $('#invoiceProductModel').data('brand') || '';
                     productsArr.push({
                         name: name,
+                        brand: selectedBrandFallback,
                         model: model,
                         model_no: selectedModelNoFallback,
                         product_id: selectedProductIdFallback,
@@ -1056,7 +1083,7 @@
             const tbody = document.querySelector('#invoiceProductTable tbody');
             tbody.innerHTML = '';
             if (productsArr.length === 0) {
-                tbody.innerHTML = '<tr class="text-muted"><td colspan="8">No products added</td></tr>';
+                tbody.innerHTML = '<tr class="text-muted"><td colspan="9">No products added</td></tr>';
                 return;
             }
             productsArr.forEach((product, index) => {
@@ -1066,8 +1093,9 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td>${cleanProductName(product.name)}</td>
-                    <td>${product.model_no || product.model || ''}</td>
+                    <td>${product.brand || ''}</td>
+                    <td>${product.model || ''}</td>
+                    <td>${product.model_no || ''}</td>
                     <td>${(product.serial_no || '').split(',').map(s => s.trim()).filter(Boolean).join('<br>')}</td>
                     <td>${product.qty}</td>
                     <td>₹${unit_price.toFixed(2)}</td>
@@ -1098,6 +1126,14 @@
             document.getElementById('invoiceProductQty').value = '';
             document.getElementById('invoiceProductPrice').value = '';
             document.getElementById('invoiceProductGst').value = '';
+            
+            // Clear stored data attributes
+            $('#invoiceProductModel').removeData('product-id').removeData('model-no').removeData('brand');
+            $('#invoiceProductBrand').val('');
+            $('#invoiceProductModelNo').val('');
+            $('#invoiceProductName').removeData('product-id');
+            $('#gstInclusivePriceLabel').hide();
+            $('#originalPriceLabel').hide();
         }
 
         // === Update Totals ===

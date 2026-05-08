@@ -36,7 +36,7 @@
                             @endif
                             <div class="col-md-4 position-relative">
                                 <label for="customer_name" class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ $invoice->customer_name }}" required autocomplete="off" readonly>
+                                <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ $invoice->customer_name }}" required autocomplete="new-password" readonly>
                                 <div id="customerSuggestions" class="list-group position-absolute w-100" style="z-index: 1050; display: none; top: 100%; left: 0;"></div>
                             </div>
                             <div class="col-md-4">
@@ -57,15 +57,15 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="mobile_no" class="form-label">Mobile Number <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control" id="mobile_no" name="mobile_no" value="{{ $customer->mobile_no ?? '' }}" required>
+                                <input type="tel" class="form-control" id="mobile_no" name="mobile_no" value="{{ $customer->mobile_no ?? '' }}" required autocomplete="new-password">
                             </div>
                             <div class="col-md-4">
                                 <label for="email" class="form-label">Email ID</label>
-                                <input type="email" class="form-control" id="email" name="email" value="{{ $customer->email ?? '' }}" required>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ $customer->email ?? '' }}" required autocomplete="new-password">
                             </div>
                             <div class="col-md-4">
                                 <label for="address" class="form-label">Address 1</label>
-                                <input type="text" class="form-control" id="address" name="address" value="{{ $customer->address ?? '' }}" required>
+                                <input type="text" class="form-control" id="address" name="address" value="{{ $customer->address ?? '' }}" required autocomplete="new-password">
                             </div>
                             <div class="col-md-4">
                                 <label for="state" class="form-label">State <span class="text-danger">*</span></label>

@@ -8,6 +8,8 @@
     <div class="col-md-2">
         <label for="invoiceProductModel" class="form-label text-nowrap">Model <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="invoiceProductModel" placeholder="Enter Model" autocomplete="off" />
+        <input type="hidden" id="invoiceProductBrand">
+        <input type="hidden" id="invoiceProductModelNo">
     </div>
     <div class="col-md-2">
         <label for="invoiceProductSerialNo" class="form-label text-nowrap">Serial No <span class="text-danger">*</span></label>
@@ -44,8 +46,9 @@
         <thead class="custom-thead table-primary">
             <tr>
                 <th>S.No</th>
-                <th>Product Name</th>
-                <th>Model</th>
+                <th>Brand</th>
+                <th>Model Name</th>
+                <th>Model No</th>
                 <th>Serial No</th>
                 <th>Qty</th>
                 <th>Unit Price</th>
@@ -60,8 +63,9 @@
                 @endphp
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>{{ $cleanedName }}</td>
-                    <td>{{ $item->model_no || $item->model }}</td>
+                    <td>{{ $item->brand_name ?? ($item->product ? $item->product->brand->name : '') }}</td>
+                    <td>{{ $item->model }}</td>
+                    <td>{{ $item->model_no ?? ($item->product ? $item->product->model_no : '') }}</td>
                     <td>{!! nl2br(e(str_replace(',', "\n", $item->serial_no))) !!}</td>
                     <td>{{ $item->qty }}</td>
                     <td>₹{{ number_format($item->unit_price, 2) }}</td>
@@ -74,7 +78,7 @@
                 </tr>
             @empty
                 <tr class="text-muted">
-                    <td colspan="8">No products added</td>
+                    <td colspan="9">No products added</td>
                 </tr>
             @endforelse
         </tbody>
@@ -118,7 +122,9 @@ $(document).ready(function() {
             const unitPrice = item.unit_price !== undefined ? Number(item.unit_price) : (item.price !== undefined ? Number(item.price) : 0);
             return {
                 name: item.product_name ? item.product_name : (item.name || ''),
+                brand: item.brand_name || (item.product && item.product.brand ? item.product.brand.name : ''),
                 model: item.model || '',
+                model_no: item.model_no || (item.product ? item.product.model_no : ''),
                 product_id: item.product_id || item.productId || item.id || null,
                 serial_no: item.serial_no || item.serialNo || '',
                 qty: item.qty || 1,
@@ -156,10 +162,10 @@ $(document).ready(function() {
                         const seen = new Set();
                         products.forEach(function(p) {
                             if (p.stock !== undefined && Number(p.stock) <= 0) return;
-                            const key = (p.brand||'')+'|'+(p.series||'')+'|'+(p.model||'');
+                            const key = (p.brand||'')+'|'+(p.series||'')+'|'+(p.model||'')+'|'+(p.model_no||'');
                             if (seen.has(key)) return;
                             seen.add(key);
-                            const display = [p.brand, p.series, p.model].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
+                            const display = [p.brand, p.series, p.model, p.model_no].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
                             // prefer offer_price if provided
                             let suggestionPrice = (p.offer_price !== undefined && p.offer_price !== null && p.offer_price !== '') ? p.offer_price : p.price;
                             $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-id="'+(p.id||'')+'" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-model_no="'+(p.model_no||'')+'" data-category="'+(p.category||'')+'" data-price="'+(suggestionPrice||'')+'" data-orig-price="'+(p.price||'')+'" data-tax_percentage="'+(p.tax_percentage||'')+'">'+display+'</button>');
@@ -197,6 +203,9 @@ $(document).ready(function() {
             // store selected product id and model_no on model input for later
             $('#invoiceProductModel').data('product-id', productIdSelected);
             $('#invoiceProductModel').data('model-no', $btn.data('model_no') || '');
+            $('#invoiceProductModelNo').val($btn.data('model_no') || '');
+            $('#invoiceProductModel').data('brand', brand || '');
+            $('#invoiceProductBrand').val(brand || '');
             $('#productSuggestions').hide();
 
         const nameDisplay = [brand, series, model].filter(Boolean).join(' - ');
@@ -432,10 +441,12 @@ function performAddProduct(name, model, serialNumbers, qty, base_price, gst_incl
                     const combinedSerials = (serialNumbers || []).join(', ');
                     // prefer explicit selected id and model_no from UI if available
                     const selectedProductId = $('#invoiceProductModel').data('product-id') || foundProductId || null;
-                    const selectedModelNo = $('#invoiceProductModel').data('model-no') || (found ? found.model_no : '');
+                    const selectedModelNo = $('#invoiceProductModelNo').val() || $('#invoiceProductModel').data('model-no') || (found ? found.model_no : '');
+                    const selectedBrand = $('#invoiceProductBrand').val() || $('#invoiceProductModel').data('brand') || (found ? found.brand : '');
                     window.productsArr.push({
                         name: productFullName,
                         product_name: productFullName,
+                        brand: selectedBrand,
                         model,
                         model_no: selectedModelNo,
                         product_id: selectedProductId,
@@ -459,10 +470,12 @@ function performAddProduct(name, model, serialNumbers, qty, base_price, gst_incl
                     let used_tax = gst_percentage || 5;
                     const combinedSerialsFallback = (serialNumbers || []).join(', ');
                     const selectedProductIdFallback = $('#invoiceProductModel').data('product-id') || null;
-                    const selectedModelNoFallback = $('#invoiceProductModel').data('model-no') || '';
+                    const selectedModelNoFallback = $('#invoiceProductModelNo').val() || $('#invoiceProductModel').data('model-no') || '';
+                    const selectedBrandFallback = $('#invoiceProductBrand').val() || $('#invoiceProductModel').data('brand') || '';
                     window.productsArr.push({
                         name: productFullName,
                         product_name: productFullName,
+                        brand: selectedBrandFallback,
                         model,
                         model_no: selectedModelNoFallback,
                         product_id: selectedProductIdFallback,
@@ -502,8 +515,9 @@ function updateProductTable() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
-            <td>${cleanProductName(product.name)}</td>
-            <td>${product.model_no || product.model || ''}</td>
+            <td>${product.brand || ''}</td>
+            <td>${product.model || ''}</td>
+            <td>${product.model_no || ''}</td>
             <td>${(product.serial_no || '').split(',').map(s => s.trim()).filter(Boolean).join('<br>')}</td>
             <td>${product.qty}</td>
             <td>₹${unit_price.toFixed(2)}</td>
@@ -536,6 +550,11 @@ function clearProductFields(excludeName = false) {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+
+    // Clear brand and model_no hidden fields and data attributes
+    $('#invoiceProductBrand').val('');
+    $('#invoiceProductModelNo').val('');
+    $('#invoiceProductModel').removeData('product-id').removeData('model-no').removeData('brand');
     
     // Clear data attributes and labels
     const priceEl = document.getElementById('invoiceProductPrice');

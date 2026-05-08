@@ -456,7 +456,7 @@ class InvoiceController extends Controller
             abort(403, 'Unauthorized');
         }
         $heading    =   "Invoice Updation";
-        $invoice = \App\Models\Invoice::with(['customer', 'customer.city', 'items', 'payments'])->findOrFail($id);
+        $invoice = \App\Models\Invoice::with(['customer', 'customer.city', 'items.product.brand', 'payments'])->findOrFail($id);
         $states = \App\Models\State::where('country_id', '101')->get();
         $warehouses = \App\Models\Warehouse::all();
         // Map payments to array with amount and mode for JS prefill
@@ -922,18 +922,19 @@ class InvoiceController extends Controller
         $fileName = 'Invoice-' . ($invoice->invoice_number ? str_replace('/', '_', $invoice->invoice_number) : $invoice->id) . '-' . time() . '.pdf';
         
         // Ensure directory exists
-        if (!\Illuminate\Support\Facades\Storage::exists($subDir)) {
-            \Illuminate\Support\Facades\Storage::makeDirectory($subDir);
+        if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($subDir)) {
+            \Illuminate\Support\Facades\Storage::disk('local')->makeDirectory($subDir);
         }
         
-        $path = $pdfFile->storeAs($subDir, $fileName);
-        $fullPath = storage_path('app/' . $path);
+        $pdfFile->storeAs($subDir, $fileName, 'local');
+        // Use Storage::disk()->path() to correctly resolve the OS path (handles Windows backslashes)
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($subDir . '/' . $fileName);
 
         // Dispatch email sending after the response is sent to the user
         dispatch(function () use ($customerEmail, $invoice, $fullPath) {
             try {
                 \Illuminate\Support\Facades\Mail::to($customerEmail)->send(new \App\Mail\InvoiceMail($invoice, $fullPath));
-                // Optional: Delete physical file after success
+                // Delete the temporary PDF file after successful send
                 if (file_exists($fullPath)) { unlink($fullPath); }
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Failed to send invoice email: ' . $e->getMessage());
