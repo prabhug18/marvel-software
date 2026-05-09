@@ -119,8 +119,12 @@
                         @endif
 
                         <div class="col-md-6">
-                            <label class="form-label">Product Interest</label>
-                            <textarea name="product_interest" class="form-control" rows="2" placeholder="Products interested in...">{{ old('product_interest', $lead->product_interest) }}</textarea>
+                            <label class="form-label">Product Interest (Auto-suggest)</label>
+                            <div class="position-relative">
+                                <input type="text" id="productSearch" class="form-control" placeholder="Search products..." autocomplete="off">
+                                <div id="productSuggestions" class="list-group position-absolute w-100 z-index-1000 d-none" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                            <textarea name="product_interest" id="productInterest" class="form-control mt-2" rows="2" placeholder="Products interested in...">{{ old('product_interest', $lead->product_interest) }}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Brand Interest</label>
@@ -159,6 +163,50 @@
                     });
                 } else {
                     $('#city').empty().append('<option value="">Select City</option>');
+                }
+            });
+
+            // Product Auto-suggest
+            $('#productSearch').on('input', function() {
+                var q = $(this).val();
+                if (q.length < 2) {
+                    $('#productSuggestions').addClass('d-none').empty();
+                    return;
+                }
+
+                $.ajax({
+                    url: '/product-search',
+                    data: { q: q },
+                    success: function(products) {
+                        var html = '';
+                        products.forEach(function(p) {
+                            var display = [p.brand, p.series, p.model, p.model_no].filter(Boolean).join(' - ');
+                            html += '<button type="button" class="list-group-item list-group-item-action product-item" data-name="'+display+'">'+display+'</button>';
+                        });
+                        if (html) {
+                            $('#productSuggestions').removeClass('d-none').html(html);
+                        } else {
+                            $('#productSuggestions').addClass('d-none').empty();
+                        }
+                    }
+                });
+            });
+
+            $(document).on('click', '.product-item', function() {
+                var name = $(this).data('name');
+                var current = $('#productInterest').val();
+                if (current) {
+                    $('#productInterest').val(current + ', ' + name);
+                } else {
+                    $('#productInterest').val(name);
+                }
+                $('#productSearch').val('');
+                $('#productSuggestions').addClass('d-none').empty();
+            });
+
+            $(document).click(function(e) {
+                if (!$(e.target).closest('#productSearch, #productSuggestions').length) {
+                    $('#productSuggestions').addClass('d-none');
                 }
             });
         });

@@ -161,7 +161,7 @@
                     success: function(products) {
                         var html = '';
                         products.forEach(function(p) {
-                            var display = [p.brand, p.series, p.model].filter(Boolean).join(' - ');
+                            var display = [p.brand, p.series, p.model, p.model_no].filter(Boolean).join(' - ');
                             html += '<button type="button" class="list-group-item list-group-item-action product-item" data-name="'+display+'">'+display+'</button>';
                         });
                         if (html) {
