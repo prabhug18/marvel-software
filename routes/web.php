@@ -14,6 +14,8 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SourceController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\EnquiryController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\Backend\ReportController;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
