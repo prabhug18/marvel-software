@@ -110,10 +110,10 @@
                                             </a>
                                             @endcan
                                             @can('lead-delete')
-                                            <form action="{{ route('leads.destroy', $lead->id) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('leads.destroy', $lead->id) }}" method="POST" class="d-inline" id="delete-form-{{ $lead->id }}">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this lead?')">
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-lead" data-id="{{ $lead->id }}" title="Delete">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             </form>
@@ -138,6 +138,23 @@
                 "language": {
                     "search": "Filter leads:",
                 }
+            });
+
+            $('.btn-delete-lead').on('click', function() {
+                var id = $(this).data('id');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#delete-form-' + id).submit();
+                    }
+                });
             });
         });
     </script>

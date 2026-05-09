@@ -72,37 +72,18 @@
                       @php
                         $hasProducts = \App\Models\Product::where('brand_id', $brandVal->id)->exists();
                       @endphp
-                      <form method="POST" action="{{ route('brands.destroy', $brandVal->id) }}" class="btn" onsubmit="return ConfirmDelete()">
+                      <form id="delete-form-{{ $brandVal->id }}" method="POST" action="{{ route('brands.destroy', $brandVal->id) }}" class="d-inline">
                         @csrf
                         @method('DELETE')
                         @if($hasProducts)
                           <span data-bs-toggle="tooltip" data-bs-placement="top" title="Cannot delete: Brand used in products">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" disabled style="pointer-events: none; opacity: 0.6;"><i class="fas fa-trash-alt"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events: none; opacity: 0.6;"><i class="fas fa-trash-alt"></i></button>
                           </span>
                         @else
-                          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
+                          <button type="button" class="btn btn-sm btn-outline-danger btn-delete-brand" data-id="{{ $brandVal->id }}"><i class="fas fa-trash-alt"></i></button>
                         @endif
                       </form>
-                      <script>
-                        function ConfirmDelete()
-                        {
-                            var x = confirm("Are you sure you want to delete?");
-                            if (x)
-                                return true;
-                            else
-                                return false;
-                        }
-                        // Enable Bootstrap 5 tooltips for dynamically rendered buttons
-                        function initTooltips() {
-                          document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-                            new bootstrap.Tooltip(el);
-                          });
-                        }
-                        document.addEventListener('DOMContentLoaded', function () {
-                          setTimeout(initTooltips, 500);
-                        });
-                        // Also re-initialize tooltips after AJAX or pagination if needed
-                      </script>
+
                     </td>
                   </tr>
                   <?php $i++; ?>
@@ -117,5 +98,33 @@
       </div>
         
     </main>
-   
+
+    <script>
+        $(document).on('click', '.btn-delete-brand', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Delete this brand? This cannot be undone.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#delete-form-' + id).submit();
+                }
+            });
+        });
+
+        // Enable Bootstrap 5 tooltips
+        function initTooltips() {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                new bootstrap.Tooltip(el);
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(initTooltips, 500);
+        });
+    </script>
 @endsection

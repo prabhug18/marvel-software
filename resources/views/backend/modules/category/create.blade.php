@@ -72,15 +72,15 @@
                         @php
                           $hasProducts = \App\Models\Product::where('category_id', $categoryVal->id)->exists();
                         @endphp
-                        <form method="POST" action="{{ route('categories.destroy', $categoryVal->id) }}" class="btn" onsubmit="return ConfirmDelete()">
+                        <form id="delete-form-{{ $categoryVal->id }}" method="POST" action="{{ route('categories.destroy', $categoryVal->id) }}" class="d-inline">
                           @csrf
                           @method('DELETE')
                           @if($hasProducts)
                             <span data-bs-toggle="tooltip" data-bs-placement="top" title="Cannot delete: Category used in products">
-                              <button type="submit" class="btn btn-sm btn-outline-danger" disabled style="pointer-events: none; opacity: 0.6;"><i class="fas fa-trash-alt"></i></button>
+                              <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events: none; opacity: 0.6;"><i class="fas fa-trash-alt"></i></button>
                             </span>
                           @else
-                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-category" data-id="{{ $categoryVal->id }}"><i class="fas fa-trash-alt"></i></button>
                           @endif
                         </form>
                       </td>
@@ -99,14 +99,22 @@
     </main>   
 
     <script>
-      function ConfirmDelete()
-      {
-          var x = confirm("Are you sure you want to delete?");
-          if (x)
-              return true;
-          else
-              return false;
-      }
+      $(document).on('click', '.btn-delete-category', function() {
+          var id = $(this).data('id');
+          Swal.fire({
+              title: 'Are you sure?',
+              text: "Delete this category? This cannot be undone.",
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              cancelButtonColor: '#3085d6',
+              confirmButtonText: 'Yes, delete it!'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  $('#delete-form-' + id).submit();
+              }
+          });
+      });
       // Enable Bootstrap 5 tooltips for dynamically rendered buttons
       function initTooltips() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {

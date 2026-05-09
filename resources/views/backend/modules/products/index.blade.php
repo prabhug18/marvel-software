@@ -98,20 +98,32 @@
     <script>
         function openModal() {
             const modal = new bootstrap.Modal(document.getElementById('stockModal'));
-            alert("Stock details will be shown here.");
+            Swal.fire({
+                title: 'Stock Details',
+                text: 'Detailed stock breakdown will be shown here.',
+                icon: 'info'
+            });
             modal.show();
         }
 
 // Infinite scroll removed as it conflicts with DataTables
 
-        function ConfirmDelete()
-        {
-            var x = confirm("Are you sure you want to delete?");
-            if (x)
-                return true;
-            else
-                return false;
-        }
+        $(document).on('click', '.btn-delete-product', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#delete-form-' + id).submit();
+                }
+            });
+        });
         // Enable Bootstrap 5 tooltips for dynamically rendered buttons
         function initTooltips() {
           document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {

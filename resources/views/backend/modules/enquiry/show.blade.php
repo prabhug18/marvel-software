@@ -17,9 +17,9 @@
                         <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 text-primary fw-bold">{{ $heading }}</h5>
                             @if($enquiry->status !== 'converted')
-                            <form action="{{ route('enquiries.convertToLead', $enquiry->id) }}" method="POST">
+                            <form id="convertEnquiryForm" action="{{ route('enquiries.convertToLead', $enquiry->id) }}" method="POST">
                                 @csrf
-                                <button type="submit" class="btn btn-success rounded-pill px-4 shadow-sm" onclick="return confirm('Convert this enquiry to a lead?')">
+                                <button type="button" class="btn btn-success rounded-pill px-4 shadow-sm" id="convertEnquiryBtn">
                                     <i class="fas fa-arrow-right me-2"></i>Convert to Lead
                                 </button>
                             </form>
@@ -139,4 +139,33 @@
             </div>
         </div>
     </main>
+
+    @push('scripts')
+    <script>
+        $(document).ready(function() {
+            $('#convertEnquiryBtn').on('click', function() {
+                Swal.fire({
+                    title: 'Convert to Lead?',
+                    text: 'Are you sure you want to convert this enquiry into a qualified lead?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#198754',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Convert It!',
+                    cancelButtonText: 'Not Yet',
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg',
+                        confirmButton: 'btn btn-success px-4 rounded-pill me-2',
+                        cancelButton: 'btn btn-secondary px-4 rounded-pill'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#convertEnquiryForm').submit();
+                    }
+                });
+            });
+        });
+    </script>
+    @endpush
 @endsection

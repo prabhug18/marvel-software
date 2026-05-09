@@ -22,9 +22,9 @@
                                 <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#followUpModal">
                                     <i class="fas fa-plus me-2"></i>Add Follow-up
                                 </button>
-                                <form action="{{ route('leads.convertToCustomer', $lead->id) }}" method="POST">
+                                <form id="convertLeadForm" action="{{ route('leads.convertToCustomer', $lead->id) }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="btn btn-success rounded-pill px-4" onclick="return confirm('Convert this lead to a customer?')">
+                                    <button type="button" class="btn btn-success rounded-pill px-4" id="convertLeadBtn">
                                         <i class="fas fa-user-check me-2"></i>Convert to Customer
                                     </button>
                                 </form>
@@ -213,4 +213,33 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        $(document).ready(function() {
+            $('#convertLeadBtn').on('click', function() {
+                Swal.fire({
+                    title: 'Convert to Customer?',
+                    text: 'Are you sure you want to promote this lead to a permanent customer record?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#198754',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Convert It!',
+                    cancelButtonText: 'Cancel',
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg',
+                        confirmButton: 'btn btn-success px-4 rounded-pill me-2',
+                        cancelButton: 'btn btn-secondary px-4 rounded-pill'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#convertLeadForm').submit();
+                    }
+                });
+            });
+        });
+    </script>
+    @endpush
 @endsection

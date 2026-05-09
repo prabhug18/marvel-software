@@ -95,18 +95,18 @@
                                             </a>
                                             @endcan
                                             @if($enquiry->status !== 'converted')
-                                            <form action="{{ route('enquiries.convertToLead', $enquiry->id) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('enquiries.convertToLead', $enquiry->id) }}" method="POST" class="d-inline" id="convert-form-{{ $enquiry->id }}">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Convert to Lead" onclick="return confirm('Are you sure you want to convert this enquiry to a lead?')">
+                                                <button type="button" class="btn btn-sm btn-outline-success btn-convert-enquiry" data-id="{{ $enquiry->id }}" title="Convert to Lead">
                                                     <i class="fas fa-arrow-right"></i>
                                                 </button>
                                             </form>
                                             @endif
                                             @can('enquiry-delete')
-                                            <form action="{{ route('enquiries.destroy', $enquiry->id) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('enquiries.destroy', $enquiry->id) }}" method="POST" class="d-inline" id="delete-form-{{ $enquiry->id }}">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this enquiry?')">
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-enquiry" data-id="{{ $enquiry->id }}" title="Delete">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             </form>
@@ -131,6 +131,40 @@
                 "language": {
                     "search": "Filter records:",
                 }
+            });
+
+            $('.btn-convert-enquiry').on('click', function() {
+                var id = $(this).data('id');
+                Swal.fire({
+                    title: 'Convert to Lead?',
+                    text: 'Move this enquiry to the sales pipeline?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#198754',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Convert'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#convert-form-' + id).submit();
+                    }
+                });
+            });
+
+            $('.btn-delete-enquiry').on('click', function() {
+                var id = $(this).data('id');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#delete-form-' + id).submit();
+                    }
+                });
             });
         });
     </script>

@@ -352,11 +352,19 @@
                 btn.replaceWith('<span class="badge bg-success">Confirmed</span>');
             } else {
                 btn.prop('disabled', false).text('Confirm');
-                alert('Failed to confirm payment.');
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to confirm payment.',
+                    icon: 'error'
+                });
             }
         }).fail(function() {
             btn.prop('disabled', false).text('Confirm');
-            alert('Failed to confirm payment.');
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to confirm payment.',
+                icon: 'error'
+            });
         });
     });
     </script>

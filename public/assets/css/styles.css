@@ -315,11 +315,11 @@ thead.custom-thead th {
   text-align: center;
   border-bottom: 1px solid #e2e8f0;
   background-color: #ffffff;
-  padding: 15px 0;
+  padding: 8px 0;
 }
 
 .sidebar-logo img {
-  max-width: 140px;
+  max-width: 120px;
   height: auto;
 }
 
@@ -328,7 +328,7 @@ thead.custom-thead th {
   width: 250px;
   background: #ffffff;
   font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
-  font-size: 14.5px;
+  font-size: 13.5px;
   color: #334155;
   border-right: 1px solid #e2e8f0;
   height: 100vh;
@@ -379,7 +379,7 @@ thead.custom-thead th {
 .sidebar ul li a {
   display: flex;
   align-items: center;
-  padding: 12px 20px;
+  padding: 8px 16px;
   color: #475569;
   font-weight: 500;
   text-decoration: none;
@@ -389,9 +389,9 @@ thead.custom-thead th {
 }
 
 .sidebar ul li a i {
-  margin-right: 12px;
-  font-size: 16px;
-  width: 20px;
+  margin-right: 10px;
+  font-size: 14px;
+  width: 18px;
   text-align: center;
   color: #64748b;
 }
@@ -424,9 +424,20 @@ thead.custom-thead th {
 }
 
 .sidebar .submenu li a {
-  padding: 10px 20px 10px 48px; /* Indent submenus */
-  font-size: 13.5px;
+  padding: 6px 16px 6px 42px;
+  font-size: 12.5px;
   color: #64748b;
+}
+
+/* Sidebar Section Dividers */
+.sidebar-divider {
+  padding: 10px 16px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  list-style: none;
 }
 
 .sidebar .submenu li:hover > a {
