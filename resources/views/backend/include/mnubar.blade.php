@@ -7,13 +7,63 @@
         <li><a href="{{ url('/') }}"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
         @endcan
         
+        <li class="sidebar-divider">SALES & CRM</li>
+
+        @can('enquiry-list')
+        <li class="has-submenu">
+            <a href="#" class="submenu-toggle">
+                <i class="fas fa-clipboard-list"></i><span>Enquiries</span><i class="fas fa-chevron-down arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li><a href="{{ route('enquiries.index') }}"><i class="fas fa-list"></i><span> Enquiry List</span></a></li>
+                @can('enquiry-create')
+                <li><a href="{{ route('enquiries.create') }}"><i class="fas fa-plus-circle"></i><span> Add Enquiry</span></a></li>
+                @endcan
+            </ul>
+        </li>
+        @endcan
+
+        @can('lead-list')
+        <li class="has-submenu">
+            <a href="#" class="submenu-toggle">
+                <i class="fas fa-bullseye"></i><span>Leads</span><i class="fas fa-chevron-down arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li><a href="{{ route('leads.index') }}"><i class="fas fa-list"></i><span> Lead Pipeline</span></a></li>
+                @can('lead-create')
+                <li><a href="{{ route('leads.create') }}"><i class="fas fa-plus-circle"></i><span> Add Lead</span></a></li>
+                @endcan
+            </ul>
+        </li>
+        @endcan
+        
         @can('customer-list')
         <li>
             <a href="{{ url('/customer') }}">
-                <i class="fa-solid fa-user"></i><span>Customers</span>
+                <i class="fa-solid fa-user-group"></i><span>Customers</span>
             </a>
         </li> 
         @endcan
+
+        @can('invoice-list')
+        <li><a href="{{ url('/invoice') }}"><i class="fa-solid fa-file-invoice-dollar"></i><span>Invoices</span></a></li>
+        @endcan
+        
+        @can('payment-list')
+        <li class="has-submenu">
+            <a href="#" class="submenu-toggle">
+                <i class="fas fa-money-bill-transfer"></i><span>Payments</span><i class="fas fa-chevron-down arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li><a href="{{ url('/payment/view') }}"><i class="fas fa-list"></i><span> Payment History</span></a></li>
+                @can('payment-create')
+                <li><a href="{{ url('/payment/create') }}"><i class="fas fa-plus-circle"></i><span> Add Payment</span></a></li>
+                @endcan
+            </ul>
+        </li>
+        @endcan
+
+        <li class="sidebar-divider">INVENTORY</li>
         
         @can('stock-list')
         <li class="has-submenu">
@@ -34,7 +84,7 @@
                 </li>
                 <li>
                     <a href="{{ route('stock.export') }}">
-                        <i class="fas fa-plus-circle"></i><span>Bulk Stock</span>
+                        <i class="fas fa-file-import"></i><span>Bulk Stock</span>
                     </a>
                 </li>    
                 @endcan            
@@ -61,23 +111,25 @@
                 </li>
                 <li>
                     <a href="{{ route('export.product') }}">
-                        <i class="fas fa-box-open"></i><span> Bulk Products</span>
+                        <i class="fas fa-file-import"></i><span> Bulk Products</span>
                     </a>
                 </li>
                 @endcan
             </ul>
         </li>
         @endcan
+
         @can('warehouse-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
-                <i class="fas fa-warehouse"></i><span>Locations</span><i class="fas fa-chevron-down arrow"></i>
+                <i class="fas fa-map-location-dot"></i><span>Locations</span><i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="submenu">
+                <li><a href="{{ url('/locations') }}"><i class="fas fa-list"></i><span> View Locations</span></a></li>
                 @can('warehouse-create')
                 <li>
                     <a href="{{ url('/locations/create') }}">
-                        <i class="fas fa-plus-circle"></i><span> Add Locations</span>
+                        <i class="fas fa-plus-circle"></i><span> Add Location</span>
                     </a>
                 </li>
                 @endcan                
@@ -85,25 +137,12 @@
         </li>
         @endcan
 
-        @can('invoice-list')
-        <li><a href="{{ url('/invoice') }}"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></a></li>
-        @endcan
-        
-        @can('payment-list')
-        <li class="has-submenu">
-            <a href="#" class="submenu-toggle">
-                <i class="fas fa-warehouse"></i><span>Payment</span><i class="fas fa-chevron-down arrow"></i>
-            </a>
-            <ul class="submenu">
-                <li><a href="{{ url('/payment/view') }}"><i class="fas fa-plus-circle"></i><span> Payment List</span></a></li>
-            </ul>
-        </li>
-        @endcan
+        <li class="sidebar-divider">SYSTEM</li>
 
         @can('report-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
-                <i class="fa-solid fa-chart-line"></i><span>Reports</span><i class="fas fa-chevron-down arrow"></i>
+                <i class="fa-solid fa-chart-pie"></i><span>Reports</span><i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="submenu">
                 <li><a href="{{ route('reports.invoice') }}"><i class="fas fa-file-invoice"></i><span> Invoice Report</span></a></li>
@@ -117,7 +156,7 @@
         @if(auth()->user()->can('brand-list') || auth()->user()->can('category-list') || auth()->user()->can('source-list') || auth()->user()->can('vendor-list'))
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
-                <i class="fas fa-sitemap"></i><span>Masters</span><i class="fas fa-chevron-down arrow"></i>
+                <i class="fas fa-cogs"></i><span>Masters</span><i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="submenu">
                 @can('brand-list')
@@ -155,12 +194,12 @@
         @can('user-list')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
-                <i class="fas fa-person"></i><span>User Creation</span><i class="fas fa-chevron-down arrow"></i>
+                <i class="fas fa-users-gear"></i><span>User Management</span><i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="submenu">
                 <li>
                     <a href="{{ url('/users') }}">
-                        <i class="fas fa-tags"></i><span>View User</span>
+                        <i class="fas fa-users"></i><span>View Users</span>
                     </a>
                 </li>
                 @can('role-list')
@@ -173,17 +212,18 @@
                 @can('user-create')
                 <li>
                     <a href="{{ url('/users/create') }}">
-                        <i class="fas fa-th-large"></i><span>Create User</span>
+                        <i class="fas fa-user-plus"></i><span>Create User</span>
                     </a>
                 </li>
                 @endcan
             </ul>
         </li>
         @endcan
+
         @can('settings-edit')
         <li class="has-submenu">
             <a href="#" class="submenu-toggle">
-                <i class="fas fa-cog"></i><span>Settings</span><i class="fas fa-chevron-down arrow"></i>
+                <i class="fas fa-sliders-h"></i><span>Configuration</span><i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="submenu">
                 <li>
@@ -201,3 +241,14 @@
         @endcan
     </ul>
 </nav>
+
+<style>
+.sidebar-divider {
+    padding: 15px 20px 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+</style>

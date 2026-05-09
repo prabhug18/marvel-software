@@ -74,13 +74,21 @@ class GeneralController extends Controller
             ->whereDate('created_at', '<=', $to)
             ->sum('grand_total');
 
+        // Enquiry & Lead Stats
+        $enquiryCount = \App\Models\Enquiry::count();
+        $leadCount = \App\Models\Lead::whereNotIn('status', ['converted', 'lost'])->count();
+        $todayFollowUps = \App\Models\Lead::whereDate('next_follow_up', now()->format('Y-m-d'))
+            ->whereNotIn('status', ['converted', 'lost'])
+            ->with(['city', 'assignee'])
+            ->get();
+
         // Pass both filtered and current month (for chart) to view
         return view('backend.general.dashboard', compact(
             'heading', 'brandCount', 'categoryCount', 'customerCount', 'stockCount',
             'currentMonthTotal', 'chartLabels', 'chartData', 'reconciledTotal', 'pendingTotal',
             'currentMonthInvoiceCount', 'currentMonthReconciled', 'pendingReconciliation',
             'filteredMonthInvoiceCount', 'filteredMonthTotal', 'filteredMonthReconciled', 'filteredPendingReconciliation',
-            'from', 'to'
+            'from', 'to', 'enquiryCount', 'leadCount', 'todayFollowUps'
         ));
     }
 

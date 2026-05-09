@@ -46,89 +46,141 @@
             </div>
 
             <div class="row g-4 mb-4">
-            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
+                        <div class="icon mb-3 rounded-circle text-info bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-clipboard-check"></i></div>
+                        <h6 class="text-secondary fw-semibold mb-2">Total Enquiries</h6>
+                        <h2 class="fw-bold mb-0 text-dark">{{ $enquiryCount }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
+                        <div class="icon mb-3 rounded-circle text-danger bg-danger bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-bullseye"></i></div>
+                        <h6 class="text-secondary fw-semibold mb-2">Active Leads</h6>
+                        <h2 class="fw-bold mb-0 text-dark">{{ $leadCount }}</h2>
+                    </div>
+                </div>
                 <div class="col-md-3">
                     <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="cursor:pointer; border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#invoiceListModal">
                         <div class="icon mb-3 rounded-circle text-primary bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-list"></i></div>
-                        <h6 class="text-secondary fw-semibold mb-2">Invoices</h6>
+                        <h6 class="text-secondary fw-semibold mb-2">Invoices (Filtered)</h6>
                         <h2 class="fw-bold mb-0 text-dark">{{ $filteredMonthInvoiceCount }}</h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
                         <div class="icon mb-3 rounded-circle text-success bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-cash-stack"></i></div>
-                        <h6 class="text-secondary fw-semibold mb-2">Total Billed</h6>
+                        <h6 class="text-secondary fw-semibold mb-2">Billed (Filtered)</h6>
                         <h2 class="fw-bold mb-0 text-dark">₹{{ number_format($filteredMonthTotal, 2) }}</h2>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
-                        <div class="icon mb-3 rounded-circle text-info bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-tag"></i></div>
-                        <h6 class="text-secondary fw-semibold mb-2">Payment Reconciled</h6>
-                        <h2 class="fw-bold mb-0 text-dark">₹{{ number_format($filteredMonthReconciled, 2) }}</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 bg-white p-4 h-100 d-flex flex-column align-items-center justify-content-center" style="border-radius: 8px;">
-                        <div class="icon mb-3 rounded-circle text-warning bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-people"></i></div>
-                        <h6 class="text-secondary fw-semibold mb-2">Pending Reconciliation</h6>
-                        <h2 class="fw-bold mb-0 text-dark">₹{{ number_format($filteredPendingReconciliation, 2) }}</h2>
-                    </div>
-                </div>
-                
-                    <div class="col-md-12 mt-4">
-                        <div class="card p-3">
-                            <h6 class="mb-3">Invoice Total (This Month)</h6>
-                            <canvas id="invoiceBarChart" height="80"></canvas>
-                            <div class="text-end mt-2">
-                                <strong>Total: ₹{{ number_format($currentMonthTotal, 2) }}</strong>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card shadow-sm border-0 rounded-4">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="mb-0 fw-bold text-danger"><i class="fas fa-bell me-2"></i>Today's Follow-up Reminders</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Lead #</th>
+                                            <th>Name</th>
+                                            <th>Mobile No</th>
+                                            <th>City</th>
+                                            <th>Assigned To</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($todayFollowUps as $tfu)
+                                        <tr>
+                                            <td class="fw-bold text-primary">{{ $tfu->lead_number }}</td>
+                                            <td>{{ $tfu->name }}</td>
+                                            <td class="fw-bold">{{ $tfu->mobile_no }}</td>
+                                            <td>{{ $tfu->city->name ?? 'N/A' }}</td>
+                                            <td><span class="badge bg-light text-dark border">{{ $tfu->assignee->name ?? 'Unassigned' }}</span></td>
+                                            <td>
+                                                <a href="{{ route('leads.show', $tfu->id) }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                                                    Process
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4 text-muted small">No follow-ups scheduled for today.</td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 mt-4">
-                        <div class="card shadow-sm border-0 border-top border-success border-4 p-4 bg-white mb-2" style="border-radius: 8px;">
-                            <h6 class="text-secondary fw-semibold mb-2">Reconciled Amount (This Month)</h6>
-                            <h3 class="fw-bold mb-0 text-success">₹{{ number_format($reconciledTotal, 2) }}</h3>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-6 mt-4">
+                    <div class="card p-3">
+                        <h6 class="mb-3">Daily Billing Trend (This Month)</h6>
+                        <canvas id="invoiceBarChart" height="150"></canvas>
+                        <div class="text-end mt-2">
+                            <strong>Current Month Total: ₹{{ number_format($currentMonthTotal, 2) }}</strong>
                         </div>
                     </div>
-                    <div class="col-md-6 mt-4">
-                        <div class="card shadow-sm border-0 border-top border-warning border-4 p-4 bg-white mb-2 pending-reconciliation-trigger" style="cursor:pointer; border-radius: 8px;" id="pendingReconciliationCard">
-                            <h6 class="text-secondary fw-semibold mb-2">Pending Reconciliation</h6>
-                            <h3 class="fw-bold mb-0 text-warning">₹{{ number_format($pendingTotal, 2) }}</h3>
+                </div>
+                <div class="col-md-6 mt-4">
+                    <div class="row g-4">
+                        <div class="col-md-12">
+                            <div class="card shadow-sm border-0 border-top border-success border-4 p-4 bg-white" style="border-radius: 8px;">
+                                <h6 class="text-secondary fw-semibold mb-2">Reconciled Amount (This Month)</h6>
+                                <h3 class="fw-bold mb-0 text-success">₹{{ number_format($reconciledTotal, 2) }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="card shadow-sm border-0 border-top border-warning border-4 p-4 bg-white pending-reconciliation-trigger" style="cursor:pointer; border-radius: 8px;" id="pendingReconciliationCard">
+                                <h6 class="text-secondary fw-semibold mb-2">Total Pending Reconciliation</h6>
+                                <h3 class="fw-bold mb-0 text-warning">₹{{ number_format($pendingTotal, 2) }}</h3>
+                            </div>
                         </div>
                     </div>
-                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                    <script>
-                        const ctx = document.getElementById('invoiceBarChart').getContext('2d');
-                        const invoiceBarChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: @json($chartLabels),
-                                datasets: [{
-                                    label: 'Invoice Amount',
-                                    data: @json($chartData),
-                                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                                    borderColor: 'rgba(54, 162, 235, 1)',
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                indexAxis: 'x', // vertical bars
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        title: { display: true, text: 'Amount (₹)' }
-                                    },
-                                    x: {
-                                        title: { display: true, text: 'Day' }
-                                    }
+                </div>
+                
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script>
+                    const ctx = document.getElementById('invoiceBarChart').getContext('2d');
+                    const invoiceBarChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: @json($chartLabels),
+                            datasets: [{
+                                label: 'Invoice Amount',
+                                data: @json($chartData),
+                                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'x', // vertical bars
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Amount (₹)' }
                                 },
-                                plugins: {
-                                    legend: { display: false }
+                                x: {
+                                    title: { display: true, text: 'Day' }
                                 }
+                            },
+                            plugins: {
+                                legend: { display: false }
                             }
-                        });
-                    </script>
+                        }
+                    });
+                </script>
                 @endif
             </div>
         </div>

@@ -63,6 +63,15 @@ Route::group(['middleware' => ['auth']], function() {
     Route::get('/get-city', [CustomerController::class, 'getCity']);
     Route::get('/check-warranty', [InvoiceController::class, 'checkWarranty']);
     Route::get('/generate-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
+
+    // Enquiry Module
+    Route::resource('enquiries', EnquiryController::class);
+    Route::post('enquiries/{id}/convert-to-lead', [EnquiryController::class, 'convertToLead'])->name('enquiries.convertToLead');
+
+    // Lead Module
+    Route::resource('leads', LeadController::class);
+    Route::post('leads/{id}/follow-up', [LeadController::class, 'addFollowUp'])->name('leads.addFollowUp');
+    Route::post('leads/{id}/convert-to-customer', [LeadController::class, 'convertToCustomer'])->name('leads.convertToCustomer');
 });
 
 // Invoice view page for a specific invoice

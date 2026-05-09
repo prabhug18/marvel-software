@@ -29,6 +29,8 @@ class PermissionTableSeeder extends Seeder
             'user',
             'settings',
             'report',
+            'enquiry',
+            'lead',
         ];
 
         $actions = ['list', 'create', 'edit', 'delete'];
