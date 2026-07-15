@@ -146,6 +146,10 @@ $(document).ready(function() {
             $(this).after($suggestions);
         }
         
+        if (productSearchXhr) {
+            productSearchXhr.abort();
+        }
+
         if (val.length > 0) {
             // Immediately clear the associated fields (Model, Qty, Price, etc) 
             // but keep the current product name input.
@@ -161,14 +165,21 @@ $(document).ready(function() {
                     if (Array.isArray(products) && products.length > 0) {
                         const seen = new Set();
                         products.forEach(function(p) {
-                            if (p.stock !== undefined && Number(p.stock) <= 0) return;
+                            // Only show products with stock > 0
+                            // if (p.stock !== undefined && Number(p.stock) <= 0) return;
                             const key = (p.brand||'')+'|'+(p.series||'')+'|'+(p.model||'')+'|'+(p.model_no||'');
                             if (seen.has(key)) return;
                             seen.add(key);
                             const display = [p.brand, p.series, p.model, p.model_no].filter(Boolean).join(' - ') + (p.category ? ' ('+p.category+')' : '');
-                            // prefer offer_price if provided
+                            // Ensure GST is a number and not empty or null
+                            let tax_percentage = 0;
+                            if (p.tax_percentage !== undefined && p.tax_percentage !== null && p.tax_percentage !== '') {
+                                tax_percentage = parseFloat(p.tax_percentage);
+                                if (isNaN(tax_percentage)) tax_percentage = 0;
+                            }
+                            // prefer offer_price if provided, otherwise fall back to price
                             let suggestionPrice = (p.offer_price !== undefined && p.offer_price !== null && p.offer_price !== '') ? p.offer_price : p.price;
-                            $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-id="'+(p.id||'')+'" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-model_no="'+(p.model_no||'')+'" data-category="'+(p.category||'')+'" data-price="'+(suggestionPrice||'')+'" data-orig-price="'+(p.price||'')+'" data-tax_percentage="'+(p.tax_percentage||'')+'">'+display+'</button>');
+                            $suggestions.append('<button type="button" class="list-group-item list-group-item-action text-start" data-id="'+(p.id||'')+'" data-brand="'+(p.brand||'')+'" data-series="'+(p.series||'')+'" data-model="'+(p.model||'')+'" data-model_no="'+(p.model_no||'')+'" data-category="'+(p.category||'')+'" data-price="'+(suggestionPrice||'')+'" data-orig-price="'+(p.price||'')+'" data-tax_percentage="'+tax_percentage+'">'+display+'</button>');
                         });
                         $suggestions.show();
                     } else {
@@ -188,26 +199,23 @@ $(document).ready(function() {
         const brand = $btn.data('brand') || '';
         const series = $btn.data('series') || '';
         const model = $btn.data('model') || '';
-        const gst_inclusive_price = parseFloat($btn.data('price')) || 0;
-        // Read tax_percentage from button data, fallback to 0
-        let gst_percentage = 0;
-        if ($btn.data('tax_percentage') !== undefined && $btn.data('tax_percentage') !== '') {
-            gst_percentage = parseFloat($btn.data('tax_percentage')) || 0;
-        }
-        // Always reverse-calculate GST-exclusive price
+        // Always treat price as GST-inclusive and reverse-calculate base price
+        let gst_inclusive_price = parseFloat($btn.data('price')) || 0;
+        let gst_percentage = parseFloat($btn.data('tax_percentage'));
+        if (isNaN(gst_percentage)) gst_percentage = 0;
         let gst_exclusive_price = gst_inclusive_price;
         if (gst_percentage > 0) {
             gst_exclusive_price = gst_inclusive_price / (1 + gst_percentage / 100);
-    
-            $('#invoiceProductPrice').data('tax-percentage', gst_percentage);
-            // store selected product id and model_no on model input for later
-            $('#invoiceProductModel').data('product-id', productIdSelected);
-            $('#invoiceProductModel').data('model-no', $btn.data('model_no') || '');
-            $('#invoiceProductModelNo').val($btn.data('model_no') || '');
-            $('#invoiceProductModel').data('brand', brand || '');
-            $('#invoiceProductBrand').val(brand || '');
-            $('#productSuggestions').hide();
-
+        }
+        
+        $('#invoiceProductPrice').data('tax-percentage', gst_percentage);
+        // store selected product id and model_no on model input for later
+        $('#invoiceProductModel').data('product-id', productIdSelected);
+        $('#invoiceProductModel').data('model-no', $btn.data('model_no') || '');
+        $('#invoiceProductModelNo').val($btn.data('model_no') || '');
+        $('#invoiceProductModel').data('brand', brand || '');
+        $('#invoiceProductBrand').val(brand || '');
+        
         const nameDisplay = [brand, series, model].filter(Boolean).join(' - ');
         $('#invoiceProductName').val(nameDisplay);
         $('#invoiceProductModel').val(model);
@@ -236,7 +244,6 @@ $(document).ready(function() {
             $('#origPriceLabel').html('Original Price: ₹' + orig_price.toFixed(2)).css({'display':'block'});
         } else {
             $('#origPriceLabel').text('').hide();
-        }
         }
     });
     // When user enters price manually, treat as GST-inclusive and reverse-calculate GST-exclusive
