@@ -425,7 +425,7 @@
         }
     </style>
     <!-- Your main app CSS (should come after Select2 CSS) -->
-    @vite(['resources/sass/app.scss'])
+
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Select2 JS -->
