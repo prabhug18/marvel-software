@@ -171,7 +171,7 @@
 @push('scripts')
 <!-- Select2 CSS (should be loaded before any JS and before your main app CSS) -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.6.2/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css" rel="stylesheet" />
     <!-- Strong custom Select2 CSS to enforce Bootstrap 4 theme and layout -->
     <style>
         .select2-container--bootstrap4 .select2-selection {
@@ -200,7 +200,7 @@
         }
     </style>
     <!-- Your main app CSS (should come after Select2 CSS) -->
-    <link href="/assets/build/app.css" rel="stylesheet" />
+    @vite(['resources/css/app.css'])
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Select2 JS -->
