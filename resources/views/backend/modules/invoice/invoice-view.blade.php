@@ -208,7 +208,8 @@ if (!function_exists('numberToWords')) {
                         <th>Description</th>
                         <th>HSN</th>                       
                         <th>Qty</th>
-                        <th class="text-end">Rate</th>
+                        <th class="text-end">Base Price</th>
+                        <th class="text-end">Unit Price</th>
                         <th>Tax %</th>
                         <th class="text-end">Tax Amt</th>
                         <th class="text-end">Total Amt</th>
@@ -216,13 +217,17 @@ if (!function_exists('numberToWords')) {
                     </thead>
                     <tbody>
                     @foreach($invoice->items as $i => $item)
+                        @php
+                            $unitPriceWithGst = $item->qty > 0 ? ($item->total / $item->qty) : $item->unit_price;
+                        @endphp
                     <tr>
                     <td data-label="S.No"><span class="mobile-value">{{ $i+1 }}</span></td>
                     <td data-label="Description"><span class="mobile-value">{{ $item->product_name ?? '-' }} <br> s/n: {{ $item->serial_no ?? '-' }}</span></td>
                     <td data-label="HSN"><span class="mobile-value">{{ $item->product->hsn_code ?? '-' }}</span></td>
                     
                     <td data-label="Qty"><span class="mobile-value">{{ $item->qty }}</span></td>
-                    <td data-label="Rate" class="text-end"><span class="mobile-value">{{ number_format($item->unit_price, 2) }}</span></td>
+                    <td data-label="Base Price" class="text-end"><span class="mobile-value">{{ number_format($item->unit_price, 2) }}</span></td>
+                    <td data-label="Unit Price" class="text-end"><span class="mobile-value">{{ number_format($unitPriceWithGst, 2) }}</span></td>
                     <td data-label="Tax %"><span class="mobile-value">{{ $item->tax_percentage ? $item->tax_percentage.'%' : '-' }}</span></td>
                     <td data-label="Tax Amt" class="text-end"><span class="mobile-value">{{ number_format($item->tax_amount ?? 0, 2) }}</span></td>
                     <td data-label="Total Amt" class="text-end"><span class="mobile-value">{{ number_format($item->total, 2) }}</span></td>

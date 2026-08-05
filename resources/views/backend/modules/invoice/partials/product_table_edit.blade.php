@@ -51,6 +51,7 @@
                 <th>Model No</th>
                 <th>Serial No</th>
                 <th>Qty</th>
+                <th>Base Price</th>
                 <th>Unit Price</th>
                 <th>Total</th>
                 <th>Remove</th>
@@ -60,6 +61,7 @@
             @forelse($invoice->items as $index => $item)
                 @php
                     $cleanedName = preg_replace('/\s*-\s*\d+\s*(M|months)\s*-\s*/i', ' - ', $item->name ?? $item->product_name);
+                    $unitPriceWithGst = $item->qty > 0 ? ($item->total / $item->qty) : $item->unit_price;
                 @endphp
                 <tr>
                     <td>{{ $index + 1 }}</td>
@@ -69,6 +71,7 @@
                     <td>{!! nl2br(e(str_replace(',', "\n", $item->serial_no))) !!}</td>
                     <td>{{ $item->qty }}</td>
                     <td>₹{{ number_format($item->unit_price, 2) }}</td>
+                    <td>₹{{ number_format($unitPriceWithGst, 2) }}</td>
                     <td>₹{{ number_format($item->total, 2) }}</td>
                     <td>
                         <button type="button" class="btn btn-sm btn-danger" onclick="removeProduct({{ $index }})">
@@ -78,7 +81,7 @@
                 </tr>
             @empty
                 <tr class="text-muted">
-                    <td colspan="9">No products added</td>
+                    <td colspan="10">No products added</td>
                 </tr>
             @endforelse
         </tbody>
@@ -118,8 +121,15 @@ $(document).ready(function() {
         // Defensive: ensure all required fields exist, including serial_no.
         // Preserve any gst_inclusive_price/offer_price if present so unit price can show inclusive value.
         window.productsArr = window.productsArr.map(function(item) {
-            const gstIncl = item.gst_inclusive_price !== undefined ? Number(item.gst_inclusive_price) : (item.offer_price !== undefined ? Number(item.offer_price) : null);
-            const unitPrice = item.unit_price !== undefined ? Number(item.unit_price) : (item.price !== undefined ? Number(item.price) : 0);
+            const unitPrice = item.unit_price !== undefined && item.unit_price !== null ? Number(item.unit_price) : (item.price !== undefined && item.price !== null ? Number(item.price) : 0);
+            const qty = item.qty || 1;
+            const itemTotal = item.total !== undefined && item.total !== null ? Number(item.total) : (unitPrice * qty);
+            const gstIncl = (item.gst_inclusive_price !== undefined && item.gst_inclusive_price !== null) 
+                ? Number(item.gst_inclusive_price) 
+                : ((item.offer_price !== undefined && item.offer_price !== null) 
+                    ? Number(item.offer_price) 
+                    : (itemTotal > 0 ? (itemTotal / qty) : null));
+
             return {
                 name: item.product_name ? item.product_name : (item.name || ''),
                 brand: item.brand_name || (item.product && item.product.brand ? item.product.brand.name : ''),
@@ -127,15 +137,19 @@ $(document).ready(function() {
                 model_no: item.model_no || (item.product ? item.product.model_no : ''),
                 product_id: item.product_id || item.productId || item.id || null,
                 serial_no: item.serial_no || item.serialNo || '',
-                qty: item.qty || 1,
+                qty: qty,
                 price: unitPrice,
                 gst_inclusive_price: gstIncl,
-                total: item.total !== undefined ? Number(item.total) : ((item.qty && (unitPrice)) ? Number(item.qty) * unitPrice : 0),
+                total: itemTotal,
                 tax_percentage: item.tax_percentage !== undefined ? Number(item.tax_percentage) : 5
             };
         });
         setTimeout(function() { updateProductTable(); updateTotals(); }, 0);
     }
+    // Listen for state change to update totals dynamically
+    $(document).on('change', '#state', function() {
+        updateTotals();
+    });
     // --- Product Auto Suggest and Autofill (AJAX version) ---
     let productSearchXhr = null;
     $('#invoiceProductName').on('input', function() {
@@ -512,10 +526,11 @@ function updateProductTable() {
     const tbody = document.querySelector('#invoiceProductTable tbody');
     tbody.innerHTML = '';
     if (window.productsArr.length === 0) {
-        tbody.innerHTML = '<tr class="text-muted"><td colspan="8">No products added</td></tr>';
+        tbody.innerHTML = '<tr class="text-muted"><td colspan="10">No products added</td></tr>';
         return;
     }
     window.productsArr.forEach((product, index) => {
+        const base_price = Number(product.price || 0);
         const unit_price = (product.gst_inclusive_price !== undefined && product.gst_inclusive_price !== null) ? Number(product.gst_inclusive_price) : Number(product.price);
         const total_incl_gst = (product.gst_inclusive_price !== undefined && product.gst_inclusive_price !== null) ? (Number(product.gst_inclusive_price) * Number(product.qty)) : (Number(product.total) || 0);
 
@@ -527,6 +542,7 @@ function updateProductTable() {
             <td>${product.model_no || ''}</td>
             <td>${(product.serial_no || '').split(',').map(s => s.trim()).filter(Boolean).join('<br>')}</td>
             <td>${product.qty}</td>
+            <td>₹${base_price.toFixed(2)}</td>
             <td>₹${unit_price.toFixed(2)}</td>
             <td>₹${total_incl_gst.toFixed(2)}</td>
             <td>
@@ -584,7 +600,17 @@ function clearProductFields(excludeName = false) {
 }
 function updateTotals() {
     // Grand total should be the sum of GST-inclusive totals for all products
-    let grandTotal = window.productsArr.reduce((sum, p) => sum + ((p.gst_inclusive_price !== undefined && p.qty !== undefined) ? (p.gst_inclusive_price * p.qty) : (p.total || 0)), 0);
+    let grandTotal = window.productsArr.reduce((sum, p) => {
+        let itemTotal = 0;
+        if (p.gst_inclusive_price !== undefined && p.gst_inclusive_price !== null && !isNaN(p.gst_inclusive_price) && Number(p.gst_inclusive_price) > 0 && p.qty) {
+            itemTotal = Number(p.gst_inclusive_price) * Number(p.qty);
+        } else if (p.total !== undefined && p.total !== null && !isNaN(p.total) && Number(p.total) > 0) {
+            itemTotal = Number(p.total);
+        } else if (p.price !== undefined && p.price !== null && !isNaN(p.price) && p.qty) {
+            itemTotal = Number(p.price) * Number(p.qty);
+        }
+        return sum + itemTotal;
+    }, 0);
 
     let cgst = 0, sgst = 0, igst = 0;
     const stateId = document.getElementById('state') ? document.getElementById('state').value : null;
@@ -631,3 +657,4 @@ function updateTotals() {
     if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(2);
 }
 </script>
+

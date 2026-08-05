@@ -174,6 +174,7 @@
                                 <th style="border:1px solid #000; padding:6px; width:60px; text-align:left;">GST%</th>
                                 <th style="border:1px solid #000; padding:6px; width:60px; text-align:right;">QTY</th>
                                 <th style="border:1px solid #000; padding:6px; width:90px; text-align:right;">BASE PRICE</th>
+                                <th style="border:1px solid #000; padding:6px; width:90px; text-align:right;">UNIT PRICE</th>
                                 <th style="border:1px solid #000; padding:6px; width:90px; text-align:right;">TOTAL PRICE</th>
                             </tr>
                         </thead>
@@ -206,7 +207,7 @@
                                     $unit = $item->unit_price ?? 0; // unit_price is GST-exclusive base price
                                     $gstPerc = $item->tax_percentage ?? 0;
                                     // prefer stored GST-inclusive unit price if present (offer price), else compute from base
-                                    $gstInclusiveUnit = $item->gst_inclusive_price ?? ($unit * (1 + ($gstPerc / 100)));
+                                    $gstInclusiveUnit = $item->gst_inclusive_price ?? ($qty > 0 ? ($item->total / $qty) : ($unit * (1 + ($gstPerc / 100))));
                                     // tax_amount may be stored; if not, compute from base price
                                     $taxAmt = $item->tax_amount ?? (($unit * $qty) * ($gstPerc / 100));
                                     // total is expected to be GST-inclusive total (gst_inclusive_price * qty) saved as 'total'
@@ -259,12 +260,13 @@
                                     <td style="border:1px solid #000; padding:6px; text-align:left;">{{ $hsn }}</td>
                                     <td style="border:1px solid #000; padding:6px; text-align:left;">{{ $gstPerc }}</td>
                                     <td style="border:1px solid #000; padding:6px; text-align:right;">{{ $qty }}</td>
+                                    <td style="border:1px solid #000; padding:6px; text-align:right;">{{ number_format($unit,2) }}</td>
                                     <td style="border:1px solid #000; padding:6px; text-align:right;">{{ number_format($gstInclusiveUnit,2) }}</td>
                                     <td style="border:1px solid #000; padding:6px; text-align:right;">{{ number_format($total,2) }}</td>
                                 </tr>
                             @endforeach
                             <tr>
-                                <td colspan="6" style="border:1px solid #000; padding:6px; text-align:right; font-weight:700;">GRAND TOTAL</td>
+                                <td colspan="7" style="border:1px solid #000; padding:6px; text-align:right; font-weight:700;">GRAND TOTAL</td>
                                 <td style="border:1px solid #000; padding:6px; text-align:right; font-weight:700;">{{ number_format($grandTotal,2) }}</td>
                             </tr>
                         </tbody>

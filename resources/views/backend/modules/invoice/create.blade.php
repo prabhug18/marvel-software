@@ -322,6 +322,7 @@
                                     <th>Model No</th>
                                     <th>Serial No</th>
                                     <th>Qty</th>
+                                    <th>Base Price</th>
                                     <th>Unit Price</th>
                                     <th>Total</th>
                                     <th>Remove</th>
@@ -329,7 +330,7 @@
                             </thead>
                             <tbody>
                                 <tr class="text-muted">
-                                    <td colspan="8">No products added</td>
+                                    <td colspan="10">No products added</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -382,9 +383,13 @@
                         </div>
                     </div>
 
-                    <!-- Payments moved to Payment Reconciliation page -->
                     <!-- Generate Invoice Button -->
-                    <button class="btn btn-success mt-3" id="invoiceGenerateBtn">Generate Invoice</button>
+                    <div class="d-flex align-items-center justify-content-center gap-3 mt-4 mb-3">
+                        <button class="btn btn-success" id="invoiceGenerateBtn">Generate Invoice</button>
+                        <a href="{{ url()->previous() != url()->current() ? url()->previous() : route('invoice.index') }}" class="btn btn-secondary shadow-sm">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </a>
+                    </div>
 
                     <!-- Payment UI removed from invoice create; use Payment Reconciliation page to record payments -->
                 </div>
@@ -1083,11 +1088,11 @@
             const tbody = document.querySelector('#invoiceProductTable tbody');
             tbody.innerHTML = '';
             if (productsArr.length === 0) {
-                tbody.innerHTML = '<tr class="text-muted"><td colspan="9">No products added</td></tr>';
+                tbody.innerHTML = '<tr class="text-muted"><td colspan="10">No products added</td></tr>';
                 return;
             }
             productsArr.forEach((product, index) => {
-                // Show GST-inclusive price (prefer offer/gst_inclusive) and total
+                const base_price = Number(product.price || 0);
                 const unit_price = (product.gst_inclusive_price !== undefined && product.gst_inclusive_price !== null) ? Number(product.gst_inclusive_price) : Number(product.price);
                 const total_incl_gst = (product.gst_inclusive_price !== undefined && product.gst_inclusive_price !== null) ? (Number(product.gst_inclusive_price) * Number(product.qty)) : (Number(product.total_incl_gst) || 0);
                 const row = document.createElement('tr');
@@ -1098,6 +1103,7 @@
                     <td>${product.model_no || ''}</td>
                     <td>${(product.serial_no || '').split(',').map(s => s.trim()).filter(Boolean).join('<br>')}</td>
                     <td>${product.qty}</td>
+                    <td>₹${base_price.toFixed(2)}</td>
                     <td>₹${unit_price.toFixed(2)}</td>
                     <td>₹${total_incl_gst.toFixed(2)}</td>
                     <td>
@@ -1139,7 +1145,17 @@
         // === Update Totals ===
         function updateTotals() {
             // Grand total should be the sum of GST-inclusive totals for all products
-            let grandTotal = productsArr.reduce((sum, p) => sum + ((p.gst_inclusive_price !== undefined && p.qty !== undefined) ? (p.gst_inclusive_price * p.qty) : (p.total_incl_gst || 0)), 0);
+            let grandTotal = productsArr.reduce((sum, p) => {
+                let itemTotal = 0;
+                if (p.gst_inclusive_price !== undefined && p.gst_inclusive_price !== null && !isNaN(p.gst_inclusive_price) && Number(p.gst_inclusive_price) > 0 && p.qty) {
+                    itemTotal = Number(p.gst_inclusive_price) * Number(p.qty);
+                } else if (p.total_incl_gst !== undefined && p.total_incl_gst !== null && !isNaN(p.total_incl_gst) && Number(p.total_incl_gst) > 0) {
+                    itemTotal = Number(p.total_incl_gst);
+                } else if (p.price !== undefined && p.price !== null && !isNaN(p.price) && p.qty) {
+                    itemTotal = Number(p.price) * Number(p.qty);
+                }
+                return sum + itemTotal;
+            }, 0);
             // Calculate GST splits as before
             let cgst = 0, sgst = 0, igst = 0, tax = 0;
             const stateId = document.getElementById('state').value;

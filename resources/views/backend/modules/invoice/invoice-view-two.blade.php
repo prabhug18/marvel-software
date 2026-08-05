@@ -208,27 +208,32 @@
                 <th>Description of Goods</th>
                 <th class="center">HSN/SAC</th>
                 <th class="center">Quantity</th>
-                <th class="center">Rate</th>
+                <th class="right">Base Price</th>
+                <th class="right">Unit Price</th>
                 <th class="center">per</th>
                 <th class="center">Disc. %</th>
                 <th class="right">Amount</th>
             </tr>
             @foreach($invoice->items as $i => $item)
+                @php
+                    $unitPriceWithGst = $item->qty > 0 ? ($item->total / $item->qty) : $item->unit_price;
+                @endphp
             <tr>
                 <td class="center">{{ $i+1 }}</td>
                 <td>{{ $item->product_name ?? '-' }}</td>
                 <td class="center">{{ $item->product->hsn_code ?? '-' }}</td>
                 <td class="center">{{ $item->qty }}</td>
                 <td class="right">{{ number_format($item->unit_price, 2) }}</td>
+                <td class="right">{{ number_format($unitPriceWithGst, 2) }}</td>
                 <td class="center">No</td>
                 <td class="center">-</td>
-                <td class="right">{{ number_format($item->unit_price * $item->qty, 2) }}</td>
+                <td class="right">{{ number_format($item->total, 2) }}</td>
             </tr>
             @endforeach
             <tr class="total-row">
                 <td colspan="3" class="right">Total</td>
                 <td class="center">{{ $invoice->items->sum('qty') }}</td>
-                <td colspan="3" class="right"></td>
+                <td colspan="4" class="right"></td>
                 <td class="right">₹{{ number_format($invoice->grand_total ?? 0, 2) }}</td>
             </tr>
             </table>

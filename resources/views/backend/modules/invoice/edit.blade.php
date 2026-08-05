@@ -11,7 +11,12 @@
         <div class="container-fluid px-3" style="padding-top: 30px;">
             <div class="card shadow-sm rounded-4 mt-4">
                 <div class="card-body">
-                    <h2 class="mb-4">{{ $heading ?? 'Edit Invoice' }}</h2>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="mb-0">{{ $heading ?? 'Edit Invoice' }}</h2>
+                        <a href="{{ url()->previous() != url()->current() ? url()->previous() : route('invoice.index') }}" class="btn btn-secondary shadow-sm">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </a>
+                    </div>
                     <form id="invoiceEditForm" method="POST" action="{{ route('invoice.update', $invoice->id) }}">
                         @csrf
                         @method('PUT')
@@ -143,10 +148,11 @@
 
                         <!-- Payments moved to Payment Reconciliation page -->
 
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-12 text-center">
-                                <button type="button" class="btn btn-success mt-3" id="invoiceUpdateBtn">Update Invoice</button>
-                            </div>
+                        <div class="d-flex align-items-center justify-content-center gap-3 mt-4 mb-3">
+                            <button type="button" class="btn btn-success" id="invoiceUpdateBtn">Update Invoice</button>
+                            <a href="{{ url()->previous() != url()->current() ? url()->previous() : route('invoice.index') }}" class="btn btn-secondary shadow-sm">
+                                <i class="fas fa-arrow-left me-1"></i> Back
+                            </a>
                         </div>
                     </form>
                 </div>
