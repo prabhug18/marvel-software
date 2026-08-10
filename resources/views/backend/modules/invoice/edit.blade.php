@@ -58,7 +58,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="invoice_date" class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="invoice_date" name="invoice_date" value="{{ $invoice->invoice_date }}" required readonly>
+                                <input type="date" class="form-control" id="invoice_date" name="invoice_date" value="{{ $invoice->invoice_date }}" required>
                             </div>
                             <div class="col-md-4">
                                 <label for="mobile_no" class="form-label">Mobile Number <span class="text-danger">*</span></label>
