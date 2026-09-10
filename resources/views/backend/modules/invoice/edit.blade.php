@@ -148,10 +148,25 @@
 
                         <!-- Payments moved to Payment Reconciliation page -->
 
-                        <div class="d-flex align-items-center justify-content-center gap-3 mt-4 mb-3">
-                            <button type="button" class="btn btn-success" id="invoiceUpdateBtn">Update Invoice</button>
-                            <a href="{{ url()->previous() != url()->current() ? url()->previous() : route('invoice.index') }}" class="btn btn-secondary shadow-sm">
-                                <i class="fas fa-arrow-left me-1"></i> Back
+                        <div class="d-flex flex-wrap align-items-center justify-content-center gap-3 mt-4 mb-3" id="actionButtonsContainer">
+                            <button type="button" class="btn btn-success" id="invoiceUpdateBtn">
+                                <i class="fas fa-save me-2"></i>Update Invoice
+                            </button>
+
+                            @if(auth()->user() && auth()->user()->hasRole('Admin'))
+                                @if(($invoice->status ?? 'pending') !== 'approved')
+                                    <button type="button" class="btn btn-primary" id="invoiceConfirmBtn" data-id="{{ $invoice->id }}">
+                                        <i class="fas fa-check-circle me-2"></i>Confirm Invoice
+                                    </button>
+                                @else
+                                    <span class="badge bg-success-subtle text-success border border-success" id="approvedStatusBadge">
+                                        <i class="fas fa-check-circle me-2"></i>Status: Approved
+                                    </span>
+                                @endif
+                            @endif
+
+                            <a href="{{ url()->previous() != url()->current() ? url()->previous() : route('invoice.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
                             </a>
                         </div>
                     </form>
@@ -190,32 +205,34 @@
         }
     </style>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
     <style>
-        /* Match create page button and payment section styles */
-        #invoiceUpdateBtn {
-            margin-top: 24px;
-            min-width: 180px;
-            font-size: 1.2rem;
-            padding: 12px 32px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        /* Action Buttons Container Uniform Alignment & Styling */
+        #actionButtonsContainer {
+            margin-top: 2rem !important;
         }
-        .row.mb-3.mt-3, .row.g-3.mb-3 {
-            margin-bottom: 2rem !important;
+        #actionButtonsContainer .btn,
+        #actionButtonsContainer .badge {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 48px !important;
+            font-size: 1.05rem !important;
+            font-weight: 600 !important;
+            padding: 10px 28px !important;
+            border-radius: 10px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+            transition: all 0.2s ease-in-out !important;
+            margin: 0 !important;
+            vertical-align: middle !important;
         }
-        .btn-outline-primary {
-            border-width: 2px;
-        }
-        #addPaymentFieldBtn {
-            min-width: 140px;
-            font-size: 1rem;
+        #actionButtonsContainer .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         }
         /* Responsive fix for bottom button */
         @media (max-width: 600px) {
-            #invoiceUpdateBtn {
+            #actionButtonsContainer .btn,
+            #actionButtonsContainer .badge {
                 width: 100%;
                 min-width: unset;
                 font-size: 1rem;
@@ -435,6 +452,51 @@ $(document).ready(function() {
                 let msg = 'Error updating invoice.';
                 if (xhr.responseJSON && xhr.responseJSON.message) msg += '\n' + xhr.responseJSON.message;
                 Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            }
+        });
+    });
+
+    // --- Invoice Confirm & Approve Handler ---
+    $('#invoiceConfirmBtn').on('click', function(e) {
+        e.preventDefault();
+        const invoiceId = $(this).data('id');
+        const token = $('meta[name="csrf-token"]').attr('content');
+
+        Swal.fire({
+            title: 'Confirm & Approve Invoice?',
+            text: 'Are you sure you want to approve Invoice #{{ $invoice->invoice_number }}?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Confirm & Approve'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/invoice/' + invoiceId + '/approve',
+                    type: 'POST',
+                    headers: { 'X-CSRF-TOKEN': token },
+                    success: function(res) {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Approved!',
+                                text: 'Invoice confirmed and approved successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                $('#invoiceConfirmBtn').replaceWith('<span class="badge bg-success-subtle text-success fs-6 px-3 py-2 border border-success rounded-pill" id="approvedStatusBadge"><i class="fas fa-check-circle me-1"></i> Status: Approved</span>');
+                            });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: res.message || 'Could not approve invoice.' });
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Error approving invoice.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    }
+                });
             }
         });
     });

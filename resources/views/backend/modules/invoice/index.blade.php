@@ -18,37 +18,80 @@
             <div class="card shadow-sm rounded-4 mt-4">
                 <div class="card-body">
 
-                <!-- Search Bar, Date Filter and Export Button -->
-                <div class="row mb-3 align-items-end justify-content-between flex-column flex-md-row">
-                    <div class="col-auto mb-2 mb-md-0">
-                        <a class="btn custom-orange-btn text-white" href="{{ url('/invoice/create') }}">
-                            <i class="fas fa-user-plus me-2"></i>Add Invoice
-                        </a>
-                    </div>
-                    <div class="col-md-6 mb-2 mb-md-0 position-relative d-flex align-items-center" style="min-width:340px;max-width:420px;">
-                        <label for="invoiceSearch" class="form-label mb-0 me-2" style="white-space:nowrap;min-width:90px;">Search Here:</label>
-                        <input id="invoiceSearch" class="form-control form-control-sm" style="min-width:240px;max-width:320px;" type="text" placeholder="Search by name, email, mobile, or invoice..." autocomplete="off">
-                        <button id="viewDetailsBtn" class="btn btn-primary btn-sm ms-2" style="display:none;white-space:nowrap;">View Details</button>
-                        <div id="searchSuggestions" class="list-group position-absolute w-100" style="z-index: 1000; display: none; top:100%;left:0;"></div>
-                    </div>
-                    <div class="col-auto">
-                        <form class="d-flex flex-column flex-md-row align-items-end" method="GET" action="{{ route('invoice.export') }}" target="_blank" onsubmit="return validateExportDates();">
-                            <div class="me-2 mb-2 mb-md-0">
-                                <label for="from_date" class="form-label mb-0">From:</label>
-                                <input type="date" class="form-control" id="from_date" name="from_date" value="{{ request('from_date') }}">
+                <!-- Unified Action & Filter Card -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: #ffffff;">
+                    <div class="card-body p-3">
+                        <form id="invoiceFilterForm" onsubmit="event.preventDefault(); applyCustomDateFilter();">
+                            <input type="hidden" name="date_range" id="dateRangeInput" value="{{ $preset ?? '3_months' }}">
+                            <input type="hidden" name="status_filter" id="statusFilterInput" value="{{ $statusFilter ?? 'all' }}">
+                            
+                            <!-- Row 1: Add Invoice, Quick Search & Export -->
+                            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pb-3 border-bottom">
+                                <div>
+                                    <a class="btn custom-orange-btn text-white rounded-pill px-4 shadow-sm" href="{{ url('/invoice/create') }}">
+                                        <i class="fas fa-plus me-2"></i>Add Invoice
+                                    </a>
+                                </div>
+                                
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <div class="position-relative" style="min-width: 280px; max-width: 380px;">
+                                        <input id="invoiceSearch" class="form-control form-control-sm rounded-pill ps-3 pe-4 border" type="text" placeholder="Quick Search..." autocomplete="off">
+                                        <button id="viewDetailsBtn" class="btn btn-primary btn-sm ms-1 rounded-pill position-absolute end-0 top-0 h-100 px-3" style="display:none;">Details</button>
+                                        <div id="searchSuggestions" class="list-group position-absolute w-100 shadow" style="z-index: 1000; display: none; top:100%;left:0;"></div>
+                                    </div>
+                                    
+                                    <button type="button" onclick="exportFilteredInvoices();" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-semibold">
+                                        <i class="fas fa-file-excel me-1"></i>Export Invoices
+                                    </button>
+                                </div>
                             </div>
-                            <div class="me-2 mb-2 mb-md-0">
-                                <label for="to_date" class="form-label mb-0">To:</label>
-                                <input type="date" class="form-control" id="to_date" name="to_date" value="{{ request('to_date') }}">
+
+                            <!-- Row 2: Range Presets, Custom Date & Status Filter -->
+                            <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center justify-content-between gap-3 pt-3">
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <!-- Date Presets Segmented Group -->
+                                    <div class="preset-segmented-control p-1 bg-light rounded-pill border d-inline-flex flex-wrap align-items-center gap-1">
+                                        <span class="px-2 text-muted fw-bold small text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                            <i class="fas fa-calendar-alt me-1 text-warning"></i>Range:
+                                        </span>
+                                        <button type="button" class="btn btn-xs preset-pill date-preset-btn {{ ($preset ?? '3_months') == '10_days' ? 'active' : '' }}" data-preset="10_days">10 Days</button>
+                                        <button type="button" class="btn btn-xs preset-pill date-preset-btn {{ ($preset ?? '3_months') == '20_days' ? 'active' : '' }}" data-preset="20_days">20 Days</button>
+                                        <button type="button" class="btn btn-xs preset-pill date-preset-btn {{ ($preset ?? '3_months') == '1_month' ? 'active' : '' }}" data-preset="1_month">1 Month</button>
+                                        <button type="button" class="btn btn-xs preset-pill date-preset-btn {{ ($preset ?? '3_months') == '3_months' ? 'active' : '' }}" data-preset="3_months">3 Months</button>
+                                        <button type="button" class="btn btn-xs preset-pill date-preset-btn {{ ($preset ?? '3_months') == '6_months' ? 'active' : '' }}" data-preset="6_months">6 Months</button>
+                                        <button type="button" class="btn btn-xs preset-pill date-preset-btn {{ ($preset ?? '3_months') == '9_months' ? 'active' : '' }}" data-preset="9_months">9 Months</button>
+                                        <button type="button" class="btn btn-xs preset-pill date-preset-btn {{ ($preset ?? '3_months') == 'custom' ? 'active' : '' }}" data-preset="custom">Custom</button>
+                                    </div>
+
+                                    <!-- Custom Date Container -->
+                                    <div id="customDateContainer" class="align-items-center gap-2 {{ ($preset ?? '3_months') == 'custom' ? 'd-flex' : 'd-none' }}">
+                                        <div class="input-group input-group-sm rounded-pill overflow-hidden border" style="max-width: 280px;">
+                                            <input type="date" class="form-control border-0 shadow-none bg-white py-1 px-2 text-secondary" id="from_date" name="from_date" value="{{ $fromDate ?? request('from_date') }}" title="From Date">
+                                            <span class="input-group-text bg-white border-0 text-muted px-1">→</span>
+                                            <input type="date" class="form-control border-0 shadow-none bg-white py-1 px-2 text-secondary" id="to_date" name="to_date" value="{{ $toDate ?? request('to_date') }}" title="To Date">
+                                        </div>
+                                        <button type="button" onclick="applyCustomDateFilter();" class="btn btn-sm custom-orange-btn text-white rounded-pill px-3 py-1 fw-semibold shadow-sm">
+                                            <i class="fas fa-filter me-1"></i>Filter
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Status Filter Segmented Group -->
+                                <div class="preset-segmented-control p-1 bg-light rounded-pill border d-inline-flex align-items-center gap-1">
+                                    <span class="px-2 text-muted fw-bold small text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                        <i class="fas fa-tasks me-1 text-warning"></i>Status:
+                                    </span>
+                                    <button type="button" class="btn btn-xs status-pill {{ ($statusFilter ?? '') == 'approved' ? 'active' : '' }}" data-status="approved">Approved</button>
+                                    <button type="button" class="btn btn-xs status-pill {{ ($statusFilter ?? '') == 'pending' ? 'active' : '' }}" data-status="pending">Pending</button>
+                                </div>
                             </div>
-                            <button type="submit" class="btn btn-success">Export Invoices</button>
                         </form>
                     </div>
                 </div>
 
-                <!-- Responsive Table -->
+                <!-- Responsive Data Table -->
                 <div class="table-responsive" id="responsive-table">
-                    <table id="invoiceTable" class="table table-striped table-bordered align-middle text-center">
+                    <table id="invoiceTable" class="table table-striped table-bordered align-middle text-center" style="transition: opacity 0.2s ease;">
                         <thead class="custom-thead text-center align-middle">
                             <tr>
                             <th scope="col">S.NO</th>
@@ -87,42 +130,114 @@
     </main>
 @push('scripts')
 <script>
-let page = 1;
-let loading = false;
-let lastPage = {{ $invoices->hasMorePages() ? 'false' : 'true' }};
 let selectedSearchId = null;
 
-function loadMoreInvoices() {
-    if (loading || lastPage) return;
-    loading = true;
-    page++;
+function initInvoiceDataTable() {
+    if ($.fn.DataTable.isDataTable('#invoiceTable')) {
+        $('#invoiceTable').DataTable().destroy();
+    }
+    return $('#invoiceTable').DataTable({
+        paging: true,
+        searching: true,
+        info: true,
+        ordering: true,
+        order: [[1, 'desc']],
+        lengthMenu: [[10, 20, 30, 50, 100, -1], [10, 20, 30, 50, 100, "All"]],
+        pageLength: 20,
+        language: {
+            searchPlaceholder: "Search table records...",
+            search: "",
+            paginate: {
+                previous: '<i class="fas fa-chevron-left"></i>',
+                next: '<i class="fas fa-chevron-right"></i>'
+            }
+        },
+        dom: '<"d-flex flex-wrap justify-content-between align-items-center mb-3"lf>rt<"d-flex flex-wrap justify-content-between align-items-center mt-3"ip><"clear">'
+    });
+}
+
+function fetchFilteredInvoices(preset, fromDate, toDate, statusFilter) {
+    $('#invoiceTable').css('opacity', '0.4');
     $.ajax({
-        url: '?page=' + page,
+        url: "{{ route('invoice.index') }}",
         type: 'GET',
+        data: {
+            date_range: preset || $('#dateRangeInput').val(),
+            from_date: fromDate || $('#from_date').val(),
+            to_date: toDate || $('#to_date').val(),
+            status_filter: statusFilter || $('#statusFilterInput').val()
+        },
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        success: function(data) {
-            if (data.trim() === '') {
-                lastPage = true;
-                if (!$('#endOfInvoices').length) {
-                    $('#invoiceTableBody').append('<tr id="endOfInvoices"><td colspan="7" class="text-center text-muted">End of invoices</td></tr>');
-                }
-            } else {
-                $('#invoiceTableBody').append(data);
+        success: function(response) {
+            if ($.fn.DataTable.isDataTable('#invoiceTable')) {
+                $('#invoiceTable').DataTable().destroy();
+            }
+            $('#invoiceTableBody').html(response);
+            if (typeof setInvoiceTableDataLabels === 'function') {
                 setInvoiceTableDataLabels();
             }
-            loading = false;
+            initInvoiceDataTable();
+            $('#invoiceTable').css('opacity', '1');
         },
         error: function() {
-            loading = false;
+            $('#invoiceTable').css('opacity', '1');
         }
     });
 }
 
-$(window).on('scroll', function() {
-    if ($(window).scrollTop() + $(window).height() >= $(document).height() - 200) {
-        loadMoreInvoices();
-    }
+$(document).ready(function() {
+    initInvoiceDataTable();
+
+    // Preset Pill Click Handler (AJAX reload, zero layout collapse)
+    $(document).on('click', '.preset-pill, .date-preset-btn', function(e) {
+        e.preventDefault();
+        var preset = $(this).data('preset');
+        $('#dateRangeInput').val(preset);
+        $('.preset-pill').removeClass('active');
+        $(this).addClass('active');
+
+        if (preset === 'custom') {
+            $('#customDateContainer').removeClass('d-none').addClass('d-flex');
+        } else {
+            $('#customDateContainer').removeClass('d-flex').addClass('d-none');
+            $('#from_date').val('');
+            $('#to_date').val('');
+            fetchFilteredInvoices(preset, '', '');
+        }
+    });
+
+    // Status Pill Click Handler
+    $(document).on('click', '.status-pill', function(e) {
+        e.preventDefault();
+        var status = $(this).data('status');
+        if ($(this).hasClass('active')) {
+            $(this).removeClass('active');
+            $('#statusFilterInput').val('all');
+        } else {
+            $('.status-pill').removeClass('active');
+            $(this).addClass('active');
+            $('#statusFilterInput').val(status);
+        }
+        fetchFilteredInvoices();
+    });
 });
+
+function applyCustomDateFilter() {
+    var preset = $('#dateRangeInput').val() || 'custom';
+    var fromDate = $('#from_date').val();
+    var toDate = $('#to_date').val();
+    fetchFilteredInvoices(preset, fromDate, toDate);
+}
+
+function exportFilteredInvoices() {
+    var from = document.getElementById('from_date').value;
+    var to = document.getElementById('to_date').value;
+    var url = "{{ route('invoice.export') }}";
+    if (from && to) {
+        url += "?from_date=" + encodeURIComponent(from) + "&to_date=" + encodeURIComponent(to);
+    }
+    window.open(url, '_blank');
+}
 
 function validateExportDates() {
     var from = document.getElementById('from_date').value;
@@ -324,7 +439,58 @@ $('#confirmApproveBtn').on('click', function() {
 });
 </script>
 
-@endpush
+<style>
+    .preset-segmented-control {
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .preset-pill {
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 50rem;
+        color: #475569;
+        border: 1px solid transparent;
+        background: transparent;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+    .preset-pill:hover {
+        color: #0f172a;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .preset-pill.active {
+        background-color: #ff6b00 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(255, 107, 0, 0.35) !important;
+    }
+    .status-pill {
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 50rem;
+        color: #475569;
+        border: 1px solid transparent;
+        background: transparent;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+    .status-pill:hover {
+        color: #0f172a;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .status-pill.active {
+        background-color: #ff6b00 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(255, 107, 0, 0.35) !important;
+    }
+    .btn-xs {
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+</style>
 
 <!-- Responsive table and utility CSS moved to styles.css -->
 

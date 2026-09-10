@@ -13,8 +13,8 @@
         }
     @endphp
 <tr @if($invoice->reconciliation_done) style="background-color: #e6ffe6;" title="Reconciliation Done" @endif data-invoice-view-url="{{ $viewUrl }}">
-    <td><span class="mobile-value">{{ ($invoices->firstItem() ?? 0) + $index }}</span></td>
-    <td><span class="mobile-value">{{ $invoice->date ?? $invoice->created_at->format('d-m-Y') }}</span></td>
+    <td><span class="mobile-value">{{ $index + 1 }}</span></td>
+    <td><span class="mobile-value">{{ $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date)->format('d-m-Y') : ($invoice->created_at ? $invoice->created_at->format('d-m-Y') : '-') }}</span></td>
     <td><span class="mobile-value">{{ $invoice->customer_name ?? ($invoice->customer->name ?? '-') }}</span></td>
     <td><span class="mobile-value">{{ $invoice->invoice_number }}</span></td>
     <td><span class="mobile-value">₹{{ number_format($invoice->grand_total, 2) }}</span></td>

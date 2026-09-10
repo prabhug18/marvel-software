@@ -161,17 +161,91 @@ class InvoiceController extends Controller
     public function index(Request $request)
     {
         $heading = "Invoice View";
-        if (Auth::user() && Auth::user()->hasRole('Admin')) {
-            $invoices = \App\Models\Invoice::orderBy('created_at', 'desc')->paginate(10);
-        } else {
-            $userWarehouseId = Auth::user()->warehouse_id ?? null;
-            $invoices = \App\Models\Invoice::where('warehouse_id', $userWarehouseId)
-                ->orderBy('created_at', 'desc')->paginate(10);
+        $preset = $request->input('date_range', '3_months');
+        $fromDateInput = $request->input('from_date');
+        $toDateInput = $request->input('to_date');
+
+        $today = \Carbon\Carbon::today();
+
+        switch ($preset) {
+            case '10_days':
+                $fromDate = $today->copy()->subDays(10)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
+            case '20_days':
+                $fromDate = $today->copy()->subDays(20)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
+            case '30_days':
+                $fromDate = $today->copy()->subDays(30)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
+            case '1_month':
+                $fromDate = $today->copy()->subMonth(1)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
+            case '3_months':
+                $fromDate = $today->copy()->subMonths(3)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
+            case '6_months':
+                $fromDate = $today->copy()->subMonths(6)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
+            case '9_months':
+                $fromDate = $today->copy()->subMonths(9)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
+            case 'custom':
+                $fromDate = $fromDateInput ? \Carbon\Carbon::parse($fromDateInput)->format('Y-m-d') : $today->copy()->subMonths(3)->format('Y-m-d');
+                $toDate = $toDateInput ? \Carbon\Carbon::parse($toDateInput)->format('Y-m-d') : $today->format('Y-m-d');
+                break;
+            case 'all':
+                $fromDate = null;
+                $toDate = null;
+                break;
+            default:
+                $preset = '3_months';
+                $fromDate = $today->copy()->subMonths(3)->format('Y-m-d');
+                $toDate = $today->format('Y-m-d');
+                break;
         }
-        if ($request->ajax()) {
+
+        $statusFilter = $request->input('status_filter', 'all');
+
+        $query = \App\Models\Invoice::with(['customer']);
+
+        if (!Auth::user() || !Auth::user()->hasRole('Admin')) {
+            $userWarehouseId = Auth::user()->warehouse_id ?? null;
+            $query->where('warehouse_id', $userWarehouseId);
+        }
+
+        if ($statusFilter === 'approved') {
+            $query->where('status', 'approved');
+        } elseif ($statusFilter === 'pending') {
+            $query->where(function($q) {
+                $q->where('status', '!=', 'approved')
+                  ->orWhereNull('status');
+            });
+        }
+
+        if ($fromDate && $toDate) {
+            $query->where(function($q) use ($fromDate, $toDate) {
+                $q->whereBetween('invoice_date', [$fromDate, $toDate])
+                  ->orWhere(function($sub) use ($fromDate, $toDate) {
+                      $sub->whereNull('invoice_date')
+                          ->whereBetween('created_at', [$fromDate . ' 00:00:00', $toDate . ' 23:59:59']);
+                  });
+            });
+        }
+
+        $invoices = $query->orderBy('invoice_date', 'desc')->orderBy('id', 'desc')->get();
+
+        if ($request->ajax() && !$request->has('draw')) {
             return view('backend.modules.invoice.partials.invoice_rows', compact('invoices'))->render();
         }
-        return view('backend.modules.invoice.index', compact('heading', 'invoices'));
+
+        return view('backend.modules.invoice.index', compact('heading', 'invoices', 'preset', 'fromDate', 'toDate', 'statusFilter'));
     }
 
     /**
