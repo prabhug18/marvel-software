@@ -81,8 +81,9 @@
                                     <span class="px-2 text-muted fw-bold small text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
                                         <i class="fas fa-tasks me-1 text-warning"></i>Status:
                                     </span>
-                                    <button type="button" class="btn btn-xs status-pill {{ ($statusFilter ?? '') == 'approved' ? 'active' : '' }}" data-status="approved">Approved</button>
-                                    <button type="button" class="btn btn-xs status-pill {{ ($statusFilter ?? '') == 'pending' ? 'active' : '' }}" data-status="pending">Pending</button>
+                                    <button type="button" class="btn btn-xs status-pill {{ ($statusFilter ?? 'all') == 'all' ? 'active' : '' }}" data-status="all">All</button>
+                                    <button type="button" class="btn btn-xs status-pill {{ ($statusFilter ?? 'all') == 'approved' ? 'active' : '' }}" data-status="approved">Approved</button>
+                                    <button type="button" class="btn btn-xs status-pill {{ ($statusFilter ?? 'all') == 'pending' ? 'active' : '' }}" data-status="pending">Pending</button>
                                 </div>
                             </div>
                         </form>
@@ -210,14 +211,9 @@ $(document).ready(function() {
     $(document).on('click', '.status-pill', function(e) {
         e.preventDefault();
         var status = $(this).data('status');
-        if ($(this).hasClass('active')) {
-            $(this).removeClass('active');
-            $('#statusFilterInput').val('all');
-        } else {
-            $('.status-pill').removeClass('active');
-            $(this).addClass('active');
-            $('#statusFilterInput').val(status);
-        }
+        $('#statusFilterInput').val(status);
+        $('.status-pill').removeClass('active');
+        $(this).addClass('active');
         fetchFilteredInvoices();
     });
 });
