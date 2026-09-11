@@ -142,7 +142,7 @@ function initInvoiceDataTable() {
         searching: true,
         info: true,
         ordering: true,
-        order: [[1, 'desc']],
+        order: [[3, 'desc']],
         lengthMenu: [[10, 20, 30, 50, 100, -1], [10, 20, 30, 50, 100, "All"]],
         pageLength: 20,
         language: {

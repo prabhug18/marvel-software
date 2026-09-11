@@ -239,7 +239,7 @@ class InvoiceController extends Controller
             });
         }
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->orderBy('id', 'desc')->get();
+        $invoices = $query->orderBy('id', 'desc')->get();
 
         if ($request->ajax() && !$request->has('draw')) {
             return view('backend.modules.invoice.partials.invoice_rows', compact('invoices'))->render();
