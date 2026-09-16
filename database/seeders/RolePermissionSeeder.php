@@ -12,6 +12,7 @@ class RolePermissionSeeder extends Seeder
     {
         // Check if roles exist before creating
         $adminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $managerRole = Role::firstOrCreate(['name' => 'Manager']);
         $editorRole = Role::firstOrCreate(['name' => 'Editor']);
 
         // Assign all permissions to Admin
