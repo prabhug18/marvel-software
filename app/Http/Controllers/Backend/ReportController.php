@@ -54,6 +54,9 @@ class ReportController extends Controller
         }
 
         if ($request->get('export') == 'excel') {
+            if (!(auth()->user() && auth()->user()->hasRole('Admin'))) {
+                abort(403, 'Unauthorized. Only Admin users can export invoice reports.');
+            }
             return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\InvoiceExport($from, $to, null), 'invoice_report.xlsx');
         }
 

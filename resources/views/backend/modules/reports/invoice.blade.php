@@ -85,7 +85,9 @@
                                 </div>
                                 <div class="col-md-4 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary w-100 me-2 mt-4">Filter</button>
-                                    <a href="{{ route('reports.invoice', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success w-100 me-2 mt-4">Export</a>
+                                    @if(Auth::user() && Auth::user()->hasRole('Admin'))
+                                        <a href="{{ route('reports.invoice', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success w-100 me-2 mt-4">Export</a>
+                                    @endif
                                     <a href="{{ route('reports.invoice') }}" class="btn btn-secondary w-100 mt-4">Reset</a>
                                 </div>
                             </form>

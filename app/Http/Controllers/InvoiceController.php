@@ -859,7 +859,7 @@ class InvoiceController extends Controller
                 }
             }
         });
-        return redirect()->route('invoice.index')->with('success', 'Invoice updated successfully.');
+        return redirect()->route('invoice.edit', $id)->with('success', 'Invoice updated successfully.');
     }
 
     /**
@@ -903,6 +903,9 @@ class InvoiceController extends Controller
      */
     public function export(Request $request)
     {
+        if (!(Auth::user() && Auth::user()->hasRole('Admin'))) {
+            abort(403, 'Unauthorized. Only Admin users can export invoices.');
+        }
         $from = $request->input('from_date');
         $to = $request->input('to_date');
         $query = \App\Models\Invoice::query();

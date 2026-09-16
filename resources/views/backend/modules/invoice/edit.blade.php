@@ -445,7 +445,7 @@ $(document).ready(function() {
             data: JSON.stringify(data),
             success: function(response) {
                 Swal.fire({ icon: 'success', title: 'Updated!', text: 'Invoice updated successfully!', timer: 2000, showConfirmButton: false }).then(() => {
-                    window.location.href = '/invoice';
+                    location.reload();
                 });
             },
             error: function(xhr) {

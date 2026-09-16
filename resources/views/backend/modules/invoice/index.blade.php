@@ -40,9 +40,11 @@
                                         <div id="searchSuggestions" class="list-group position-absolute w-100 shadow" style="z-index: 1000; display: none; top:100%;left:0;"></div>
                                     </div>
                                     
+                                    @if(Auth::user() && Auth::user()->hasRole('Admin'))
                                     <button type="button" onclick="exportFilteredInvoices();" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-semibold">
                                         <i class="fas fa-file-excel me-1"></i>Export Invoices
                                     </button>
+                                    @endif
                                 </div>
                             </div>
 
